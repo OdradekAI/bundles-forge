@@ -2,5 +2,10 @@
   "name": "skill-engineering-guide",
   "description": "Skill project engineering toolkit: scaffolding, platform adaptation, version management, and skill lifecycle",
   "version": "1.0.0",
+  "author": {
+    "name": "Luiz",
+    "email": "odradekai@outlook.com"
+  },
+  "repository": "https://github.com/odradekai/skill-engineering-guide",
   "contextFileName": "GEMINI.md"
 }

@@ -1,7 +1,22 @@
 {
   "name": "skill-engineering-guide",
   "abbreviation": "seg",
+  "description": "Skill project engineering toolkit: scaffolding, platform adaptation, version management, and skill lifecycle",
   "version": "1.0.0",
   "type": "module",
-  "main": ".opencode/plugins/skill-engineering-guide.js"
+  "main": ".opencode/plugins/skill-engineering-guide.js",
+  "author": {
+    "name": "Luiz",
+    "email": "odradekai@outlook.com"
+  },
+  "homepage": "https://github.com/odradekai/skill-engineering-guide",
+  "repository": "https://github.com/odradekai/skill-engineering-guide",
+  "license": "MIT",
+  "keywords": [
+    "skills",
+    "scaffolding",
+    "platform-adaptation",
+    "version-management",
+    "skill-engineering"
+  ]
 }
