@@ -339,3 +339,109 @@ docs/
   specs/
     2025-01-15-feature-design.md
 ```
+
+---
+
+## Optional / Advanced Components
+
+These components are defined in the [Claude Code plugins reference](https://code.claude.com/docs/en/plugins-reference) but only needed for specific use cases. Only generate them when the design document explicitly requests them.
+
+### `bin/` — Plugin Executables
+
+Executables placed here are added to the Bash tool's `PATH` while the plugin is enabled. Files are invokable as bare commands in any Bash tool call.
+
+Only create if skills need CLI tools that should be available as bare commands. Ensure executables are marked `chmod +x`.
+
+### `output-styles/` — Output Style Definitions
+
+Custom output formatting definitions as Markdown files. Only create if the project needs specialized output beyond the platform defaults.
+
+### `settings.json` — Plugin Default Settings
+
+Default configuration applied when the plugin is enabled. Currently only supports the `agent` key to activate one of the plugin's custom agents as the main thread:
+
+```json
+{
+  "agent": "security-reviewer"
+}
+```
+
+Only create if the project should change how the host platform behaves by default when the plugin is enabled.
+
+### `.mcp.json` — MCP Server Definitions
+
+Bundle Model Context Protocol servers with the plugin. Servers start automatically when the plugin is enabled. Use `${CLAUDE_PLUGIN_ROOT}` for paths to bundled scripts:
+
+```json
+{
+  "mcpServers": {
+    "plugin-database": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/servers/db-server",
+      "args": ["--config", "${CLAUDE_PLUGIN_ROOT}/config.json"]
+    }
+  }
+}
+```
+
+Only create if skills need external tool integrations beyond what the host platform provides natively.
+
+### `.lsp.json` — LSP Server Configurations
+
+Language Server Protocol configurations for code intelligence (diagnostics, go-to-definition, find references). Maps file extensions to language server commands:
+
+```json
+{
+  "go": {
+    "command": "gopls",
+    "args": ["serve"],
+    "extensionToLanguage": {
+      ".go": "go"
+    }
+  }
+}
+```
+
+Only create if skills involve language-specific code intelligence. The language server binary must be installed separately by the user.
+
+### `userConfig` — User-Configurable Values (in plugin.json)
+
+Declared in `.claude-plugin/plugin.json` under the `userConfig` field. Claude Code prompts the user for these values when the plugin is enabled. Available as `${user_config.KEY}` in MCP/LSP configs and hook commands:
+
+```json
+{
+  "userConfig": {
+    "api_endpoint": {
+      "description": "Your team's API endpoint",
+      "sensitive": false
+    },
+    "api_token": {
+      "description": "API authentication token",
+      "sensitive": true
+    }
+  }
+}
+```
+
+Sensitive values are stored in the system keychain; non-sensitive values go to `settings.json`.
+
+---
+
+## Environment Variables
+
+Two plugin-scoped variables are provided by the host platform. Both are substituted inline in skill content, agent content, hook commands, and MCP/LSP configs. Both are also exported to hook processes and server subprocesses.
+
+- **`${CLAUDE_PLUGIN_ROOT}`** — absolute path to the plugin's installation directory. Use for referencing bundled scripts, binaries, and config files. This path changes on plugin updates, so do not write persistent data here.
+
+- **`${CLAUDE_PLUGIN_DATA}`** — persistent directory for plugin state that survives updates. Use for installed dependencies (`node_modules`, virtual environments), caches, and generated files. Created automatically on first reference. Deleted when the plugin is uninstalled from its last scope.
+
+---
+
+## Plugin Caching Behavior
+
+Marketplace plugins are copied to `~/.claude/plugins/cache` rather than used in-place. This has important implications:
+
+- **Path traversal limitation**: Paths that reference files outside the plugin root (e.g., `../shared-utils`) will not work after installation because external files are not copied to the cache.
+- **Symlinks are followed**: If your plugin needs external files, create symlinks within the plugin directory. Symlinked content is copied during cache population.
+- **Version isolation**: Each installed version is a separate cache directory. Old versions are cleaned up 7 days after update.
+
+For persistent data that should survive plugin updates, use `${CLAUDE_PLUGIN_DATA}` instead of writing to the plugin root.

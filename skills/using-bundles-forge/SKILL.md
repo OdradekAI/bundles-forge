@@ -48,23 +48,33 @@ User message about bundles
     → no  → Respond directly
 ```
 
-## Available Skills
+## User Entry Points
+
+These skills are invoked directly by users. Each has a matching command in `commands/`.
 
 | Skill | When to Use |
 |-------|-------------|
-| `bundles-forge:designing` | Planning new bundles, splitting a complex skill into a project |
-| `bundles-forge:scaffolding` | Generating project structure, manifests, hooks, bootstrap skill |
-| `bundles-forge:writing-skill` | Writing or improving individual SKILL.md files and supporting resources |
+| `bundles-forge:designing` | Planning new bundles, splitting or composing skills, combining third-party skills |
 | `bundles-forge:auditing` | Reviewing a project for quality issues, security risks, or before release |
 | `bundles-forge:optimizing` | Engineering optimization, feedback iteration, descriptions, token efficiency |
-| `bundles-forge:adapting-platforms` | Adding platform support (Claude Code, Cursor, Codex, OpenCode, Gemini CLI) |
 | `bundles-forge:releasing` | Version management, release pipeline: audit, version bump, publish |
+
+## Workflow Skills (invoked by other skills, not directly)
+
+These skills are called as part of a workflow chain. Users typically don't invoke them directly — they are triggered by entry-point skills.
+
+| Skill | Called By | Purpose |
+|-------|-----------|---------|
+| `bundles-forge:scaffolding` | designing | Generate project structure after design approval |
+| `bundles-forge:writing-skill` | scaffolding | Fill in SKILL.md content after scaffold |
+| `bundles-forge:adapting-platforms` | scaffolding / standalone | Add platform support to existing project |
+| `bundles-forge:using-bundles-forge` | hooks (auto-loaded) | Bootstrap meta-skill — you're reading it now |
 
 ## Skill Priority
 
 When multiple skills could apply:
 
-1. **Design first** — if creating something new or splitting a complex skill, start with `designing`
+1. **Design first** — if creating something new, splitting, or composing skills, start with `designing`
 2. **Write content after scaffold** — use `writing-skill` to fill in SKILL.md files
 3. **Audit before optimize** — understand the full picture before targeted fixes
 4. **Platform adapt after scaffold** — structure must exist before adding platforms

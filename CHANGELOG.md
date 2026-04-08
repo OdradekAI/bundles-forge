@@ -2,6 +2,33 @@
 
 ## [Unreleased]
 
+## [1.3.2] - 2026-04-09
+
+### Added
+
+- **Minimal/Intelligent dual-mode** in `designing` and `scaffolding` — minimal mode for quick skill packaging (just skills + manifest), intelligent mode for full multi-platform projects with hooks, bootstrap, and version infrastructure.
+- **Third-party skill handling** in `designing` — inventory, compatibility analysis, integration intent (repackage vs integrate), and mandatory security audit for imported content.
+- **Skill visibility classification** — entry-point skills get matching commands in `commands/`, internal skills are invoked only by other skills in the workflow chain.
+- **Advanced components** in `designing` and `scaffolding` — conditional support for `bin/`, `.mcp.json`, `.lsp.json`, `output-styles/`, and `settings.json`.
+- **Optional/Advanced components reference** in `scaffolding/references/project-anatomy.md` — documentation for plugin executables, MCP/LSP servers, output styles, settings, userConfig, environment variables, and caching behavior.
+- **Commands** for `optimizing` (`optimize-project.md`) and `releasing` (`release-project.md`) entry-point skills.
+- **GitHub Release creation** in `releasing` skill — `gh release create` step after tag push, with fallback to GitHub web UI.
+
+### Changed
+
+- **`using-bundles-forge` routing table** — split into "User Entry Points" (designing, auditing, optimizing, releasing) and "Workflow Skills" (scaffolding, writing-skill, adapting-platforms).
+- **`scaffolding` description** — rewritten to reflect dual-mode support.
+- **`designing` design document template** — now includes mode, visibility column, advanced components, and third-party sources table.
+
+### Removed
+
+- **`commands/scaffold-project.md`** — scaffolding reclassified as workflow skill (invoked by designing, not directly by users).
+
+### Fixed
+
+- **`.gitignore`** — added `__pycache__/` pattern and removed committed `.pyc` files.
+- **`.gitignore`** — added missing trailing newline.
+
 ## [1.3.1] - 2026-04-08
 
 ### Removed

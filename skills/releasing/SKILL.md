@@ -158,7 +158,7 @@ scripts/bump-version.sh --audit   # No stray versions
 
 ### Step 6: Publish
 
-**Git:**
+**Git + GitHub Release:**
 ```bash
 git add -A
 git commit -m "release: v<version>"
@@ -166,15 +166,23 @@ git tag v<version>
 git push origin main --tags
 ```
 
+After pushing the tag, create a GitHub Release so the `/releases` page has release notes and notifies watchers:
+
+```bash
+gh release create v<version> --title "v<version>" --notes-file CHANGELOG-EXCERPT.md
+```
+
+Generate `CHANGELOG-EXCERPT.md` from the current version's CHANGELOG.md section (the `## [X.Y.Z]` block written in Step 4). Delete the excerpt file after `gh release create` succeeds. If `gh` CLI is unavailable, instruct the user to create the release manually from the GitHub web UI at `https://github.com/<owner>/<repo>/releases/new?tag=v<version>`.
+
 **Platform-specific publishing:**
 
 | Platform | Command |
 |----------|---------|
 | Claude Code | `claude plugin publish` (if marketplace-ready) |
 | Cursor | Submit through Cursor plugin marketplace |
-| Codex | Users pull from git — tag is sufficient |
-| OpenCode | Users pull from git — tag is sufficient |
-| Gemini CLI | Users install from git URL — tag is sufficient |
+| Codex | Users pull from git — GitHub Release is sufficient |
+| OpenCode | Users pull from git — GitHub Release is sufficient |
+| Gemini CLI | Users install from git URL — GitHub Release is sufficient |
 
 ## Hotfix Releases
 
@@ -202,6 +210,7 @@ When setting up version infrastructure for the first time:
 |---------|-----|
 | Releasing without running audit | Always run full pipeline — "it's just a small change" is how drift happens |
 | Forgetting to tag the release | Tags are how git-based platforms identify versions |
+| Only pushing a tag without creating a GitHub Release | Tags appear on `/tags` but not `/releases` — use `gh release create` to publish release notes and notify watchers |
 | Bumping version before fixing issues | Fix first, bump second — avoid releasing a known-broken version |
 | Skipping CHANGELOG update | Users need to know what changed, especially for breaking changes |
 | Not re-verifying after fixes | Changes to fix issues can introduce new drift |
