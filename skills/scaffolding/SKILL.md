@@ -1,6 +1,8 @@
 ---
 name: scaffolding
 description: "Use when generating project structure for new bundle-plugins — supports minimal packaging (skills + manifest) and full multi-platform projects with hooks, bootstrap, and version infrastructure. Use after design is complete"
+user-invocable: false
+allowed-tools: Python(scripts/bump_version.py *)
 ---
 
 # Scaffolding Bundle-Plugins
@@ -15,7 +17,7 @@ Generate a bundle-plugin project from a design blueprint. Supports two modes: **
 
 ## Prerequisites
 
-A design document from `bundles-forge:designing` or equivalent information:
+A design document from `bundles-forge:blueprinting` or equivalent information:
 - Project mode (minimal / intelligent)
 - Project name (kebab-case)
 - Target platforms (minimal mode defaults to Claude Code only)
@@ -38,7 +40,7 @@ Only generated when design specifies minimal mode. Produces a lean plugin ready 
 | `README.md` | Installation instructions and skill catalog |
 | `LICENSE` | Default MIT unless specified |
 
-No hooks, no bootstrap, no version infrastructure. Users can add these later via `bundles-forge:adapting-platforms` or by re-running with intelligent mode.
+No hooks, no bootstrap, no version infrastructure. Users can add these later via `bundles-forge:porting` or by re-running with intelligent mode.
 
 ### Intelligent Mode — Core
 
@@ -51,7 +53,7 @@ Generated for all intelligent-mode projects regardless of platform selection:
 | `LICENSE` | Default MIT unless specified |
 | `.gitignore` | node_modules, .worktrees, OS files |
 | `.version-bump.json` | Version sync manifest |
-| `scripts/bump-version.sh` | Version management tool |
+| `scripts/bump_version.py` | Version management tool |
 | `skills/<skill-name>/SKILL.md` | One directory per skill |
 | `commands/<entry-skill>.md` | One command per entry-point skill (from visibility classification) |
 
@@ -93,7 +95,7 @@ Generated for all intelligent-mode projects regardless of platform selection:
 **Intelligent mode:**
 1. **Read template index** — load `references/scaffold-templates.md` for the template inventory and placeholder reference
 2. **Read templates** — load the needed template files from `assets/` (infrastructure, docs, bootstrap)
-3. **Read platform templates** — for per-platform files, load from `adapting-platforms/assets/<platform>/`
+3. **Read platform templates** — for per-platform files, load from `porting/assets/<platform>/`
 4. **Read anatomy** — load `references/project-anatomy.md` for structure details
 5. **Replace placeholders** — substitute `<project-name>`, `<author-name>`, etc.
 6. **Generate per-platform** — only create files for target platforms
@@ -111,13 +113,13 @@ Generated for all intelligent-mode projects regardless of platform selection:
 
 **Intelligent mode:**
 1. **Initialize git** — `git init`, create initial commit
-2. **Verify version sync** — run `scripts/bump-version.sh --check`
+2. **Verify version sync** — run `python scripts/bump_version.py --check`
 3. **Validate manifests** — each platform manifest references correct paths
 4. **Test bootstrap** — if created, verify it loads on at least one target platform
 5. **Security baseline** — run `bundles-forge:auditing` on generated hooks and plugin code
 6. **Report** — show the user the generated structure and next steps
 
-Dispatch the `reviewer` agent (`agents/reviewer.md`) for automated validation if subagents are available.
+Dispatch the `inspector` agent (`agents/inspector.md`) for automated validation if subagents are available.
 
 ## Quick Reference: Placeholder Map
 
@@ -139,7 +141,7 @@ Dispatch the `reviewer` agent (`agents/reviewer.md`) for automated validation if
 | Hardcoding author in templates | Pull from git config or ask |
 | Missing `run-hook.cmd` for Windows | Always include if any hook-based platform is targeted |
 | Bootstrap skill > 200 lines | Keep lean — extract to `references/` |
-| Forgetting `chmod +x` on scripts | Note in post-scaffold checklist |
+| Forgetting `chmod +x` on hook scripts | Note in post-scaffold checklist |
 | Using intelligent mode infrastructure for minimal projects | Minimal mode exists to avoid over-engineering |
 | Forgetting commands for entry-point skills | Each entry-point skill gets a matching command file |
 | Generating optional components not in the design | Only create what the design document specifies |
@@ -147,10 +149,10 @@ Dispatch the `reviewer` agent (`agents/reviewer.md`) for automated validation if
 ## Integration
 
 **Called by:**
-- **bundles-forge:designing** — after design approval
+- **bundles-forge:blueprinting** — after design approval
 
 **Calls:**
 - **bundles-forge:auditing** — post-scaffold verification
 **Pairs with:**
 - **bundles-forge:releasing** — version infrastructure setup
-- **bundles-forge:adapting-platforms** — adding platforms later
+- **bundles-forge:porting** — adding platforms later

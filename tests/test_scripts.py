@@ -17,18 +17,18 @@ SCRIPTS_DIR = REPO_ROOT / "scripts"
 
 
 class TestLintSkills(unittest.TestCase):
-    """Tests for scripts/lint-skills.py"""
+    """Tests for scripts/lint_skills.py"""
 
     def test_lint_runs_without_error(self):
         result = subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / "lint-skills.py"), str(REPO_ROOT)],
+            [sys.executable, str(SCRIPTS_DIR / "lint_skills.py"), str(REPO_ROOT)],
             capture_output=True, text=True
         )
         self.assertIn("Skill Quality Lint", result.stdout)
 
     def test_lint_json_output(self):
         result = subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / "lint-skills.py"), "--json", str(REPO_ROOT)],
+            [sys.executable, str(SCRIPTS_DIR / "lint_skills.py"), "--json", str(REPO_ROOT)],
             capture_output=True, text=True
         )
         data = json.loads(result.stdout)
@@ -39,20 +39,20 @@ class TestLintSkills(unittest.TestCase):
 
     def test_lint_finds_expected_skills(self):
         result = subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / "lint-skills.py"), "--json", str(REPO_ROOT)],
+            [sys.executable, str(SCRIPTS_DIR / "lint_skills.py"), "--json", str(REPO_ROOT)],
             capture_output=True, text=True
         )
         data = json.loads(result.stdout)
         skill_names = {s["skill"] for s in data["skills"]}
-        expected = {"designing", "scaffolding", "auditing", "optimizing",
-                    "releasing", "adapting-platforms", "writing-skill",
+        expected = {"blueprinting", "scaffolding", "authoring", "auditing",
+                    "optimizing", "releasing", "porting",
                     "using-bundles-forge"}
         self.assertTrue(expected.issubset(skill_names),
                         f"Missing skills: {expected - skill_names}")
 
     def test_lint_no_deleted_skills(self):
         result = subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / "lint-skills.py"), "--json", str(REPO_ROOT)],
+            [sys.executable, str(SCRIPTS_DIR / "lint_skills.py"), "--json", str(REPO_ROOT)],
             capture_output=True, text=True
         )
         data = json.loads(result.stdout)
@@ -63,18 +63,18 @@ class TestLintSkills(unittest.TestCase):
 
 
 class TestScanSecurity(unittest.TestCase):
-    """Tests for scripts/scan-security.py"""
+    """Tests for scripts/scan_security.py"""
 
     def test_scan_runs_without_crash(self):
         result = subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / "scan-security.py"), str(REPO_ROOT)],
+            [sys.executable, str(SCRIPTS_DIR / "scan_security.py"), str(REPO_ROOT)],
             capture_output=True, text=True
         )
         self.assertIn("Security Scan", result.stdout)
 
     def test_scan_json_output(self):
         result = subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / "scan-security.py"), "--json", str(REPO_ROOT)],
+            [sys.executable, str(SCRIPTS_DIR / "scan_security.py"), "--json", str(REPO_ROOT)],
             capture_output=True, text=True
         )
         data = json.loads(result.stdout)
@@ -84,7 +84,7 @@ class TestScanSecurity(unittest.TestCase):
 
     def test_scan_classifies_file_types(self):
         result = subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / "scan-security.py"), "--json", str(REPO_ROOT)],
+            [sys.executable, str(SCRIPTS_DIR / "scan_security.py"), "--json", str(REPO_ROOT)],
             capture_output=True, text=True
         )
         data = json.loads(result.stdout)
@@ -94,28 +94,28 @@ class TestScanSecurity(unittest.TestCase):
 
 
 class TestAuditProject(unittest.TestCase):
-    """Tests for scripts/audit-project.py"""
+    """Tests for scripts/audit_project.py"""
 
     def test_audit_runs_without_crash(self):
         result = subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / "audit-project.py"), str(REPO_ROOT)],
+            [sys.executable, str(SCRIPTS_DIR / "audit_project.py"), str(REPO_ROOT)],
             capture_output=True, text=True
         )
         self.assertIn("Bundle-Plugin Audit", result.stdout)
 
     def test_audit_json_output(self):
         result = subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / "audit-project.py"), "--json", str(REPO_ROOT)],
+            [sys.executable, str(SCRIPTS_DIR / "audit_project.py"), "--json", str(REPO_ROOT)],
             capture_output=True, text=True
         )
         data = json.loads(result.stdout)
         self.assertIn("categories", data)
-        self.assertIn("overall_score", data)
-        self.assertIn("scores", data)
+        self.assertIn("status", data)
+        self.assertIn(data["status"], ("PASS", "WARN", "FAIL"))
 
     def test_audit_has_all_categories(self):
         result = subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / "audit-project.py"), "--json", str(REPO_ROOT)],
+            [sys.executable, str(SCRIPTS_DIR / "audit_project.py"), "--json", str(REPO_ROOT)],
             capture_output=True, text=True
         )
         data = json.loads(result.stdout)
@@ -125,22 +125,13 @@ class TestAuditProject(unittest.TestCase):
         self.assertTrue(expected_cats.issubset(actual_cats),
                         f"Missing categories: {expected_cats - actual_cats}")
 
-    def test_audit_score_range(self):
-        result = subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / "audit-project.py"), "--json", str(REPO_ROOT)],
-            capture_output=True, text=True
-        )
-        data = json.loads(result.stdout)
-        self.assertGreaterEqual(data["overall_score"], 0)
-        self.assertLessEqual(data["overall_score"], 10)
-
 
 class TestCrossReferences(unittest.TestCase):
     """Verify cross-references resolve to existing skills."""
 
     def test_no_broken_crossrefs(self):
         result = subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / "lint-skills.py"), "--json", str(REPO_ROOT)],
+            [sys.executable, str(SCRIPTS_DIR / "lint_skills.py"), "--json", str(REPO_ROOT)],
             capture_output=True, text=True
         )
         data = json.loads(result.stdout)

@@ -1,6 +1,7 @@
 ---
 name: auditing
 description: "Use when reviewing a bundle-plugin for structural issues, version drift, manifest problems, skill quality, or security risks — before releasing, after changes, or when scanning third-party skills. Auto-detects scope (full project vs single skill)"
+allowed-tools: Bash(python scripts/*)
 ---
 
 # Auditing Bundle-Plugins
@@ -63,14 +64,14 @@ Scan project root
 ### Script Shortcuts
 
 ```bash
-python scripts/audit-project.py <project-root>        # full audit with scores
-python scripts/audit-project.py --json <project-root>  # machine-readable
+python scripts/audit_project.py <project-root>        # full audit with status
+python scripts/audit_project.py --json <project-root>  # machine-readable
 
-python scripts/scan-security.py <project-root>         # security-only scan
-python scripts/scan-security.py --json <project-root>  # security JSON output
+python scripts/scan_security.py <project-root>         # security-only scan
+python scripts/scan_security.py --json <project-root>  # security JSON output
 ```
 
-`audit-project.py` orchestrates `scan-security.py` (security) and `lint-skills.py` (skill quality), then adds structure, manifest, version-sync, hook, and documentation checks.
+`audit_project.py` orchestrates `scan_security.py` (security) and `lint_skills.py` (skill quality), then adds structure, manifest, version-sync, hook, and documentation checks.
 
 Dispatch the `auditor` agent (`agents/auditor.md`) for automated assessment if subagents are available. The auditor runs read-only and returns a scored report.
 
@@ -170,8 +171,8 @@ When the target is a single skill directory or SKILL.md file, run only the 4 cat
 ### Script Shortcuts
 
 ```bash
-python scripts/lint-skills.py <skill-directory>         # skill quality only
-python scripts/scan-security.py <skill-directory>        # security scan on skill files
+python scripts/lint_skills.py <skill-directory>         # skill quality only
+python scripts/scan_security.py <skill-directory>        # security scan on skill files
 ```
 
 ### Process
@@ -225,7 +226,7 @@ When auditing a skill from an external source (marketplace, git, shared file):
 
 | Mistake | Fix |
 |---------|-----|
-| Skipping version sync check | Always run `bump-version.sh --check` (full audit) |
+| Skipping version sync check | Always run `python scripts/bump_version.py --check` (full audit) |
 | Not checking description anti-patterns | Descriptions that summarize workflow cause agents to shortcut |
 | Ignoring cross-reference resolution | Broken `project:skill-name` refs = broken workflow chains |
 | Running full 9-category audit on a single skill | Let scope auto-detection handle it — 5 categories don't apply |

@@ -1,6 +1,6 @@
 ---
 name: using-bundles-forge
-description: "Use when starting any conversation involving bundle-plugins — designing, scaffolding, auditing, optimizing, adapting platforms, writing skills, or releasing. Also use when unsure which bundles-forge skill applies"
+description: "Use when starting any conversation involving bundle-plugins — blueprinting, scaffolding, authoring, auditing, optimizing, porting, or releasing. Also use when unsure which bundles-forge skill applies"
 ---
 
 <SUBAGENT-STOP>
@@ -54,7 +54,7 @@ These skills are invoked directly by users. Each has a matching command in `comm
 
 | Skill | When to Use |
 |-------|-------------|
-| `bundles-forge:designing` | Planning new bundle-plugins, splitting or composing skills, combining third-party skills |
+| `bundles-forge:blueprinting` | Planning new bundle-plugins, splitting or composing skills, combining third-party skills |
 | `bundles-forge:auditing` | Reviewing a project for quality issues, security risks, or before release |
 | `bundles-forge:optimizing` | Engineering optimization, feedback iteration, descriptions, token efficiency |
 | `bundles-forge:releasing` | Version management, release pipeline: audit, version bump, publish |
@@ -65,17 +65,17 @@ These skills are called as part of a workflow chain. Users typically don't invok
 
 | Skill | Called By | Purpose |
 |-------|-----------|---------|
-| `bundles-forge:scaffolding` | designing | Generate project structure after design approval |
-| `bundles-forge:writing-skill` | scaffolding | Fill in SKILL.md content after scaffold |
-| `bundles-forge:adapting-platforms` | scaffolding / standalone | Add platform support to existing project |
+| `bundles-forge:scaffolding` | blueprinting | Generate project structure after design approval |
+| `bundles-forge:authoring` | scaffolding | Fill in SKILL.md content after scaffold |
+| `bundles-forge:porting` | scaffolding / standalone | Add platform support to existing project |
 | `bundles-forge:using-bundles-forge` | hooks (auto-loaded) | Bootstrap meta-skill — you're reading it now |
 
 ## Skill Priority
 
 When multiple skills could apply:
 
-1. **Design first** — if creating something new, splitting, or composing skills, start with `designing`
-2. **Write content after scaffold** — use `writing-skill` to fill in SKILL.md files
+1. **Design first** — if creating something new, splitting, or composing skills, start with `blueprinting`
+2. **Write content after scaffold** — use `authoring` to fill in SKILL.md files
 3. **Audit before optimize** — understand the full picture before targeted fixes
 4. **Platform adapt after scaffold** — structure must exist before adding platforms
 5. **Optimize includes feedback** — use `optimizing` for both engineering improvements and user feedback iteration

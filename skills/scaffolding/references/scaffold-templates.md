@@ -25,7 +25,7 @@ Replace all placeholders before writing to the target project.
 |---------------|-------------|---------|
 | `assets/hooks/session-start` | `hooks/session-start` | Bootstrap injection script (shared across Claude Code, Cursor) |
 | `assets/hooks/run-hook.cmd` | `hooks/run-hook.cmd` | Windows polyglot hook runner |
-| `assets/scripts/bump-version.sh` | `scripts/bump-version.sh` | Version sync tool (bump, check, audit) |
+| `assets/scripts/bump_version.py` | `scripts/bump_version.py` | Version sync tool (bump, check, audit) |
 | `assets/root/version-bump.json` | `.version-bump.json` | Version sync config (adapt `files` array to target platforms) |
 | `assets/root/gitignore` | `.gitignore` | Standard ignores |
 | `assets/root/package.json` | `package.json` | Project identity (omit `main` if OpenCode not targeted) |
@@ -46,14 +46,13 @@ Replace all placeholders before writing to the target project.
 
 ### Platform Adapters
 
-Platform-specific manifest templates live in `adapting-platforms/assets/`. Use those when generating per-platform files (plugin.json, hooks.json, etc.).
+Platform-specific manifest templates live in `porting/assets/`. Use those when generating per-platform files (plugin.json, hooks.json, etc.).
 
 ---
 
 ## Generation Notes
 
 - **After creating `session-start`:** run `chmod +x hooks/session-start`
-- **After creating `bump-version.sh`:** run `chmod +x scripts/bump-version.sh`
 - **`.version-bump.json`:** only include entries for platforms that have version-bearing manifest files
 - **`package.json`:** omit the `main` field if OpenCode is not a target platform
 - **`GEMINI.md`:** only generate if Gemini CLI is a target platform

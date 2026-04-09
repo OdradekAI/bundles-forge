@@ -1,9 +1,9 @@
 ---
-name: writing-skill
+name: authoring
 description: "Use when writing or improving skill content in a bundle-plugin — SKILL.md structure, frontmatter conventions, description writing for reliable triggering, instruction style, and resource organization. Also use after scaffolding for content guidance"
 ---
 
-# Writing Skill Content
+# Authoring Skill Content
 
 ## Overview
 
@@ -13,7 +13,7 @@ Guide the authoring of effective SKILL.md files and supporting resources within 
 
 This skill distills best practices from the [Anthropic skill-creator](https://github.com/anthropics/skills/tree/main/skills/skill-creator) into actionable guidance for bundle-plugin authors.
 
-**Announce at start:** "I'm using the writing-skill skill to help author skill content."
+**Announce at start:** "I'm using the authoring skill to help author skill content."
 
 ## Skill Anatomy
 

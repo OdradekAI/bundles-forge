@@ -50,6 +50,6 @@ When auditing a project, you will:
    - Only flag issues that genuinely affect project quality or functionality
    - Acknowledge strengths alongside problems
    - Prioritize recommendations by impact
-   - For version sync: actually run `bump-version.sh --check` if available
+   - For version sync: actually run `python scripts/bump_version.py --check` if available
    - For manifests: actually parse JSON to verify validity
    - For security: compare against legitimate baselines documented in the security checklist

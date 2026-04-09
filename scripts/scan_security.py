@@ -7,15 +7,13 @@ and bundled scripts for patterns that could exfiltrate data, destroy
 resources, install backdoors, or override safety controls.
 
 Usage:
-    python scripts/scan-security.py [project-root]
-    python scripts/scan-security.py --json [project-root]
+    python scripts/scan_security.py [project-root]
+    python scripts/scan_security.py --json [project-root]
 
 Exit codes: 0 = clean, 1 = warnings only, 2 = critical findings
 """
 
-import argparse
 import json
-import os
 import re
 import sys
 from pathlib import Path
@@ -225,6 +223,12 @@ def scan_file(path, rel_path, file_type):
 
 
 def collect_scannable_files(project_root):
+    """Collect all scannable files from known directories.
+
+    Note: this includes scripts/ itself, so the security scanner will also
+    audit its own source files and sibling scripts. This is intentional —
+    audit tooling should not be exempt from its own rules.
+    """
     scan_dirs = ["skills", "hooks", "agents", "scripts", ".opencode"]
     files = []
     for d in scan_dirs:
@@ -301,16 +305,9 @@ def format_markdown(results, project_name):
 # ---------------------------------------------------------------------------
 
 def main():
-    parser = argparse.ArgumentParser(description="Scan bundle-plugins for security risks.")
-    parser.add_argument("project_root", nargs="?", default=".",
-                        help="Bundle-plugin root (default: current directory)")
-    parser.add_argument("--json", action="store_true", help="Output JSON instead of markdown")
-    args = parser.parse_args()
-
-    root = Path(args.project_root).resolve()
-    if not (root / "skills").is_dir():
-        print(f"error: {root} has no skills/ directory", file=sys.stderr)
-        sys.exit(1)
+    from _cli import make_parser, resolve_root, exit_by_severity
+    args = make_parser("Scan bundle-plugins for security risks.").parse_args()
+    root = resolve_root(args.project_root)
 
     results = run_scan(root)
     if args.json:
@@ -318,8 +315,7 @@ def main():
     else:
         print(format_markdown(results, root.name))
 
-    sys.exit(2 if results["summary"]["critical"] else
-             1 if results["summary"]["warning"] else 0)
+    exit_by_severity(results["summary"])
 
 
 if __name__ == "__main__":

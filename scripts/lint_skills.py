@@ -6,13 +6,12 @@ Validates SKILL.md frontmatter, descriptions, line counts, cross-references,
 and relative path links across all skills in a project.
 
 Usage:
-    python scripts/lint-skills.py [project-root]
-    python scripts/lint-skills.py --json [project-root]
+    python scripts/lint_skills.py [project-root]
+    python scripts/lint_skills.py --json [project-root]
 
-Exit codes: 0 = all pass, 1 = warnings, 2 = errors
+Exit codes: 0 = all pass, 1 = warnings, 2 = critical
 """
 
-import argparse
 import json
 import re
 import sys
@@ -48,7 +47,11 @@ def parse_frontmatter(content):
         idx = line.find(":")
         if idx > 0:
             key = line[:idx].strip()
-            val = line[idx + 1:].strip().strip('"').strip("'")
+            val = line[idx + 1:].strip()
+            # Strip matched quote pairs only (preserves inner quotes)
+            if (val.startswith('"') and val.endswith('"')) or \
+               (val.startswith("'") and val.endswith("'")):
+                val = val[1:-1]
             fm[key] = val
             current_key = key
     body_start = m.end()
@@ -65,7 +68,7 @@ def lint_skill(skill_dir, project_root, project_name, project_abbreviation=None)
     dir_name = skill_dir.name
 
     if not skill_md.exists():
-        findings.append(dict(check="Q1", severity="error", message="Missing SKILL.md"))
+        findings.append(dict(check="Q1", severity="critical", message="Missing SKILL.md"))
         return findings
 
     content = skill_md.read_text(encoding="utf-8", errors="replace")
@@ -74,7 +77,7 @@ def lint_skill(skill_dir, project_root, project_name, project_abbreviation=None)
 
     # Q1: Frontmatter exists
     if fm is None:
-        findings.append(dict(check="Q1", severity="error",
+        findings.append(dict(check="Q1", severity="critical",
                              message="No YAML frontmatter (missing --- delimiters)"))
         return findings
 
@@ -83,7 +86,7 @@ def lint_skill(skill_dir, project_root, project_name, project_abbreviation=None)
     # Q2: name field
     name = fm.get("name", "")
     if not name:
-        findings.append(dict(check="Q2", severity="error", message="Missing 'name' in frontmatter"))
+        findings.append(dict(check="Q2", severity="critical", message="Missing 'name' in frontmatter"))
     else:
         # Q4: kebab-case
         if not KEBAB_CASE_RE.match(name):
@@ -97,7 +100,7 @@ def lint_skill(skill_dir, project_root, project_name, project_abbreviation=None)
     # Q3: description field
     desc = fm.get("description", "")
     if not desc:
-        findings.append(dict(check="Q3", severity="error", message="Missing 'description' in frontmatter"))
+        findings.append(dict(check="Q3", severity="critical", message="Missing 'description' in frontmatter"))
     else:
         # Q5: starts with "Use when"
         if not desc.lower().startswith("use when"):
@@ -123,12 +126,13 @@ def lint_skill(skill_dir, project_root, project_name, project_abbreviation=None)
         findings.append(dict(check="Q9", severity="warning",
                              message=f"SKILL.md body is {body_lines} lines (max 500)"))
 
-    # Q10: Overview section
-    if "## Overview" not in content and "## overview" not in content.lower():
+    # Q10: Overview section (skip for bootstrap skills like using-*)
+    is_bootstrap = skill_dir.name.startswith("using-")
+    if not is_bootstrap and "## Overview" not in content and "## overview" not in content.lower():
         findings.append(dict(check="Q10", severity="info", message="Missing Overview section"))
 
-    # Q11: Common Mistakes section
-    if "## Common Mistakes" not in content and "common mistakes" not in content.lower():
+    # Q11: Common Mistakes section (skip for bootstrap skills)
+    if not is_bootstrap and "## Common Mistakes" not in content and "common mistakes" not in content.lower():
         findings.append(dict(check="Q11", severity="info", message="Missing Common Mistakes section"))
 
     # X1: Cross-reference resolution (supports both full name and abbreviation)
@@ -188,7 +192,7 @@ def run_lint(project_root):
         except (json.JSONDecodeError, OSError):
             pass
 
-    results = {"skills": [], "summary": {"error": 0, "warning": 0, "info": 0}}
+    results = {"skills": [], "summary": {"critical": 0, "warning": 0, "info": 0}}
 
     for skill_dir in sorted(skills_dir.iterdir()):
         if not skill_dir.is_dir():
@@ -198,7 +202,7 @@ def run_lint(project_root):
         skill_result = {
             "skill": skill_dir.name,
             "findings": findings,
-            "counts": {"error": 0, "warning": 0, "info": 0},
+            "counts": {"critical": 0, "warning": 0, "info": 0},
         }
         for f in findings:
             skill_result["counts"][f["severity"]] += 1
@@ -216,10 +220,10 @@ def format_markdown(results):
     out = [
         "## Skill Quality Lint\n",
         f"**Skills checked:** {len(results['skills'])}",
-        f"**Results:** {s['error']} errors, {s['warning']} warnings, {s['info']} info\n",
+        f"**Results:** {s['critical']} critical, {s['warning']} warnings, {s['info']} info\n",
     ]
 
-    for sev, heading in [("error", "### Errors"), ("warning", "### Warnings"), ("info", "### Info")]:
+    for sev, heading in [("critical", "### Critical"), ("warning", "### Warnings"), ("info", "### Info")]:
         items = []
         for sr in results["skills"]:
             for f in sr["findings"]:
@@ -231,11 +235,11 @@ def format_markdown(results):
             out.append("")
 
     out.append("### Per-Skill Summary\n")
-    out.append("| Skill | Errors | Warnings | Info |")
-    out.append("|-------|--------|----------|------|")
+    out.append("| Skill | Critical | Warnings | Info |")
+    out.append("|-------|----------|----------|------|")
     for sr in results["skills"]:
         c = sr["counts"]
-        out.append(f"| {sr['skill']} | {c['error']} | {c['warning']} | {c['info']} |")
+        out.append(f"| {sr['skill']} | {c['critical']} | {c['warning']} | {c['info']} |")
     return "\n".join(out)
 
 # ---------------------------------------------------------------------------
@@ -243,16 +247,9 @@ def format_markdown(results):
 # ---------------------------------------------------------------------------
 
 def main():
-    parser = argparse.ArgumentParser(description="Lint skill quality in a bundle-plugin project.")
-    parser.add_argument("project_root", nargs="?", default=".",
-                        help="Bundle-plugin root (default: current directory)")
-    parser.add_argument("--json", action="store_true", help="Output JSON instead of markdown")
-    args = parser.parse_args()
-
-    root = Path(args.project_root).resolve()
-    if not (root / "skills").is_dir():
-        print(f"error: {root} has no skills/ directory", file=sys.stderr)
-        sys.exit(1)
+    from _cli import make_parser, resolve_root, exit_by_severity
+    args = make_parser("Lint skill quality in a bundle-plugin project.").parse_args()
+    root = resolve_root(args.project_root)
 
     results = run_lint(root)
     if args.json:
@@ -260,8 +257,7 @@ def main():
     else:
         print(format_markdown(results))
 
-    sys.exit(2 if results["summary"]["error"] else
-             1 if results["summary"]["warning"] else 0)
+    exit_by_severity(results["summary"])
 
 
 if __name__ == "__main__":

@@ -1,6 +1,7 @@
 ---
 name: optimizing
 description: "Use when optimizing a bundle-plugin or single skill — improving descriptions for better triggering, reducing token usage, fixing audit findings, or iterating on user feedback about skill behavior. Auto-detects scope (full project vs single skill)"
+allowed-tools: Python(scripts/lint_skills.py *)
 ---
 
 # Optimizing Bundle-Plugins
@@ -49,8 +50,8 @@ After normalization, determine the scope from the resolved local path:
 Run the quality linter to identify frontmatter issues, description anti-patterns, and broken references before manual optimization:
 
 ```bash
-python scripts/lint-skills.py <project-root>        # markdown report
-python scripts/lint-skills.py --json <project-root>  # machine-readable
+python scripts/lint_skills.py <project-root>        # markdown report
+python scripts/lint_skills.py --json <project-root>  # machine-readable
 ```
 
 The linter automates checks Q1-Q12 and X1-X2 from the skill quality ruleset. Focus manual effort on the subjective targets below.
@@ -140,7 +141,7 @@ Map the complete chain. Verify every link works.
 
 ### Target 5: Platform Coverage (project only)
 
-Identify platforms the project doesn't yet support. For adding new platforms, invoke `bundles-forge:adapting-platforms`.
+Identify platforms the project doesn't yet support. For adding new platforms, invoke `bundles-forge:porting`.
 
 ### Target 6: Security Remediation (project only)
 
@@ -196,7 +197,7 @@ Read target skill
 ### Script Shortcuts
 
 ```bash
-python scripts/lint-skills.py <skill-directory>     # quality checks on single skill
+python scripts/lint_skills.py <skill-directory>     # quality checks on single skill
 ```
 
 ---
@@ -279,4 +280,4 @@ After applying changes to the copy, verify with a parallel comparison:
 
 **Pairs with:**
 - **bundles-forge:releasing** — after optimization, versions may need sync
-- **bundles-forge:writing-skill** — reference for content modification guidelines
+- **bundles-forge:authoring** — reference for content modification guidelines

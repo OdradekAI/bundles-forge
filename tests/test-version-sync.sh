@@ -37,17 +37,17 @@ jq -r '.files[] | .path' "$CONFIG" | while IFS= read -r fpath; do
 done
 
 echo ""
-echo "[3] bump-version.sh exists"
-if [[ -f "$REPO_ROOT/scripts/bump-version.sh" ]]; then
-  pass "scripts/bump-version.sh exists"
+echo "[3] bump_version.py exists"
+if [[ -f "$REPO_ROOT/scripts/bump_version.py" ]]; then
+  pass "scripts/bump_version.py exists"
 else
-  fail "scripts/bump-version.sh missing"
+  fail "scripts/bump_version.py missing"
 fi
 
 echo ""
-echo "[4] Version drift check (via bump-version.sh --check)"
-if [[ -f "$REPO_ROOT/scripts/bump-version.sh" ]]; then
-  if bash "$REPO_ROOT/scripts/bump-version.sh" --check > /dev/null 2>&1; then
+echo "[4] Version drift check (via bump_version.py --check)"
+if [[ -f "$REPO_ROOT/scripts/bump_version.py" ]]; then
+  if python3 "$REPO_ROOT/scripts/bump_version.py" --check > /dev/null 2>&1; then
     pass "no version drift detected"
   else
     fail "version drift detected"

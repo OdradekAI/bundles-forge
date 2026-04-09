@@ -1,9 +1,9 @@
 ---
-name: designing
+name: blueprinting
 description: "Use when planning new bundle-plugins, splitting complex skills into structured projects, combining skills into unified bundles, mapping platform targets, or when a user has a vague idea about packaging skills. Use before scaffolding to avoid rework"
 ---
 
-# Designing Bundle-Plugins
+# Blueprinting Bundle-Plugins
 
 ## Overview
 
@@ -11,7 +11,7 @@ Turn a vague idea ("I want to package my skills") into a concrete project bluepr
 
 **Core principle:** Understand what you're building before generating anything. Five minutes of interview saves hours of rework.
 
-**Announce at start:** "I'm using the designing skill to plan your bundle-plugin."
+**Announce at start:** "I'm using the blueprinting skill to plan your bundle-plugin."
 
 ## Three Entry Points
 
@@ -25,7 +25,7 @@ If the user has an existing skill they want to break apart, start with Scenario 
 
 ## Scenario B: Decomposition Analysis
 
-When the user wants to split a complex skill into a bundle-plugin, analyze the existing skill before designing the new project.
+When the user wants to split a complex skill into a bundle-plugin, analyze the existing skill before blueprinting the new project.
 
 ### B1. Read the Existing Skill
 
@@ -120,7 +120,7 @@ For each skill classified as **Needs import**, ask the user which integration in
   - Trim standalone-only instructions that don't apply in the orchestrated context
   - Add handoff guidance to/from adjacent skills in the chain
   - Classify as entry-point or internal skill (see Interview step 3b)
-- After adaptation, invoke `bundles-forge:writing-skill` for quality validation
+- After adaptation, invoke `bundles-forge:authoring` for quality validation
 - Use case: building your own orchestrated workflow on top of third-party foundations
 
 ### C2.6. Security Audit
@@ -180,7 +180,7 @@ Which platforms should the project support?
 | OpenCode | `.opencode/plugins/<name>.js` | Plugin config |
 | Gemini CLI | `gemini-extension.json` | Context file |
 
-Start with what the user actually uses. Others can be added later via `bundles-forge:adapting-platforms`.
+Start with what the user actually uses. Others can be added later via `bundles-forge:porting`.
 
 ### 3. Skill Inventory
 
@@ -299,4 +299,4 @@ After the user approves the design:
 - **bundles-forge:scaffolding** — after design approval
 
 **Pairs with:**
-- **bundles-forge:adapting-platforms** — for adding platforms later
+- **bundles-forge:porting** — for adding platforms later

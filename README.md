@@ -2,17 +2,32 @@
 
 [中文](README.zh.md)
 
-A bundle-plugin engineering toolkit: scaffolding, platform adaptation, version management, auditing, and skill lifecycle management across 5 AI coding platforms.
+A toolkit for building **bundle-plugins** — AI coding plugins organized around collaborative skill workflows — across Claude Code, Cursor, Codex, OpenCode, and Gemini CLI.
 
-## Installation
+## What is a Bundle-Plugin?
 
-### Claude Code
+A single skill (`SKILL.md`) does one thing — an AI agent discovers it by its `description` field and loads it on demand. A **bundle-plugin** takes this further: multiple skills reference each other and form a workflow, where one skill's output feeds the next.
+
+```mermaid
+graph LR
+    A["Skill A"] -->|output feeds| B["Skill B"]
+    B -->|output feeds| C["Skill C"]
+    C -->|validates| A
+```
+
+bundles-forge itself is a bundle-plugin — `blueprinting` produces a design, `scaffolding` generates a project from it, `auditing` validates the result, and `optimizing` iterates on issues found.
+
+**If your plugin has 3+ skills that form a workflow, you're building a bundle-plugin.** This toolkit gives you scaffolding, quality gates, and multi-platform publishing for that pattern.
+
+## Quick Start
+
+### Install (Claude Code)
 
 ```bash
 claude plugin install bundles-forge
 ```
 
-Or for development:
+For development (any platform):
 
 ```bash
 git clone https://github.com/odradekai/bundles-forge.git
@@ -20,67 +35,84 @@ cd bundles-forge
 claude plugin link .
 ```
 
-### Cursor
+> Other platforms: see [Platform Support](#platform-support) below.
 
-Search for `bundles-forge` in the Cursor plugin marketplace, or use `/add-plugin bundles-forge`.
+### Path A: Build a New Bundle-Plugin
 
-### Codex
-
-See [`.codex/INSTALL.md`](.codex/INSTALL.md)
-
-### OpenCode
-
-See [`.opencode/INSTALL.md`](.opencode/INSTALL.md)
-
-### Gemini CLI
-
-```bash
-gemini extensions install https://github.com/odradekai/bundles-forge.git
+```
+/bundles-blueprint
 ```
 
-## Core Concepts
+This starts a structured interview to design your project — scope, platform targets, skill decomposition. When the design is ready, the agent automatically chains into `scaffolding` (project generation) and then `authoring` (SKILL.md writing).
+
+### Path B: Audit an Existing Project
+
+```
+cd your-bundle-plugin-project
+/bundles-audit
+```
+
+Runs a 9-category quality assessment with security scanning across 5 attack surfaces.
+
+## Skills
+
+The 8 skills cover the full lifecycle of a bundle-plugin project:
 
 ```mermaid
-graph TB
-    BundlesForge["bundles-forge\n(engineering toolkit)"] -->|"creates / maintains"| Bundles
-    Bundles["Bundle-Plugin\n(a plugin organized around skills)"] -->|contains| Skills["Skills\n(SKILL.md)"]
-    Bundles -->|contains| Agents["Agents\n(subagent prompts)"]
-    Bundles -->|contains| Hooks["Hooks\n(session bootstrap)"]
-    Bundles -->|contains| Commands["Commands\n(slash shortcuts)"]
-    Bundles -->|contains| Manifests["Platform Manifests\n(Claude, Cursor, Codex, ...)"]
-    Skills -->|"cross-reference via"| Convention["project:skill-name\nconvention"]
+flowchart LR
+    Design["blueprinting"] --> Scaffold["scaffolding"]
+    Scaffold --> Write["authoring"]
+    Write --> Audit["auditing"]
+    Audit -->|issues| Optimize["optimizing"]
+    Optimize --> Audit
+    Audit -->|pass| Release["releasing"]
+    Adapt["porting"] -.->|"any phase"| Design
+    Adapt -.->|"any phase"| Release
 ```
 
-| Term | Definition |
-|------|-----------|
-| **Skill** | The atomic unit of capability — a `SKILL.md` file (with optional `references/`) that an AI agent discovers through its `description` field and loads on demand. |
-| **Plugin** | The distribution format for AI coding platforms. A plugin can contain skills, agents, commands, hooks, MCP servers, and other components. |
-| **Bundle-plugin** | A plugin organized primarily around a **collection of collaborative skills** — skills that reference each other and form workflows. "Bundles" is a shorthand used in this project for this pattern. |
-| **bundles-forge** | An engineering toolkit (itself a bundle-plugin) for creating, auditing, optimizing, and releasing bundle-plugin projects across 5 platforms. |
+| Phase | Skill | What It Does |
+|-------|-------|-------------|
+| Design | `blueprinting` | Structured interview to determine project scope, platform targets, and skill decomposition. Produces a design document. |
+| Scaffold | `scaffolding` | Generates the complete project structure from the design — manifests, hooks, scripts, bootstrap skill, and per-platform files. |
+| Write | `authoring` | Guides SKILL.md authoring — frontmatter, "Use when..." descriptions, instructions, and progressive disclosure via `references/`. |
+| Audit | `auditing` | 9-category quality assessment including security scanning across 5 attack surfaces. |
+| Optimize | `optimizing` | Engineering improvements — description triggering accuracy, token efficiency, workflow chains, and feedback iteration. |
+| Adapt | `porting` | Adds or fixes platform support. Generates manifests from templates. |
+| Release | `releasing` | Orchestrates the pre-release pipeline: version drift check, audit, version bump, CHANGELOG update, and publish guidance. |
 
-### Why Bundles?
+The bootstrap meta-skill `using-bundles-forge` is injected at session start via hooks — it gives the agent awareness of all available skills and routes tasks automatically.
 
-A regular plugin might have one skill doing one thing. A **bundle-plugin** project has skills that _collaborate_: skill A produces output that skill B consumes, skill C validates what A and B created. bundles-forge itself is a bundle-plugin — `designing` feeds into `scaffolding`, which triggers `auditing`, which may call `optimizing`.
+**Standalone use:** `authoring`, `auditing`, and `optimizing` can be invoked independently on any existing project without going through the full lifecycle.
 
-If your plugin has 3+ skills that form a workflow, you're building a bundle-plugin. This toolkit gives you scaffolding, quality gates, and multi-platform publishing for that pattern.
+### Agents
 
-### How Skills Invoke Each Other
+| Agent | Role |
+|-------|------|
+| `inspector` | Validates scaffolded project structure |
+| `auditor` | Executes systematic quality audit with security scanning |
+| `evaluator` | Runs one side of an A/B skill evaluation for optimization |
 
-Skills chain through **prose instructions**, not code APIs. When a skill finishes, it tells the agent (in plain text) which skill to invoke next using the `project:skill-name` convention. The host platform's skill-loading tool does the actual loading:
+### Commands
 
-| Platform | Tool |
-|----------|------|
-| Claude Code | `Skill` tool |
-| Cursor | `Skill` tool |
-| Gemini CLI | `activate_skill` tool |
-| Codex | Filesystem discovery from `~/.agents/skills/` |
-| OpenCode | `use_skill` via plugin transform |
+| Command | Skill |
+|---------|-------|
+| `/bundles-forge` | `using-bundles-forge` |
+| `/bundles-blueprint` | `blueprinting` |
+| `/bundles-audit` | `auditing` |
+| `/bundles-optimize` | `optimizing` |
+| `/bundles-release` | `releasing` |
+| `/bundles-scan` | `auditing` |
 
-## How It Works
+Skills without a slash command are invoked **automatically** (the agent matches user intent to the skill's `description` field) or **explicitly** when another skill chains to them via `bundles-forge:<skill-name>` references.
+
+## Architecture
+
+<details>
+<summary>Session bootstrap and skill routing internals</summary>
 
 ### Session Bootstrap
 
-When a session starts, the `session-start` hook reads the full content of `using-bundles-forge/SKILL.md` (the bootstrap meta-skill) and injects it into the agent's context. This gives the agent awareness of all available skills and how to route tasks.
+When a session starts, the `session-start` hook reads `using-bundles-forge/SKILL.md` and injects it into the agent's context. This gives the agent the full skill inventory and routing logic.
 
 ```mermaid
 sequenceDiagram
@@ -103,105 +135,189 @@ sequenceDiagram
 
 ### Skill Routing
 
-Once the bootstrap context is loaded, the agent routes user requests to the right skill through three mechanisms:
+Once the bootstrap context is loaded, the agent routes requests through three paths:
+
+1. **Slash commands** — `/bundles-blueprint`, `/bundles-audit`, etc. Each command file redirects to a skill via `bundles-forge:<skill-name>`.
+2. **Explicit references** — Other skills or the user directly reference `bundles-forge:<skill-name>`. The agent uses the platform's skill-loading tool.
+3. **Description matching** — The agent matches user intent against each skill's `description` field (which starts with "Use when...") and invokes the best match.
+
+### How Skills Chain
+
+Skills chain through **prose instructions**, not code APIs. When a skill finishes, it tells the agent which skill to invoke next using the `project:skill-name` convention. The host platform handles the actual loading:
+
+| Platform | Skill Loading Tool |
+|----------|-------------------|
+| Claude Code | `Skill` tool |
+| Cursor | `Skill` tool |
+| Gemini CLI | `activate_skill` tool |
+| Codex | Filesystem discovery from `~/.agents/skills/` |
+| OpenCode | `use_skill` via plugin transform |
+
+### Agent Dispatch
+
+Three specialized agents handle tasks that benefit from isolated, read-only execution. They are dispatched as **subagents** — only when the host platform supports subagent dispatch. If subagents are unavailable, the main agent performs the same work inline.
+
+All agents share two constraints: `disallowedTools: Edit` (cannot modify project files) and reports are saved to `.bundles-forge/`.
 
 ```mermaid
-flowchart TD
-    Input["User message"] --> Check{"Related to bundle-plugins?"}
-    Check -->|No| Direct["Respond directly"]
-    Check -->|Yes| How{"How to invoke?"}
-    How -->|"Slash command\n(/audit-project)"| Cmd["Command maps to skill"]
-    How -->|"Explicit reference\n(bundles-forge:designing)"| Ref["Direct skill reference"]
-    How -->|"Description match\n(Use when...)"| Match["Agent matches intent\nto skill description"]
-    Cmd --> Load["Platform loads SKILL.md"]
-    Ref --> Load
-    Match --> Load
-    Load --> Follow["Agent follows instructions"]
-    Follow --> Chain{"Skill chains\nto another?"}
-    Chain -->|"Yes (prose instruction)"| Load
-    Chain -->|No| Done["Task complete"]
+flowchart TB
+    subgraph triggers [Trigger Skills]
+        SC["scaffolding"]
+        AU["auditing"]
+        OP["optimizing"]
+    end
+
+    subgraph agents [Agents]
+        RV["inspector"]
+        AD["auditor"]
+        EV1["evaluator A"]
+        EV2["evaluator B"]
+    end
+
+    SC -->|"post-scaffold validation"| RV
+    AU -->|"9-category quality + security audit"| AD
+    OP -->|"A/B test: original skill"| EV1
+    OP -->|"A/B test: optimized skill"| EV2
+
+    RV -->|"PASS / FAIL + issue list"| Report1[".bundles-forge/*-review.md"]
+    AD -->|"score + findings by severity"| Report2[".bundles-forge/*-audit.md"]
+    EV1 -->|"per-prompt results"| Report3[".bundles-forge/*-eval-original.md"]
+    EV2 -->|"per-prompt results"| Report4[".bundles-forge/*-eval-optimized.md"]
 ```
 
-**Three invocation paths:**
+| Agent | Dispatched By | When | What It Does | Output |
+|-------|--------------|------|-------------|--------|
+| `inspector` | `scaffolding` | After project structure is generated | Validates directories, manifests, version sync, hooks, and skill frontmatter conventions | PASS/FAIL with issues by severity |
+| `auditor` | `auditing` | During a full or skill-scoped audit | Runs 9-category checklist (structure, manifests, version sync, quality, cross-refs, hooks, testing, docs, security) | Weighted score + critical/warning/info findings |
+| `evaluator` | `optimizing` | During description A/B test or feedback A/B test | Runs test prompts against a single SKILL.md variant (labelled `original` or `optimized`) and records whether each prompt triggers the skill correctly | Per-prompt trigger/response report |
 
-1. **Slash commands** — `/design-project`, `/audit-project`, etc. Each command file redirects to a skill via `bundles-forge:skill-name`.
-2. **Explicit references** — Other skills or the user directly reference `bundles-forge:skill-name`. The agent uses the platform's skill-loading tool.
-3. **Description matching** — The agent matches the user's intent against each skill's `description` field (which starts with "Use when...") and invokes the best match.
+**Key detail:** `optimizing` dispatches **two evaluators in parallel** — one for the original skill, one for the optimized variant. The parent skill compares their reports to decide which version wins.
 
-## Skills
+### Command Execution
 
-| Skill | Description |
-|-------|-------------|
-| `using-bundles-forge` | Bootstrap meta-skill — injected at session start via hooks; establishes skill routing, naming conventions, and the full skill inventory |
-| `designing` | Plan a new bundle-plugin or decompose a complex skill through structured interview |
-| `scaffolding` | Generate project structure, manifests, hooks, and bootstrap skill |
-| `writing-skill` | Guide authoring of SKILL.md files — structure, descriptions, progressive disclosure |
-| `auditing` | Quality assessment (9 categories) and security scanning (5 attack surfaces) |
-| `optimizing` | Engineering optimization, feedback iteration — descriptions, token efficiency, workflow chains |
-| `adapting-platforms` | Add platform support (Claude Code, Cursor, Codex, OpenCode, Gemini CLI) |
-| `releasing` | Version management, release pipeline — audit, version bump, CHANGELOG, publish |
-
-## User Guide
-
-### Full Lifecycle
-
-The 8 skills cover the complete lifecycle of a bundle-plugin project — from initial design to publishing:
+Each slash command is a thin pointer to a skill. The real logic lives in the skill — but the execution chains can be deep.
 
 ```mermaid
 flowchart LR
-    Design["designing"] --> Scaffold["scaffolding"]
-    Scaffold --> Write["writing-skill"]
-    Write --> Audit["auditing"]
-    Audit -->|issues| Optimize["optimizing"]
-    Optimize --> Audit
-    Audit -->|pass| Release["releasing"]
-    Adapt["adapting-platforms"] -.->|"any phase"| Design
-    Adapt -.->|"any phase"| Release
+    subgraph commands [Slash Commands]
+        CMD_BP["/bundles-blueprint"]
+        CMD_AU["/bundles-audit"]
+        CMD_OP["/bundles-optimize"]
+        CMD_RE["/bundles-release"]
+        CMD_SC["/bundles-scan"]
+    end
+
+    CMD_BP --> blueprinting
+    CMD_AU --> auditing
+    CMD_OP --> optimizing
+    CMD_RE --> releasing
+    CMD_SC -->|"security focus"| auditing
+
+    blueprinting -->|"design approved"| scaffolding
+    scaffolding -->|"structure generated"| authoring
+    scaffolding -->|"post-scaffold check"| auditing
+    auditing -->|"issues found"| optimizing
+    optimizing -->|"verify fixes"| auditing
+    releasing -->|"pre-flight"| auditing
+    releasing -->|"fix quality"| optimizing
+    blueprinting -.->|"multi-platform"| porting
+    scaffolding -.->|"add platform"| porting
+    porting -->|"verify adapter"| auditing
 ```
 
-| Phase | Skill | What It Does |
-|-------|-------|-------------|
-| 1. Design | `bundles-forge:designing` | Structured interview to determine project scope, platform targets, and skill decomposition. Produces a design document. |
-| 2. Scaffold | `bundles-forge:scaffolding` | Generates the complete project structure from the design — manifests, hooks, scripts, bootstrap skill, and per-platform files. |
-| 3. Write | `bundles-forge:writing-skill` | Guides authoring of each SKILL.md — frontmatter, "Use when..." descriptions, instructions, and progressive disclosure via `references/`. |
-| 4. Audit | `bundles-forge:auditing` | 9-category quality assessment including security scanning across 5 attack surfaces. Runs `scripts/audit-project.py` which orchestrates `lint-skills.py` + `scan-security.py` + structure/manifest/version checks. |
-| 5. Optimize | `bundles-forge:optimizing` | Engineering improvements and feedback iteration — description triggering accuracy, token efficiency, workflow chains, user-reported skill issues. |
-| 6. Adapt | `bundles-forge:adapting-platforms` | Adds or fixes platform support. Generates manifests from templates in `skills/adapting-platforms/assets/`. |
-| 7. Release | `bundles-forge:releasing` | Orchestrates the full pre-release pipeline: version drift check, audit, version bump, CHANGELOG update, and publish guidance. |
+#### `/bundles-blueprint` — Plan a new bundle-plugin
 
-### Standalone Skills
+**When to use:** Starting a new project, splitting a monolithic skill into multiple skills, or composing third-party skills into a bundle.
 
-The following skills can be invoked independently, without going through the full lifecycle:
+```
+User runs /bundles-blueprint
+  → blueprinting: structured interview (scope, platforms, skill decomposition)
+  → User approves design document
+  → scaffolding: generate project structure, manifests, hooks, scripts
+    → inspector agent validates scaffold (if subagents available)
+  → authoring: guide SKILL.md content for each skill
+  → porting: add platform adapters (if multi-platform)
+```
 
-| Skill | Standalone Use Case |
-|-------|-------------------|
-| `writing-skill` | Guide writing a single SKILL.md for any project |
-| `auditing` | Run a quality audit or security scan on any existing bundle-plugin project |
-| `optimizing` | Optimize an existing project or iterate on skill feedback |
+#### `/bundles-audit` — Quality assessment
 
-## Agents
+**When to use:** Reviewing a project before release, after significant changes, or when scanning a third-party skill for security risks.
 
-| Agent | Role |
-|-------|------|
-| `reviewer` | Validates scaffolded project structure |
-| `auditor` | Executes systematic quality audit with security scanning |
-| `evaluator` | Runs one side of an A/B skill evaluation for optimization |
+```
+User runs /bundles-audit
+  → auditing: detect scope (full project vs single skill)
+  → Full project: 9 categories (structure, manifests, version sync,
+    quality, cross-refs, hooks, testing, docs, security)
+    → auditor agent runs checklist (if subagents available)
+    → Scripts: audit_project.py, scan_security.py, lint_skills.py
+  → Single skill: 4 categories (structure, quality, cross-refs, security)
+  → Score + report with Critical / Warning / Info findings
+  → Critical issues? → Offer to fix → Re-audit once
+  → Warnings? → Suggest optimizing skill
+```
 
-## Commands
+#### `/bundles-scan` — Security-focused audit
 
-| Command | Redirects To |
-|---------|-------------|
-| `/use-bundles-forge` | `bundles-forge:using-bundles-forge` |
-| `/design-project` | `bundles-forge:designing` |
-| `/scaffold-project` | `bundles-forge:scaffolding` |
-| `/audit-project` | `bundles-forge:auditing` |
-| `/scan-security` | `bundles-forge:auditing` |
+**When to use:** Same as `/bundles-audit` but emphasizes security scanning. Maps to the same `auditing` skill — the 5-surface security scan (SKILL.md content, hook scripts, plugin code, agent prompts, bundled scripts) runs as Category 9.
 
-Skills without a slash command are invoked in two ways: **automatically** when the agent matches user intent to a skill's `description` field, or **explicitly** when another skill chains to them via `bundles-forge:skill-name` references in its instructions.
+#### `/bundles-optimize` — Engineering improvements
+
+**When to use:** Improving description triggering accuracy, reducing token usage, fixing workflow chain gaps, or iterating on user feedback about a specific skill.
+
+```
+User runs /bundles-optimize
+  → optimizing: detect scope (project vs single skill)
+  → Project scope: 6 optimization targets
+    (descriptions, tokens, progressive disclosure, workflow chain,
+     platform coverage, security remediation)
+  → Skill scope: targeted optimization + feedback iteration
+  → Description A/B test:
+    → 2x evaluator agents in parallel (if subagents available)
+    → Compare reports → pick winner
+  → Verify fixes via auditing
+```
+
+#### `/bundles-release` — Version bump and publish
+
+**When to use:** Preparing a release — version drift check, quality gate, version bump, CHANGELOG update, and publishing guidance.
+
+```
+User runs /bundles-release
+  → releasing: pre-flight checks
+    → bump_version.py --check (version drift)
+    → auditing (full quality + security)
+  → Address critical findings (block release until resolved)
+  → bump_version.py <new-version> (update all manifests)
+  → Update CHANGELOG.md and README.md
+  → Final verification (--check + --audit)
+  → Commit, tag, push, gh release create
+```
+
+</details>
+
+## Platform Support
+
+### Cursor
+
+Search for `bundles-forge` in the Cursor plugin marketplace, or use `/add-plugin bundles-forge`.
+
+### Codex
+
+See [`.codex/INSTALL.md`](.codex/INSTALL.md)
+
+### OpenCode
+
+See [`.opencode/INSTALL.md`](.opencode/INSTALL.md)
+
+### Gemini CLI
+
+```bash
+gemini extensions install https://github.com/odradekai/bundles-forge.git
+```
 
 ## Contributing
 
-Contributions welcome. Please follow the existing code style and ensure all platform manifests stay in sync using `scripts/bump-version.sh --check`.
+Contributions welcome. Please follow the existing code style and ensure all platform manifests stay in sync using `python scripts/bump_version.py --check`.
 
 ## License
 

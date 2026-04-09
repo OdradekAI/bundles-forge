@@ -1,0 +1,232 @@
+#!/usr/bin/env python3
+"""
+Version synchronization tool for bundle-plugins.
+
+Reads .version-bump.json and bumps version numbers across all declared
+files, detects drift, and audits for undeclared version strings.
+
+Usage:
+    python scripts/bump_version.py <new-version>
+    python scripts/bump_version.py --check
+    python scripts/bump_version.py --audit
+
+Exit codes: 0 = in sync, 1 = drift or undeclared files found
+"""
+
+import argparse
+import json
+import re
+import sys
+from pathlib import Path
+
+SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+$")
+
+
+def _resolve_field_path(data, field):
+    """Traverse a dotted field path like 'plugins.0.version' into nested JSON."""
+    parts = field.split(".")
+    current = data
+    for part in parts:
+        if part.isdigit():
+            idx = int(part)
+            if not isinstance(current, list) or idx >= len(current):
+                return None
+            current = current[idx]
+        else:
+            if not isinstance(current, dict) or part not in current:
+                return None
+            current = current[part]
+    return current
+
+
+def _set_field_path(data, field, value):
+    """Set a value at a dotted field path like 'plugins.0.version'."""
+    parts = field.split(".")
+    current = data
+    for part in parts[:-1]:
+        if part.isdigit():
+            current = current[int(part)]
+        else:
+            current = current[part]
+    last = parts[-1]
+    if last.isdigit():
+        current[int(last)] = value
+    else:
+        current[last] = value
+
+
+def load_config(repo_root):
+    config_path = repo_root / ".version-bump.json"
+    if not config_path.exists():
+        print("error: .version-bump.json not found", file=sys.stderr)
+        sys.exit(1)
+    return json.loads(config_path.read_text(encoding="utf-8"))
+
+
+def declared_files(config):
+    return [(entry["path"], entry["field"]) for entry in config.get("files", [])]
+
+
+def read_version(repo_root, path, field):
+    fpath = repo_root / path
+    if not fpath.exists():
+        return None
+    data = json.loads(fpath.read_text(encoding="utf-8"))
+    return _resolve_field_path(data, field)
+
+
+def write_version(repo_root, path, field, new_version):
+    fpath = repo_root / path
+    data = json.loads(fpath.read_text(encoding="utf-8"))
+    _set_field_path(data, field, new_version)
+    fpath.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n",
+                     encoding="utf-8")
+
+
+def cmd_check(repo_root):
+    config = load_config(repo_root)
+    entries = declared_files(config)
+    versions = {}
+    missing = []
+
+    print("Version check:\n")
+    for path, field in entries:
+        ver = read_version(repo_root, path, field)
+        label = f"{path} ({field})"
+        if ver is None:
+            print(f"  {label:<45}  MISSING")
+            missing.append(path)
+        else:
+            print(f"  {label:<45}  {ver}")
+            versions[path] = ver
+
+    print()
+    unique = set(versions.values())
+    has_drift = len(unique) > 1 or len(missing) > 0
+
+    if len(unique) > 1:
+        print("DRIFT DETECTED — versions are not in sync:")
+        from collections import Counter
+        counts = Counter(versions.values())
+        for ver, count in counts.most_common():
+            print(f"  {ver} ({count} files)")
+    elif versions:
+        print(f"All declared files are in sync at {list(versions.values())[0]}")
+
+    return has_drift
+
+
+def cmd_audit(repo_root):
+    has_drift = cmd_check(repo_root)
+    print()
+
+    config = load_config(repo_root)
+    entries = declared_files(config)
+
+    from collections import Counter
+    version_counts = Counter()
+    for path, field in entries:
+        ver = read_version(repo_root, path, field)
+        if ver:
+            version_counts[ver] += 1
+
+    if not version_counts:
+        print("error: could not determine current version", file=sys.stderr)
+        return True
+
+    current_version = version_counts.most_common(1)[0][0]
+    print(f"Audit: scanning repo for version string '{current_version}'...\n")
+
+    excludes = set(config.get("audit", {}).get("exclude", []))
+    excludes.update({".git", "node_modules"})
+    declared_paths = {path for path, _ in entries}
+
+    found_undeclared = []
+    for f in sorted(repo_root.rglob("*")):
+        if not f.is_file():
+            continue
+        rel = f.relative_to(repo_root)
+        rel_str = str(rel).replace("\\", "/")
+
+        if any(exc in rel.parts or rel_str == exc for exc in excludes):
+            continue
+
+        try:
+            content = f.read_text(encoding="utf-8", errors="replace")
+        except (OSError, PermissionError):
+            continue
+
+        if current_version not in content or rel_str in declared_paths:
+            continue
+
+        for line_num, line in enumerate(content.splitlines(), 1):
+            if current_version in line:
+                found_undeclared.append(f"{rel_str}:{line_num}:{line.strip()}")
+
+    if found_undeclared:
+        print(f"UNDECLARED files containing '{current_version}':")
+        for match in found_undeclared:
+            print(f"  {match}")
+        print()
+        print("Review the above — add to .version-bump.json or audit.exclude as appropriate.")
+        return True
+    else:
+        print("No undeclared files contain the version string. All clear.")
+        return has_drift
+
+
+def cmd_bump(repo_root, new_version):
+    if not SEMVER_RE.match(new_version):
+        print(f"error: '{new_version}' doesn't look like a version (expected X.Y.Z)",
+              file=sys.stderr)
+        sys.exit(1)
+
+    config = load_config(repo_root)
+    print(f"Bumping all declared files to {new_version}...\n")
+
+    for path, field in declared_files(config):
+        fpath = repo_root / path
+        if not fpath.exists():
+            print(f"  SKIP (missing): {path}")
+            continue
+        old_ver = read_version(repo_root, path, field)
+        write_version(repo_root, path, field, new_version)
+        label = f"{path} ({field})"
+        print(f"  {label:<45}  {old_ver} -> {new_version}")
+
+    print()
+    print("Done. Running audit to check for missed files...\n")
+    cmd_audit(repo_root)
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Version synchronization tool for bundle-plugins.")
+    parser.add_argument("command", nargs="?", default=None,
+                        help="New version (X.Y.Z), --check, or --audit")
+    parser.add_argument("--check", action="store_true",
+                        help="Report current versions (detect drift)")
+    parser.add_argument("--audit", action="store_true",
+                        help="Check + scan repo for undeclared version strings")
+    args = parser.parse_args()
+
+    script_dir = Path(__file__).resolve().parent
+    repo_root = script_dir.parent
+
+    if args.check:
+        has_drift = cmd_check(repo_root)
+        sys.exit(1 if has_drift else 0)
+    elif args.audit:
+        has_issues = cmd_audit(repo_root)
+        sys.exit(1 if has_issues else 0)
+    elif args.command:
+        if args.command.startswith("--"):
+            print(f"error: unknown flag '{args.command}'", file=sys.stderr)
+            sys.exit(1)
+        cmd_bump(repo_root, args.command)
+    else:
+        parser.print_help()
+
+
+if __name__ == "__main__":
+    main()

@@ -1,9 +1,10 @@
 ---
-name: adapting-platforms
+name: porting
 description: "Use when adding Claude Code, Cursor, Codex, OpenCode, or Gemini CLI support to a bundle-plugin, updating or fixing platform manifests, migrating to a new platform, or changing platform-specific hooks and configuration"
+allowed-tools: Python(scripts/bump_version.py *)
 ---
 
-# Adapting Skill Platforms
+# Porting to Platforms
 
 ## Overview
 
@@ -11,7 +12,7 @@ Add support for a new AI coding platform to an existing bundle-plugin repository
 
 **Core principle:** One project, many platforms. Platform adapters translate the same skills into each platform's native format.
 
-**Announce at start:** "I'm using the adapting-platforms skill to add <platform> support."
+**Announce at start:** "I'm using the porting skill to add <platform> support."
 
 ## The Process
 
@@ -74,7 +75,7 @@ If the platform uses session hooks (Claude Code, Cursor), ensure `session-start`
 ### Step 7: Verify
 
 - New manifest is valid JSON (where applicable)
-- Version sync includes new files: `bump-version.sh --check`
+- Version sync includes new files: `python scripts/bump_version.py --check`
 - Hooks handle new platform: test with appropriate env var
 - README has installation instructions
 
@@ -90,7 +91,7 @@ If the platform uses session hooks (Claude Code, Cursor), ensure `session-start`
 ## Integration
 
 **Called by:**
-- **bundles-forge:designing** — when adding platforms to a new project
+- **bundles-forge:blueprinting** — when blueprinting includes platform targets
 
 **Calls:**
 - **bundles-forge:auditing** — verify after adaptation

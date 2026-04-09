@@ -61,13 +61,13 @@ Run these checks only for platforms the project claims to support.
 | V2 | Critical | All files listed in `.version-bump.json` actually exist |
 | V3 | Critical | All listed files have the same version string (no drift) |
 | V4 | Warning | Every platform manifest is listed in `.version-bump.json` |
-| V5 | Warning | `scripts/bump-version.sh` exists and is executable |
-| V6 | Info | `bump-version.sh --check` exits 0 |
-| V7 | Info | `bump-version.sh --audit` finds no undeclared version strings |
+| V5 | Warning | `scripts/bump_version.py` exists |
+| V6 | Info | `python scripts/bump_version.py --check` exits 0 |
+| V7 | Info | `python scripts/bump_version.py --audit` finds no undeclared version strings |
 
 **Quick drift check:**
 ```bash
-scripts/bump-version.sh --check
+python scripts/bump_version.py --check
 ```
 
 ---

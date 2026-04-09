@@ -171,7 +171,7 @@ Scan `scripts/` directory and any executable files within skill directories.
 
 ### Legitimate Script Baseline
 
-The standard `bump-version.sh` should only:
+The standard `bump_version.py` should only:
 1. Read `.version-bump.json`
 2. Read/write version fields in declared JSON files using `jq`
 3. Grep the repo for version strings
@@ -205,8 +205,8 @@ The standard `bump-version.sh` should only:
 | hooks/session-start | Hook script | 0 | 0 | 0 |
 | .opencode/plugins/example.js | OpenCode plugin | 0 | 0 | 1 |
 | skills/my-skill/SKILL.md | Skill content | 0 | 0 | 0 |
-| agents/reviewer.md | Agent prompt | 0 | 0 | 0 |
-| scripts/bump-version.sh | Bundled script | 0 | 0 | 0 |
+| agents/inspector.md | Agent prompt | 0 | 0 | 0 |
+| scripts/bump_version.py | Bundled script | 0 | 0 | 0 |
 
 ### Recommendations
 1. <highest-priority remediation>

@@ -78,7 +78,7 @@ Declares every file containing the project version, plus audit exclusions:
       "node_modules",
       ".git",
       ".version-bump.json",
-      "scripts/bump-version.sh"
+      "scripts/bump_version.py"
     ]
   }
 }
@@ -304,14 +304,14 @@ Markdown files that define slash commands for platforms that support them (Curso
 
 ## `scripts/` — Project Tooling
 
-### `bump-version.sh`
+### `bump_version.py`
 
 Version synchronization tool. Reads `.version-bump.json` and provides:
-- `bump-version.sh <version>` — update all declared files
-- `bump-version.sh --check` — detect drift between files
-- `bump-version.sh --audit` — check + scan repo for undeclared version strings
+- `python scripts/bump_version.py <version>` — update all declared files
+- `python scripts/bump_version.py --check` — detect drift between files
+- `python scripts/bump_version.py --audit` — check + scan repo for undeclared version strings
 
-Requires `jq` and `bash`.
+Requires Python 3.
 
 ## `tests/` — Integration Tests
 

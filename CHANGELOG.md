@@ -1,13 +1,42 @@
 # Changelog
 
-## [Unreleased]
+## [1.4.1] - 2026-04-09
+
+### Changed
+
+- **Agent renamed** — `reviewer` → `inspector` for post-scaffold validation. "Inspector" better reflects the read-only structural verification role. Updated agent file, scaffolding skill, security checklist, and both READMEs.
+
+### Added
+
+- **Architecture documentation** in README (en/zh) — Agent Dispatch and Command Execution subsections inside the Architecture details block, with mermaid flowcharts showing agent dispatch triggers, command execution chains, and applicable scenarios for each slash command.
+
+## [1.4.0] - 2026-04-09
+
+### Changed
+
+- **Skill naming standardization** — all skill directories now use single-gerund names:
+  - `designing` → `blueprinting` (building-metaphor chain with `scaffolding`)
+  - `writing-skill` → `authoring`
+  - `adapting-platforms` → `porting`
+- **Command naming standardization** — all commands now use `bundles-<verb>` prefix for namespace isolation and autocomplete grouping:
+  - `/audit-project` → `/bundles-audit`
+  - `/blueprint-project` → `/bundles-blueprint`
+  - `/optimize-project` → `/bundles-optimize`
+  - `/release-project` → `/bundles-release`
+  - `/scan-security` → `/bundles-scan`
+  - `/use-bundles-forge` → `/bundles-forge`
+  Updated command files, README (en/zh) command tables, and all cross-references.
+
+### Fixed
+
+- **Lint false positives on bootstrap skills** — `lint_skills.py` no longer reports missing Overview/Common Mistakes sections (Q10/Q11) for `using-*` bootstrap skills, whose structure intentionally differs from action skills.
 
 ## [1.3.3] - 2026-04-09
 
 ### Changed
 
 - **Terminology standardization** — "Bundles" → "Bundle-plugin" / "bundle-plugin" across all SKILL.md files, README (en/zh), CLAUDE.md, AGENTS.md, commands, scripts, and references. Establishes "bundle-plugin" as the canonical term.
-- **Description length limit** — lowered from 500 to 250 characters across `lint-skills.py`, `audit-checklist.md`, `writing-skill`, and `optimizing`. Claude Code truncates descriptions beyond 250 chars in the skill listing.
+- **Description length limit** — lowered from 500 to 250 characters across `lint-skills.py`, `audit-checklist.md`, `authoring`, and `optimizing`. Claude Code truncates descriptions beyond 250 chars in the skill listing.
 - **All skill descriptions** — rewritten to fit within the 250-character limit while preserving triggering accuracy.
 - **`marketplace.json` structure** — `description` moved into `metadata` object to match Claude Code marketplace schema.
 - **`package.json` keyword** — `skill-engineering` → `bundle-plugin-engineering`; Claude/Cursor plugin keywords `bundles-engineering` → `bundle-plugin-engineering`.
@@ -18,8 +47,8 @@
 ### Added
 
 - **`evaluator` agent** (`agents/evaluator.md`) — runs one side of an A/B skill evaluation for optimization comparisons.
-- **Optional Frontmatter Fields** section in `writing-skill` — documents Claude Code advanced fields: `disable-model-invocation`, `user-invocable`, `allowed-tools`, `context: fork`, `agent`, `argument-hint`, `model`, `effort`, `paths`, `hooks`, `shell`.
-- **Claude Code Hook Events** reference in `adapting-platforms/references/platform-adapters.md` — documents 7 key hook events, hook types, and environment variables (`${CLAUDE_PLUGIN_ROOT}`, `${CLAUDE_PLUGIN_DATA}`).
+- **Optional Frontmatter Fields** section in `authoring` — documents Claude Code advanced fields: `disable-model-invocation`, `user-invocable`, `allowed-tools`, `context: fork`, `agent`, `argument-hint`, `model`, `effort`, `paths`, `hooks`, `shell`.
+- **Claude Code Hook Events** reference in `porting/references/platform-adapters.md` — documents 7 key hook events, hook types, and environment variables (`${CLAUDE_PLUGIN_ROOT}`, `${CLAUDE_PLUGIN_DATA}`).
 - **Plugin manifest fields** and **agent restrictions** in platform-adapters reference.
 - **`hooks.json` matcher** — added `startup|clear|compact` matcher for `SessionStart` hook.
 - **`.gitignore`** — added `.bundles-forge/` pattern for plugin data directory.
@@ -33,23 +62,23 @@
 
 ### Added
 
-- **Minimal/Intelligent dual-mode** in `designing` and `scaffolding` — minimal mode for quick skill packaging (just skills + manifest), intelligent mode for full multi-platform projects with hooks, bootstrap, and version infrastructure.
-- **Third-party skill handling** in `designing` — inventory, compatibility analysis, integration intent (repackage vs integrate), and mandatory security audit for imported content.
+- **Minimal/Intelligent dual-mode** in `blueprinting` and `scaffolding` — minimal mode for quick skill packaging (just skills + manifest), intelligent mode for full multi-platform projects with hooks, bootstrap, and version infrastructure.
+- **Third-party skill handling** in `blueprinting` — inventory, compatibility analysis, integration intent (repackage vs integrate), and mandatory security audit for imported content.
 - **Skill visibility classification** — entry-point skills get matching commands in `commands/`, internal skills are invoked only by other skills in the workflow chain.
-- **Advanced components** in `designing` and `scaffolding` — conditional support for `bin/`, `.mcp.json`, `.lsp.json`, `output-styles/`, and `settings.json`.
+- **Advanced components** in `blueprinting` and `scaffolding` — conditional support for `bin/`, `.mcp.json`, `.lsp.json`, `output-styles/`, and `settings.json`.
 - **Optional/Advanced components reference** in `scaffolding/references/project-anatomy.md` — documentation for plugin executables, MCP/LSP servers, output styles, settings, userConfig, environment variables, and caching behavior.
-- **Commands** for `optimizing` (`optimize-project.md`) and `releasing` (`release-project.md`) entry-point skills.
+- **Commands** for `optimizing` (`bundles-optimize.md`) and `releasing` (`bundles-release.md`) entry-point skills.
 - **GitHub Release creation** in `releasing` skill — `gh release create` step after tag push, with fallback to GitHub web UI.
 
 ### Changed
 
-- **`using-bundles-forge` routing table** — split into "User Entry Points" (designing, auditing, optimizing, releasing) and "Workflow Skills" (scaffolding, writing-skill, adapting-platforms).
+- **`using-bundles-forge` routing table** — split into "User Entry Points" (blueprinting, auditing, optimizing, releasing) and "Workflow Skills" (scaffolding, authoring, porting).
 - **`scaffolding` description** — rewritten to reflect dual-mode support.
-- **`designing` design document template** — now includes mode, visibility column, advanced components, and third-party sources table.
+- **`blueprinting` design document template** — now includes mode, visibility column, advanced components, and third-party sources table.
 
 ### Removed
 
-- **`commands/scaffold-project.md`** — scaffolding reclassified as workflow skill (invoked by designing, not directly by users).
+- **`commands/scaffold-project.md`** — scaffolding reclassified as workflow skill (invoked by blueprinting, not directly by users).
 
 ### Fixed
 
@@ -97,18 +126,18 @@
 - Replaced `skill-project` / `skill-projects` terminology with `bundles` throughout
 - Renamed all 11 skill directories:
   - `auditing-skill-projects` → `auditing`
-  - `designing-skill-projects` → `designing`
+  - `designing-skill-projects` → `designing` → `blueprinting`
   - `optimizing-skill-projects` → `optimizing`
   - `releasing-skill-projects` → `releasing`
   - `scaffolding-skill-projects` → `scaffolding`
-  - `adapting-skill-platforms` → `adapting-platforms`
+  - `adapting-skill-platforms` → `adapting-platforms` → `porting`
   - `iterating-skill-feedback` → `iterating-feedback`
   - `managing-skill-versions` → `managing-versions`
   - `scanning-skill-security` → `scanning-security`
-  - `writing-skill-content` → `writing-skill`
+  - `writing-skill-content` → `writing-skill` → `authoring`
   - `using-skill-forge` → `using-bundles-forge`
 - Renamed OpenCode plugin file to `bundles-forge.js`
-- Renamed command `/use-skill-forge` → `/use-bundles-forge`
+- Renamed command `/use-skill-forge` → `/use-bundles-forge` → `/bundles-forge`
 - Updated all repository URLs to `odradekai/bundles-forge`
 - Replaced all `skill-forge:` cross-reference prefixes with `bundles-forge:`
 - Updated all cross-reference skill names to match new directory names

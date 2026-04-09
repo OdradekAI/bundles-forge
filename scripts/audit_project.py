@@ -2,40 +2,37 @@
 """
 Comprehensive audit for bundle-plugins.
 
-Orchestrates scan-security.py and lint-skills.py, then runs additional
+Orchestrates scan_security.py and lint_skills.py, then runs additional
 structural, version-sync, hook, and documentation checks to produce a
 combined project health report.
 
 Usage:
-    python scripts/audit-project.py [project-root]
-    python scripts/audit-project.py --json [project-root]
+    python scripts/audit_project.py [project-root]
+    python scripts/audit_project.py --json [project-root]
 
-Exit codes: 0 = healthy, 1 = warnings, 2 = critical findings
+Exit codes: 0 = pass, 1 = warnings, 2 = critical findings
 """
 
-import argparse
 import json
-import re
 import sys
 from pathlib import Path
 
-# Import sibling modules by path
 _SCRIPT_DIR = Path(__file__).resolve().parent
 if str(_SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR))
-import importlib
-scan_security = importlib.import_module("scan-security")
-lint_skills = importlib.import_module("lint-skills")
+
+import bump_version
+import scan_security
+import lint_skills
 
 # ---------------------------------------------------------------------------
-# Category checkers (structure, manifests, version-sync, hooks, docs)
+# Category checkers
 # ---------------------------------------------------------------------------
 
 def check_structure(root):
-    """Category 1: Directory layout and required files."""
+    """Directory layout and required files."""
     findings = []
     required_dirs = ["skills", "hooks", "scripts"]
-    optional_dirs = ["agents", "commands", ".claude-plugin", ".cursor-plugin", ".codex", ".opencode"]
 
     for d in required_dirs:
         if not (root / d).is_dir():
@@ -75,7 +72,7 @@ def check_structure(root):
 
 
 def check_manifests(root):
-    """Category 2: Platform manifest validity."""
+    """Platform manifest validity."""
     findings = []
 
     manifest_map = {
@@ -122,7 +119,7 @@ def check_manifests(root):
 
 
 def check_version_sync(root):
-    """Category 3: Version drift across manifests."""
+    """Version drift across manifests (delegates to bump_version)."""
     findings = []
     vb_path = root / ".version-bump.json"
     if not vb_path.exists():
@@ -131,42 +128,31 @@ def check_version_sync(root):
         return findings
 
     try:
-        vb = json.loads(vb_path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as e:
+        result = bump_version.run_check(root)
+    except (json.JSONDecodeError, SystemExit):
         findings.append(dict(check="V1", severity="critical",
-                             message=f".version-bump.json invalid JSON: {e}"))
+                             message=".version-bump.json invalid or unreadable"))
         return findings
 
-    version_re = re.compile(r"\d+\.\d+\.\d+")
-    versions_found = {}
-    for entry in vb.get("files", []):
-        fpath_str = entry["path"] if isinstance(entry, dict) else entry
-        fpath = root / fpath_str
-        if not fpath.exists():
-            findings.append(dict(check="V2", severity="warning",
-                                 message=f".version-bump.json lists missing file: {fpath_str}"))
-            continue
-        content = fpath.read_text(encoding="utf-8", errors="replace")
-        matches = version_re.findall(content)
-        if matches:
-            versions_found[fpath_str] = matches[0]
+    for m in result.get("missing", []):
+        findings.append(dict(check="V2", severity="warning",
+                             message=f".version-bump.json lists missing file: {m}"))
 
-    unique = set(versions_found.values())
-    if len(unique) > 1:
-        drift = ", ".join(f"{k}={v}" for k, v in versions_found.items())
+    if len(result.get("unique_versions", [])) > 1:
+        drift = ", ".join(f"{k}={v}" for k, v in result["versions"].items())
         findings.append(dict(check="V3", severity="critical",
                              message=f"Version drift detected: {drift}"))
 
-    bump_script = root / "scripts" / "bump-version.sh"
+    bump_script = root / "scripts" / "bump_version.py"
     if not bump_script.exists():
         findings.append(dict(check="V4", severity="info",
-                             message="Missing scripts/bump-version.sh"))
+                             message="Missing scripts/bump_version.py"))
 
     return findings
 
 
 def check_hooks(root):
-    """Category 5: Bootstrap injection and hook scripts."""
+    """Bootstrap injection and hook scripts."""
     findings = []
     hooks_dir = root / "hooks"
     if not hooks_dir.is_dir():
@@ -195,7 +181,7 @@ def check_hooks(root):
 
 
 def check_documentation(root):
-    """Category 8: README, CHANGELOG, install docs."""
+    """README, CHANGELOG, install docs."""
     findings = []
 
     readme = root / "README.md"
@@ -216,31 +202,6 @@ def check_documentation(root):
 
 
 # ---------------------------------------------------------------------------
-# Category weights and scoring
-# ---------------------------------------------------------------------------
-
-CATEGORY_WEIGHTS = {
-    "structure": 0.15,
-    "manifests": 0.15,
-    "version_sync": 0.15,
-    "skill_quality": 0.15,
-    "hooks": 0.10,
-    "documentation": 0.05,
-    "security": 0.25,
-}
-
-
-def severity_score(counts):
-    crit = counts.get("critical", counts.get("error", 0))
-    warn = counts.get("warning", 0)
-    if crit > 0:
-        return max(0, 4 - crit)
-    if warn > 0:
-        return max(4, 8 - warn)
-    return 10
-
-
-# ---------------------------------------------------------------------------
 # Orchestrator
 # ---------------------------------------------------------------------------
 
@@ -256,7 +217,7 @@ def run_audit(project_root):
     docs = check_documentation(root)
 
     def _count(findings, key="severity"):
-        c = {"critical": 0, "warning": 0, "info": 0, "error": 0}
+        c = {"critical": 0, "warning": 0, "info": 0}
         for f in findings:
             s = f.get(key, "info")
             c[s] = c.get(s, 0) + 1
@@ -280,20 +241,20 @@ def run_audit(project_root):
         },
     }
 
-    scores = {}
-    for cat, data in categories.items():
-        scores[cat] = severity_score(data["counts"])
-    overall = sum(scores[c] * CATEGORY_WEIGHTS[c] for c in CATEGORY_WEIGHTS)
-
     total_critical = sum(
-        d["counts"].get("critical", 0) + d["counts"].get("error", 0)
-        for d in categories.values())
+        d["counts"].get("critical", 0) for d in categories.values())
     total_warning = sum(d["counts"].get("warning", 0) for d in categories.values())
 
+    if total_critical > 0:
+        status = "FAIL"
+    elif total_warning > 0:
+        status = "WARN"
+    else:
+        status = "PASS"
+
     return {
-        "categories": {k: {"score": scores[k], **v} for k, v in categories.items()},
-        "scores": scores,
-        "overall_score": round(overall, 1),
+        "status": status,
+        "categories": categories,
         "summary": {"critical": total_critical, "warning": total_warning},
     }
 
@@ -304,7 +265,7 @@ def run_audit(project_root):
 def format_markdown(results, project_name):
     out = [
         f"## Bundle-Plugin Audit: {project_name}\n",
-        f"### Overall Score: {results['overall_score']}/10\n",
+        f"### Status: {results['status']}\n",
     ]
 
     all_findings = []
@@ -332,7 +293,6 @@ def format_markdown(results, project_name):
 
     for sev, heading in [
         ("critical", "### Critical (must fix)"),
-        ("error", "### Errors"),
         ("warning", "### Warnings (should fix)"),
         ("info", "### Info (consider)"),
     ]:
@@ -344,52 +304,31 @@ def format_markdown(results, project_name):
             out.append("")
 
     out.append("### Category Breakdown\n")
-    out.append("| Category | Score | Critical | Warning | Info |")
-    out.append("|----------|-------|----------|---------|------|")
+    out.append("| Category | Critical | Warning | Info |")
+    out.append("|----------|----------|---------|------|")
     for cat, data in results["categories"].items():
         c = data["counts"]
-        crit = c.get("critical", 0) + c.get("error", 0)
-        out.append(f"| {cat} | {data['score']}/10 | {crit} | {c.get('warning', 0)} | {c.get('info', 0)} |")
+        out.append(f"| {cat} | {c.get('critical', 0)} | {c.get('warning', 0)} | {c.get('info', 0)} |")
 
     return "\n".join(out)
 
-
-def _json_safe(obj):
-    if isinstance(obj, dict):
-        cleaned = {}
-        for k, v in obj.items():
-            if k == "detail":
-                continue
-            cleaned[k] = _json_safe(v)
-        return cleaned
-    if isinstance(obj, list):
-        return [_json_safe(i) for i in obj]
-    return obj
 
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
 def main():
-    parser = argparse.ArgumentParser(description="Comprehensive audit for bundle-plugins.")
-    parser.add_argument("project_root", nargs="?", default=".",
-                        help="Bundle-plugin root (default: current directory)")
-    parser.add_argument("--json", action="store_true", help="Output JSON instead of markdown")
-    args = parser.parse_args()
-
-    root = Path(args.project_root).resolve()
-    if not (root / "skills").is_dir():
-        print(f"error: {root} has no skills/ directory", file=sys.stderr)
-        sys.exit(1)
+    from _cli import make_parser, resolve_root, exit_by_severity
+    args = make_parser("Comprehensive audit for bundle-plugins.").parse_args()
+    root = resolve_root(args.project_root)
 
     results = run_audit(root)
     if args.json:
-        print(json.dumps(_json_safe(results), indent=2))
+        print(json.dumps(results, indent=2))
     else:
         print(format_markdown(results, root.name))
 
-    sys.exit(2 if results["summary"]["critical"] else
-             1 if results["summary"]["warning"] else 0)
+    exit_by_severity(results["summary"])
 
 
 if __name__ == "__main__":

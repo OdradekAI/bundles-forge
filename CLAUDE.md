@@ -7,7 +7,7 @@ This is a bundle-plugin engineering toolkit supporting 5 platforms: Claude Code,
 ## Development Workflow
 
 1. Make changes to skills under `skills/`
-2. Keep platform manifests in sync — run `scripts/bump-version.sh --check` before committing
+2. Keep platform manifests in sync — run `python scripts/bump_version.py --check` before committing
 3. Run tests with `bash tests/run-all.sh`
 4. Use `bundles-forge:auditing` for quality checks
 
@@ -24,9 +24,9 @@ This is a bundle-plugin engineering toolkit supporting 5 platforms: Claude Code,
 All versioned files are declared in `.version-bump.json`. Never edit version numbers manually — use:
 
 ```bash
-scripts/bump-version.sh <new-version>   # bump all files
-scripts/bump-version.sh --check         # detect drift
-scripts/bump-version.sh --audit         # find undeclared version strings
+python scripts/bump_version.py <new-version>   # bump all files
+python scripts/bump_version.py --check         # detect drift
+python scripts/bump_version.py --audit         # find undeclared version strings
 ```
 
 ## Platform Manifests
