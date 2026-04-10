@@ -7,6 +7,9 @@ Or:  python -m pytest tests/test_scripts.py -v
 """
 
 import json
+import os
+import re
+import shutil
 import subprocess
 import sys
 import unittest
@@ -14,6 +17,27 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS_DIR = REPO_ROOT / "scripts"
+SKILLS_DIR = REPO_ROOT / "skills"
+HOOKS_DIR = REPO_ROOT / "hooks"
+
+def _bash_works():
+    """Check that bash is genuinely usable (not just a broken WSL stub)."""
+    bash = shutil.which("bash")
+    if not bash:
+        return False
+    try:
+        r = subprocess.run([bash, "-c", "echo ok"],
+                           capture_output=True, timeout=5)
+        return r.returncode == 0 and b"ok" in r.stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+
+HAS_BASH = _bash_works()
+
+EXPECTED_SKILLS = {
+    "authoring", "auditing", "blueprinting", "optimizing",
+    "releasing", "scaffolding", "using-bundles-forge", "porting",
+}
 
 
 class TestLintSkills(unittest.TestCase):
@@ -120,10 +144,93 @@ class TestAuditProject(unittest.TestCase):
         )
         data = json.loads(result.stdout)
         expected_cats = {"structure", "manifests", "version_sync",
-                         "skill_quality", "hooks", "documentation", "security"}
+                         "skill_quality", "cross_references", "hooks",
+                         "documentation", "security"}
         actual_cats = set(data["categories"].keys())
         self.assertTrue(expected_cats.issubset(actual_cats),
                         f"Missing categories: {expected_cats - actual_cats}")
+
+
+class TestGraphRules(unittest.TestCase):
+    """Tests for G1-G4 graph analysis rules in lint_skills.py."""
+
+    def _get_lint_data(self):
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "lint_skills.py"), "--json", str(REPO_ROOT)],
+            capture_output=True, text=True
+        )
+        return json.loads(result.stdout)
+
+    def test_lint_json_has_graph_key(self):
+        """lint --json output includes 'graph' key when >=2 skills."""
+        data = self._get_lint_data()
+        self.assertIn("graph", data,
+                       "lint JSON output missing 'graph' key")
+        self.assertIsInstance(data["graph"], list)
+
+    def test_no_undeclared_circular_dependencies(self):
+        """G1: no undeclared circular dependency findings (warning level)."""
+        data = self._get_lint_data()
+        undeclared_cycles = [
+            f for f in data["graph"]
+            if f["check"] == "G1" and f["severity"] == "warning"
+        ]
+        self.assertEqual(undeclared_cycles, [],
+                         f"Undeclared circular dependencies:\n"
+                         + "\n".join(f["message"] for f in undeclared_cycles))
+
+    def test_all_skills_reachable(self):
+        """G2: all skills reachable from using-* entry points or declared direct-call."""
+        data = self._get_lint_data()
+        unreachable = [
+            f for f in data["graph"]
+            if f["check"] == "G2"
+        ]
+        self.assertEqual(unreachable, [],
+                         f"Unreachable skills:\n"
+                         + "\n".join(f["message"] for f in unreachable))
+
+    def test_terminal_skills_have_outputs(self):
+        """G3: terminal skills have ## Outputs section."""
+        data = self._get_lint_data()
+        missing_outputs = [
+            f for f in data["graph"]
+            if f["check"] == "G3"
+        ]
+        self.assertEqual(missing_outputs, [],
+                         f"Terminal skills without Outputs:\n"
+                         + "\n".join(f["message"] for f in missing_outputs))
+
+    def test_referenced_skills_have_inputs(self):
+        """G4: skills with incoming refs have ## Inputs section."""
+        data = self._get_lint_data()
+        missing_inputs = [
+            f for f in data["graph"]
+            if f["check"] == "G4"
+        ]
+        self.assertEqual(missing_inputs, [],
+                         f"Referenced skills without Inputs:\n"
+                         + "\n".join(f["message"] for f in missing_inputs))
+
+
+class TestArtifactMatching(unittest.TestCase):
+    """Tests for G5 artifact identifier matching."""
+
+    def test_g5_no_critical_mismatches(self):
+        """G5: workflow edges have matching artifact IDs (info level only)."""
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "lint_skills.py"), "--json",
+             str(REPO_ROOT)],
+            capture_output=True, text=True
+        )
+        data = json.loads(result.stdout)
+        g5_findings = [
+            f for f in data.get("graph", [])
+            if f["check"] == "G5"
+        ]
+        for f in g5_findings:
+            self.assertEqual(f["severity"], "info",
+                             f"G5 should be info-level: {f['message']}")
 
 
 class TestCrossReferences(unittest.TestCase):
@@ -141,6 +248,156 @@ class TestCrossReferences(unittest.TestCase):
                 if finding["check"] == "X1":
                     broken.append(f"{skill['skill']}: {finding['message']}")
         self.assertEqual(broken, [], f"Broken cross-references:\n" + "\n".join(broken))
+
+
+class TestSkillDiscovery(unittest.TestCase):
+    """Verify all skills exist with valid SKILL.md and frontmatter.
+
+    Python equivalent of test-skill-discovery.sh.
+    """
+
+    def test_skills_directory_exists(self):
+        self.assertTrue(SKILLS_DIR.is_dir(), "skills/ directory missing")
+
+    def test_all_expected_skills_present(self):
+        for skill in EXPECTED_SKILLS:
+            self.assertTrue(
+                (SKILLS_DIR / skill).is_dir(),
+                f"{skill}/ directory missing")
+
+    def test_each_skill_has_skill_md(self):
+        for skill in EXPECTED_SKILLS:
+            self.assertTrue(
+                (SKILLS_DIR / skill / "SKILL.md").is_file(),
+                f"{skill}/SKILL.md missing")
+
+    def test_each_skill_has_valid_frontmatter(self):
+        for skill in EXPECTED_SKILLS:
+            path = SKILLS_DIR / skill / "SKILL.md"
+            if not path.is_file():
+                continue
+            content = path.read_text(encoding="utf-8")
+            lines = content.splitlines()
+            self.assertEqual(lines[0], "---",
+                             f"{skill}/SKILL.md missing frontmatter opening ---")
+            fm_end = None
+            for i, line in enumerate(lines[1:], 1):
+                if line == "---":
+                    fm_end = i
+                    break
+            self.assertIsNotNone(fm_end,
+                                 f"{skill}/SKILL.md missing frontmatter closing ---")
+            fm_block = "\n".join(lines[1:fm_end])
+            self.assertTrue(
+                re.search(r"^name:", fm_block, re.MULTILINE),
+                f"{skill}/SKILL.md missing name field")
+            self.assertTrue(
+                re.search(r"^description:", fm_block, re.MULTILINE),
+                f"{skill}/SKILL.md missing description field")
+
+    def test_directory_names_match_frontmatter(self):
+        name_re = re.compile(r'^name:\s*"?([^"\n]+)"?\s*$', re.MULTILINE)
+        for skill in EXPECTED_SKILLS:
+            path = SKILLS_DIR / skill / "SKILL.md"
+            if not path.is_file():
+                continue
+            content = path.read_text(encoding="utf-8")
+            end = content.index("\n---", 1)
+            fm_block = content[:end]
+            m = name_re.search(fm_block)
+            self.assertIsNotNone(m, f"{skill}/SKILL.md has no parsable name field")
+            self.assertEqual(m.group(1).strip(), skill,
+                             f"{skill} directory vs frontmatter name '{m.group(1).strip()}'")
+
+
+class TestBootstrapInjection(unittest.TestCase):
+    """Verify session-start hook produces valid platform-appropriate JSON.
+
+    Python equivalent of test-bootstrap-injection.sh.
+    Pure-Python checks always run; bash execution tests skip if bash unavailable.
+    """
+
+    def test_hook_script_exists(self):
+        self.assertTrue(
+            (HOOKS_DIR / "session-start").is_file(),
+            "hooks/session-start missing")
+
+    def test_hook_references_bootstrap_skill(self):
+        content = (HOOKS_DIR / "session-start").read_text(encoding="utf-8")
+        self.assertIn("using-bundles-forge/SKILL.md", content)
+
+    def _run_hook(self, **extra_env):
+        """Run the session-start hook with the given env vars."""
+        env = {**os.environ, **extra_env}
+        for key in ("CURSOR_PLUGIN_ROOT", "CLAUDE_PLUGIN_ROOT"):
+            if key not in extra_env:
+                env.pop(key, None)
+        return subprocess.run(
+            ["bash", str(HOOKS_DIR / "session-start")],
+            capture_output=True, env=env, encoding="utf-8", errors="replace")
+
+    @unittest.skipUnless(HAS_BASH, "bash not available")
+    def test_claude_output_is_valid_json(self):
+        result = self._run_hook(CLAUDE_PLUGIN_ROOT=str(REPO_ROOT))
+        try:
+            json.loads(result.stdout)
+        except json.JSONDecodeError:
+            self.fail("Claude Code hook output is not valid JSON")
+
+    @unittest.skipUnless(HAS_BASH, "bash not available")
+    def test_cursor_output_is_valid_json(self):
+        result = self._run_hook(CURSOR_PLUGIN_ROOT=str(REPO_ROOT))
+        try:
+            json.loads(result.stdout)
+        except json.JSONDecodeError:
+            self.fail("Cursor hook output is not valid JSON")
+
+    @unittest.skipUnless(HAS_BASH, "bash not available")
+    def test_claude_output_contains_bootstrap_content(self):
+        result = self._run_hook(CLAUDE_PLUGIN_ROOT=str(REPO_ROOT))
+        self.assertIn("bundles-forge", result.stdout)
+
+    @unittest.skipUnless(HAS_BASH, "bash not available")
+    def test_platform_appropriate_json_structure(self):
+        cursor_result = self._run_hook(CURSOR_PLUGIN_ROOT=str(REPO_ROOT))
+        self.assertIn("additional_context", cursor_result.stdout,
+                       "Cursor output missing additional_context format")
+
+        claude_result = self._run_hook(CLAUDE_PLUGIN_ROOT=str(REPO_ROOT))
+        self.assertIn("hookSpecificOutput", claude_result.stdout,
+                       "Claude Code output missing hookSpecificOutput format")
+
+
+class TestVersionSync(unittest.TestCase):
+    """Verify version consistency across all declared files.
+
+    Python equivalent of test-version-sync.sh.
+    """
+
+    VERSION_BUMP_CONFIG = REPO_ROOT / ".version-bump.json"
+
+    def test_version_bump_config_exists(self):
+        self.assertTrue(self.VERSION_BUMP_CONFIG.is_file(),
+                        ".version-bump.json missing")
+
+    def test_all_declared_files_exist(self):
+        config = json.loads(self.VERSION_BUMP_CONFIG.read_text(encoding="utf-8"))
+        for entry in config["files"]:
+            path = REPO_ROOT / entry["path"]
+            self.assertTrue(path.is_file(), f"{entry['path']} missing")
+
+    def test_bump_version_script_exists(self):
+        self.assertTrue(
+            (SCRIPTS_DIR / "bump_version.py").is_file(),
+            "scripts/bump_version.py missing")
+
+    def test_no_version_drift(self):
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "bump_version.py"), "--check"],
+            capture_output=True, text=True, cwd=str(REPO_ROOT))
+        self.assertEqual(result.returncode, 0,
+                         f"Version drift detected:\n{result.stdout}\n{result.stderr}")
+        self.assertIn("in sync", result.stdout)
 
 
 if __name__ == "__main__":

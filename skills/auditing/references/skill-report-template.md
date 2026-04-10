@@ -62,6 +62,17 @@ Two vocabularies based on audit context:
 ## Template
 
 ```markdown
+---
+audit-date: "<YYYY-MM-DDTHH:mm±HH:mm>"       # ISO 8601 with timezone
+auditor-platform: "<Cursor / Claude Code / Codex / OpenCode / Gemini CLI>"
+auditor-model: "<model-name or unknown>"       # if available; use "unknown" when the platform does not expose model info
+bundles-forge-version: "<version>"
+source-type: "<local-directory / git-repo / archive / marketplace>"
+source-uri: "<original URL or local path>"
+os: "<e.g. Windows 10, macOS 14, Ubuntu 22.04>"
+python: "<version>"
+---
+
 # Skill Audit: <skill-name>
 
 ## 1. Decision Brief
@@ -69,7 +80,7 @@ Two vocabularies based on audit context:
 | Field | Value |
 |-------|-------|
 | **Skill** | `<skill-name>` |
-| **Path** | `<path/to/skill-directory>` |
+| **Target** | `<path/to/skill-directory-or-url>` |
 | **Date** | `<YYYY-MM-DD>` |
 | **Audit Context** | `self-check` / `third-party-evaluation` |
 

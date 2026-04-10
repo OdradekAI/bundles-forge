@@ -217,6 +217,16 @@ When setting up version infrastructure for the first time:
 | Forgetting marketplace.json entry | `plugins.0.version` field needs tracking too |
 | Manual editing without bump script | Always use the script — it runs audit after |
 
+## Inputs
+
+- `project-directory` (required) — bundle-plugin project root with committed skill content ready for release
+
+## Outputs
+
+- `version-tag` — git tag (`v<version>`) for the release
+- `changelog-entry` — CHANGELOG.md update with categorized changes (Added, Changed, Fixed)
+- `github-release` (optional) — GitHub Release with release notes, created via `gh release create`
+
 ## Integration
 
 **Calls:**

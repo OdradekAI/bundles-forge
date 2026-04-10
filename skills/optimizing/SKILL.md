@@ -107,6 +107,17 @@ When optimizing a description, never overwrite the original blindly. Use a copy-
 
 **When to skip A/B eval:** If the change is purely additive (adding triggering conditions that were previously missing) and doesn't modify existing trigger phrases, a simple verification pass is sufficient.
 
+### Chain A/B Eval
+
+When optimizing workflow transitions (Target 4), use chain evaluation to verify end-to-end quality:
+
+1. Define a realistic end-to-end scenario (e.g. "design and scaffold a new bundle-plugin")
+2. Dispatch `evaluator` agent (`agents/evaluator.md`) with label "chain" and the ordered skill list
+3. Review transition quality ratings — focus on "broken" handoffs
+4. Address broken handoffs by improving `## Inputs` / `## Outputs` declarations in the affected skills
+
+**When to use chain eval:** After modifying Inputs/Outputs sections, adding new skills to a workflow chain, or when audit findings indicate workflow integrity issues (G1-G4).
+
 ### Target 2: Token Efficiency
 
 > **Canonical source:** Token budgets are defined in `bundles-forge:authoring` (Token Efficiency section). Repeated here for optimizer context.
@@ -138,14 +149,25 @@ If SKILL.md is approaching 500 lines, extract sections into `references/`.
 
 ### Target 4: Workflow Chain Integrity
 
+Run the graph analysis rules automatically:
+
+```bash
+python scripts/lint_skills.py --json <project-root>
+```
+
+Inspect the `graph` key in the JSON output. The linter automates checks G1-G4:
+
 | Check | What It Catches |
 |-------|----------------|
-| Every `project:skill-name` reference resolves | Broken links after renames |
-| No circular dependencies | Infinite loops |
-| Terminal states are clear | Agent doesn't wonder "what's next?" |
-| Integration sections are present | Skills document their place in the chain |
+| G1 | Circular dependencies (undeclared cycles are warnings; declared via `<!-- cycle:a,b -->` are info) |
+| G2 | Unreachable skills (not linked from bootstrap entry points) |
+| G3 | Terminal skills without `## Outputs` section |
+| G4 | Referenced skills without `## Inputs` section |
 
-Map the complete chain. Verify every link works.
+Focus manual effort on:
+- Verifying that Inputs/Outputs artifact names are semantically clear
+- Confirming terminal skills produce user-visible deliverables
+- Checking that `## Inputs` artifact identifiers match upstream `## Outputs`
 
 ### Target 5: Platform Coverage (project only)
 
@@ -283,10 +305,25 @@ After applying changes to the copy, verify with a parallel comparison:
 | Expanding skill scope based on feedback | Feedback should improve what the skill does, not change what it is |
 | Running all 6 targets on a single skill | Let scope auto-detection handle it — targets 5-6 don't fully apply |
 
+## Inputs
+
+- `audit-report` (optional) — findings from `bundles-forge:auditing` identifying optimization targets
+- `user-feedback` (optional) — behavioral feedback about skill quality, triggering issues, or wrong output
+
+## Outputs
+
+- `optimized-skill` — improved SKILL.md content with better descriptions, reduced tokens, or fixed workflow references
+- `eval-report` (optional) — A/B evaluation results comparing original vs optimized versions, written to `.bundles-forge/`
+
 ## Integration
+
+<!-- cycle:auditing,optimizing -->
 
 **Called by:**
 - **bundles-forge:auditing** — when audit finds optimization opportunities or user feedback issues
+
+**Calls:**
+- **bundles-forge:auditing** — post-change verification after applying optimizations
 
 **Pairs with:**
 - **bundles-forge:releasing** — after optimization, versions may need sync

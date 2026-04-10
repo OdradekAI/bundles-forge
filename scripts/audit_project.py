@@ -26,6 +26,43 @@ import scan_security
 import lint_skills
 
 # ---------------------------------------------------------------------------
+# Scoring
+# ---------------------------------------------------------------------------
+
+CATEGORY_WEIGHTS = {
+    "structure": 3,
+    "manifests": 2,
+    "version_sync": 3,
+    "skill_quality": 2,
+    "cross_references": 2,
+    "hooks": 2,
+    "testing": 2,
+    "documentation": 1,
+    "security": 3,
+}
+
+
+def compute_baseline_score(findings):
+    """Deterministic baseline: 10 minus penalties for critical/warning findings."""
+    critical = sum(1 for f in findings
+                   if f.get("severity", f.get("risk", "info")) == "critical")
+    warning = sum(1 for f in findings
+                  if f.get("severity", f.get("risk", "info")) == "warning")
+    return max(0, 10 - (critical * 3 + warning * 1))
+
+
+def compute_weighted_average(scores):
+    """Weighted average across categories using CATEGORY_WEIGHTS."""
+    total_weight = 0
+    weighted_sum = 0.0
+    for cat, score in scores.items():
+        w = CATEGORY_WEIGHTS.get(cat, 1)
+        weighted_sum += score * w
+        total_weight += w
+    return round(weighted_sum / total_weight, 1) if total_weight else 0.0
+
+
+# ---------------------------------------------------------------------------
 # Category checkers
 # ---------------------------------------------------------------------------
 
@@ -201,6 +238,46 @@ def check_documentation(root):
     return findings
 
 
+def check_testing(root):
+    """Test directory, prompt files, and eval results."""
+    findings = []
+    tests_dir = root / "tests"
+    if not tests_dir.is_dir():
+        findings.append(dict(check="T1", severity="warning",
+                             message="Missing tests/ directory"))
+        return findings
+
+    skills_dir = root / "skills"
+    if skills_dir.is_dir():
+        for skill_dir in sorted(skills_dir.iterdir()):
+            if not skill_dir.is_dir():
+                continue
+            name = skill_dir.name
+            prompts_a = tests_dir / "prompts" / f"{name}.yml"
+            prompts_b = skill_dir / "tests" / "prompts.yml"
+            if not prompts_a.exists() and not prompts_b.exists():
+                findings.append(dict(check="T5", severity="warning",
+                                     message=f"No test prompts for skill '{name}'"))
+
+    bundles_dir = root / ".bundles-forge"
+    if not bundles_dir.is_dir() or not any(
+            f.name.endswith("-eval-original.md") or "-eval-" in f.name
+            for f in bundles_dir.iterdir() if f.is_file()):
+        findings.append(dict(check="T8", severity="warning",
+                             message="No A/B eval results found in .bundles-forge/"))
+
+    if bundles_dir.is_dir():
+        has_chain_eval = any(
+            "-chain-eval-" in f.name
+            for f in bundles_dir.iterdir() if f.is_file())
+        if not has_chain_eval:
+            findings.append(dict(check="T9", severity="info",
+                                 message="No chain eval results found in "
+                                         ".bundles-forge/"))
+
+    return findings
+
+
 # ---------------------------------------------------------------------------
 # Orchestrator
 # ---------------------------------------------------------------------------
@@ -215,6 +292,8 @@ def run_audit(project_root):
     version_sync = check_version_sync(root)
     hooks = check_hooks(root)
     docs = check_documentation(root)
+    testing = check_testing(root)
+    graph_findings = lint_results.get("graph", [])
 
     def _count(findings, key="severity"):
         c = {"critical": 0, "warning": 0, "info": 0}
@@ -222,6 +301,20 @@ def run_audit(project_root):
             s = f.get(key, "info")
             c[s] = c.get(s, 0) + 1
         return c
+
+    def _flat_findings(detail, finding_key="findings", risk_key="severity"):
+        """Extract a flat list of findings from a detail result."""
+        flat = []
+        if "files" in detail:
+            for fr in detail["files"]:
+                for f in fr.get("findings", []):
+                    flat.append({"severity": f.get("risk", "info"),
+                                 "check": f.get("check_id", "")})
+        if "skills" in detail:
+            for sr in detail["skills"]:
+                for f in sr.get("findings", []):
+                    flat.append(f)
+        return flat
 
     categories = {
         "structure": {"findings": structure, "counts": _count(structure)},
@@ -232,7 +325,12 @@ def run_audit(project_root):
             "counts": lint_results["summary"],
             "detail": lint_results,
         },
+        "cross_references": {
+            "findings": graph_findings,
+            "counts": _count(graph_findings),
+        },
         "hooks": {"findings": hooks, "counts": _count(hooks)},
+        "testing": {"findings": testing, "counts": _count(testing)},
         "documentation": {"findings": docs, "counts": _count(docs)},
         "security": {
             "findings": [],
@@ -240,6 +338,20 @@ def run_audit(project_root):
             "detail": sec_results,
         },
     }
+
+    # Compute baseline scores per category
+    scores = {}
+    for cat_name, cat_data in categories.items():
+        if cat_data["findings"]:
+            scores[cat_name] = compute_baseline_score(cat_data["findings"])
+        elif "detail" in cat_data:
+            flat = _flat_findings(cat_data["detail"])
+            scores[cat_name] = compute_baseline_score(flat)
+        else:
+            scores[cat_name] = 10
+        cat_data["baseline_score"] = scores[cat_name]
+
+    overall_score = compute_weighted_average(scores)
 
     total_critical = sum(
         d["counts"].get("critical", 0) for d in categories.values())
@@ -254,6 +366,7 @@ def run_audit(project_root):
 
     return {
         "status": status,
+        "overall_score": overall_score,
         "categories": categories,
         "summary": {"critical": total_critical, "warning": total_warning},
     }
@@ -291,9 +404,10 @@ def _skill_category_counts(findings):
 
 
 def format_markdown(results, project_name):
+    overall = results.get("overall_score", "N/A")
     out = [
         f"## Bundle-Plugin Audit: {project_name}\n",
-        f"### Status: {results['status']}\n",
+        f"### Status: {results['status']} — Overall Score: {overall}/10\n",
     ]
 
     all_findings = []
@@ -332,11 +446,14 @@ def format_markdown(results, project_name):
             out.append("")
 
     out.append("### Category Breakdown\n")
-    out.append("| Category | Critical | Warning | Info |")
-    out.append("|----------|----------|---------|------|")
+    out.append("| Category | Weight | Score | Critical | Warning | Info |")
+    out.append("|----------|--------|-------|----------|---------|------|")
     for cat, data in results["categories"].items():
         c = data["counts"]
-        out.append(f"| {cat} | {c.get('critical', 0)} | {c.get('warning', 0)} | {c.get('info', 0)} |")
+        w = CATEGORY_WEIGHTS.get(cat, 1)
+        s = data.get("baseline_score", "—")
+        out.append(f"| {cat} | {w} | {s}/10 | {c.get('critical', 0)} "
+                   f"| {c.get('warning', 0)} | {c.get('info', 0)} |")
 
     # Per-skill breakdown
     skill_results = lint_detail.get("skills", [])

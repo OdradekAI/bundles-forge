@@ -373,4 +373,4 @@ gemini extensions install https://github.com/odradekai/bundles-forge.git
 
 ## 许可证
 
-MIT
+Apache-2.0

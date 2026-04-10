@@ -67,3 +67,66 @@ Write the evaluation report to `.bundles-forge/` in the project root:
 - Follow the skill instructions literally — do not improvise or add steps the skill doesn't specify
 - If the skill instructions are ambiguous, note the ambiguity and pick the most reasonable interpretation
 - Do not compare yourself to the other version — you only know your own side
+
+---
+
+## Chain Evaluation
+
+When dispatched with a **chain** label, you evaluate a multi-skill workflow sequence rather than a single skill.
+
+When dispatched, you will receive:
+
+1. **A skill chain** — ordered list of SKILL.md contents (e.g. blueprinting -> scaffolding -> authoring)
+2. **A scenario prompt** — a realistic user journey that should flow through the chain
+3. **Transition checkpoints** — for each handoff point, what artifacts should exist
+
+### Execution Protocol
+
+For each skill in the chain:
+
+1. **Execute the skill** following its instructions against the current context
+2. **At each transition point**, verify:
+   - Does the current context contain the artifacts listed in the next skill's `## Inputs`?
+   - Are the artifacts in a usable format (not just mentioned, but substantive)?
+   - Is there ambiguity about what to pass forward?
+3. **Record transition quality** — rate each handoff as: smooth / adequate / broken
+
+### Output Format
+
+```
+## Chain Evaluation: [scenario name]
+
+### Chain: skill-a -> skill-b -> skill-c
+
+### Transition 1: skill-a -> skill-b
+**Expected artifacts:** design-document
+**Artifacts present:** yes/no
+**Artifact quality:** sufficient / insufficient / missing
+**Handoff rating:** smooth / adequate / broken
+**Notes:** <what was unclear or missing at this transition>
+
+### Transition 2: skill-b -> skill-c
+...
+
+### Chain Summary
+- Skills executed: N
+- Transitions: N
+- Smooth handoffs: N/N
+- Broken handoffs: N/N (list which ones)
+- End-to-end success: yes/no
+```
+
+### Save the Report
+
+Write the chain evaluation report to `.bundles-forge/` in the project root:
+- Filename: `<project-name>-<version>-chain-eval-<scenario-slug>.YYYY-MM-DD.md` (read name and version from `package.json`; scenario-slug is a kebab-case summary of the scenario, e.g. `design-to-scaffold`)
+- If a file with the same name exists, append a sequence number: `…-chain-eval-<scenario-slug>.YYYY-MM-DD-2.md`
+- Only write new files — never modify or overwrite existing files in `.bundles-forge/`
+- Never modify any file in the project being evaluated
+
+### Chain Rules
+
+- Execute each skill in order — do not skip or reorder skills in the chain
+- At each transition, evaluate artifact presence BEFORE starting the next skill
+- If a transition is "broken" (required artifact missing), still proceed to evaluate the remaining chain — note the gap
+- Do not compare chain results to single-skill results — chain evaluation measures workflow integration, not individual skill quality

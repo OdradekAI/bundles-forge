@@ -373,4 +373,4 @@ Contributions welcome. Please follow the existing code style and ensure all plat
 
 ## License
 
-MIT
+Apache-2.0

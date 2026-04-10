@@ -4,14 +4,30 @@ Structured criteria for evaluating a bundle-plugin. Each category has specific c
 
 ## Scoring
 
-Each category is scored 0-10:
+Each category is scored 0-10. Scripts compute a **baseline score** using the formula:
+
+```
+baseline = max(0, 10 - (critical_count × 3 + warning_count × 1))
+```
+
+The auditor agent (or inline auditor) may adjust the baseline by **±2 points** to account for qualitative factors the formula cannot capture (e.g. a critical that is a confirmed false positive, or a warning-free category that still has poor design). Any adjustment must include a one-sentence rationale in the report.
+
+**Interpretation:**
 - **10** — All checks pass, exemplary implementation
 - **7-9** — Minor issues only (info-level)
 - **4-6** — Has warnings that should be addressed
 - **1-3** — Critical issues that prevent correct operation
 - **0** — Category entirely missing
 
-**Overall score** = weighted average of category scores.
+### Category Weights
+
+| Weight Level | Numeric Value | Categories |
+|-------------|--------------|------------|
+| High | 3 | Structure, Version Sync, Security |
+| Medium | 2 | Platform Manifests, Skill Quality, Cross-References, Hooks, Testing |
+| Low | 1 | Documentation |
+
+**Overall score** = `sum(score_i × weight_i) / sum(weight_i)` (total weight = 20).
 
 ---
 
@@ -31,7 +47,7 @@ Each category is scored 0-10:
 
 ---
 
-## Category 2: Platform Manifests (Weight: High)
+## Category 2: Platform Manifests (Weight: Medium)
 
 Run these checks only for platforms the project claims to support.
 
@@ -93,6 +109,8 @@ Run for every SKILL.md in the project.
 | Q13 | Warning/Info | Token budget: bootstrap skill body ≤ 200 lines (warning); regular skill reports estimated token count when high (info) |
 | Q14 | Warning | `allowed-tools` frontmatter references scripts/paths that actually exist |
 | Q15 | Info | Conditional blocks (`If ... unavailable` etc.) over 30 lines should be in `references/` |
+| Q16 | Info | Non-bootstrap skills have an `## Inputs` section |
+| Q17 | Info | Non-bootstrap skills have an `## Outputs` section |
 
 **Description anti-patterns (Q6):**
 - Contains step-by-step workflow → agents shortcut to description
@@ -112,11 +130,21 @@ Run for every SKILL.md in the project.
 | X5 | Info | Workflow chain has no circular dependencies |
 | X6 | Info | Terminal skills (end of chain) are clearly marked |
 
+**Graph analysis rules** (automated by `G1`-`G4` in `lint_skills.py`):
+
+| Check | Severity | Criteria |
+|-------|----------|----------|
+| G1 | Warning/Info | No undeclared circular dependencies in the workflow graph. Cycles declared via `<!-- cycle:a,b -->` in `## Integration` are demoted to Info |
+| G2 | Info | All skills are reachable from entry points (skills referenced by `using-*` bootstrap). Skills declaring "Called by: user directly" in `## Integration` are exempt |
+| G3 | Info | Terminal skills (no outgoing cross-references) have an `## Outputs` section documenting final deliverables |
+| G4 | Info | Skills referenced by other skills have an `## Inputs` section declaring expected artifacts |
+
 **How to check:**
 1. Extract all `<project>:<name>` patterns from all SKILL.md files
 2. Verify each `<name>` matches a directory under `skills/`
 3. Extract all relative file references and verify they exist
 4. Scan for prose references to subdirectories and verify they exist
+5. Run `python scripts/lint_skills.py --json` and inspect the `graph` key for G1-G4 findings
 
 ---
 
@@ -142,7 +170,7 @@ CLAUDE_PLUGIN_ROOT="$(pwd)" bash hooks/session-start | python3 -m json.tool
 
 ---
 
-## Category 7: Testing (Weight: Low)
+## Category 7: Testing (Weight: Medium)
 
 | Check | Severity | Criteria |
 |-------|----------|----------|
@@ -150,6 +178,10 @@ CLAUDE_PLUGIN_ROOT="$(pwd)" bash hooks/session-start | python3 -m json.tool
 | T2 | Info | At least one test per target platform |
 | T3 | Info | Tests verify skill discovery (skills appear in available list) |
 | T4 | Info | Tests verify bootstrap injection (session-start content loads) |
+| T5 | Warning | Each skill has a test prompts file (`tests/prompts/<skill-name>.yml` or `skills/<name>/tests/prompts.yml`) |
+| T6 | Info | Test prompts include both should-trigger and should-not-trigger samples |
+| T7 | Info | Test prompts cover all major branch paths of the skill |
+| T8 | Warning | Most recent A/B eval result exists in `.bundles-forge/` |
 
 ---
 

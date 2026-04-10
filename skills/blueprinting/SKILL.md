@@ -293,6 +293,14 @@ After the user approves the design:
 | Using intelligent mode for simple skill packaging | Minimal mode exists for a reason — don't over-engineer |
 | Forgetting skill visibility classification | Entry-point vs internal determines commands/ and description style |
 
+## Inputs
+
+- `user-requirements` (required) — conversational input gathered through the structured interview process
+
+## Outputs
+
+- `design-document` — structured design summary containing project name, platforms, skill inventory, workflow chain, bootstrap strategy, and advanced components. Consumed by `bundles-forge:scaffolding`
+
 ## Integration
 
 **Calls:**

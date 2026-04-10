@@ -117,6 +117,11 @@ _NEGATIVE_CONTEXT_RE = re.compile(
     re.IGNORECASE,
 )
 
+_USER_PRIORITY_CONTEXT_RE = re.compile(
+    r"\buser['s]*\s+(explicit\s+)?instructions\b",
+    re.IGNORECASE,
+)
+
 SCRIPT_RULES = _compile([
     ("BS1", "critical", r"\b(curl|wget)\b",
      "Network calls in bundled script"),
@@ -155,8 +160,10 @@ def classify_file(rel_path):
         return "bundled_script"
     if name == "skill.md":
         return "skill_content"
-    if "references" in parts and name.endswith(".md"):
-        return None
+    if "skills" in parts and "references" in parts and name.endswith(".md"):
+        if "auditing" in parts:
+            return None
+        return "skill_content"
     return None
 
 # ---------------------------------------------------------------------------
@@ -214,6 +221,8 @@ def scan_file(path, rel_path, file_type):
                 continue
             if pattern.search(line):
                 if check_id == "AG4" and _NEGATIVE_CONTEXT_RE.search(line):
+                    continue
+                if check_id == "SC11" and _USER_PRIORITY_CONTEXT_RE.search(line):
                     continue
                 findings.append(dict(
                     check_id=check_id, risk=risk, line=line_num,

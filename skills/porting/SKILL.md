@@ -100,10 +100,20 @@ When deprecating or removing support for a platform:
 | Wrong hook format (PascalCase vs camelCase) | Claude Code: `SessionStart`, Cursor: `sessionStart` |
 | Missing `run-hook.cmd` for Windows | Include if any hook platform is targeted |
 
+## Inputs
+
+- `project-directory` (required) — existing bundle-plugin project root
+- `target-platform` (required) — platform to add or remove (Claude Code, Cursor, Codex, OpenCode, Gemini CLI)
+
+## Outputs
+
+- `platform-manifest` — generated adapter files for the target platform (manifest, hooks, install docs)
+
 ## Integration
 
 **Called by:**
 - **bundles-forge:blueprinting** — when blueprinting includes platform targets
+- Called by: user directly
 
 **Calls:**
 - **bundles-forge:auditing** — verify after adaptation

@@ -99,12 +99,12 @@ Run all 9 categories from `references/audit-checklist.md`. The checklist has 50+
 | Category | Weight | What It Checks |
 |----------|--------|----------------|
 | Structure | High | Directory layout, required files |
-| Platform Manifests | High | Format, valid paths, metadata |
+| Platform Manifests | Medium | Format, valid paths, metadata |
 | Version Sync | High | Drift, `.version-bump.json` completeness |
 | Skill Quality | Medium | Frontmatter, descriptions, token efficiency |
 | Cross-References | Medium | `project:skill-name` resolution, broken links |
 | Hooks | Medium | Bootstrap injection, platform detection |
-| Testing | Low | Test directory, platform coverage |
+| Testing | Medium | Test directory, test prompts, A/B eval results |
 | Documentation | Low | README, install docs, CHANGELOG |
 | Security | High | 5 attack surfaces — see Security Scan below |
 
@@ -124,7 +124,7 @@ Scans 5 attack surfaces. See `references/security-checklist.md` for the full pat
 
 ### Step 4: Score
 
-Each category: 0-10 scale. Overall = weighted average.
+Each category: 0-10 scale. Scripts compute baseline via `max(0, 10 - (critical × 3 + warning × 1))`. The auditor may adjust by ±2 with rationale. Overall = weighted average (High=3, Medium=2, Low=1).
 
 ### Step 5: Report
 
@@ -232,7 +232,17 @@ When auditing a skill from an external source (marketplace, git, shared file):
 | Skipping security because "I wrote it myself" | Accidental vulnerabilities are common — always scan |
 | Only scanning SKILL.md, ignoring hooks | Hooks are the highest-risk executable code (full audit) |
 
+## Inputs
+
+- `project-directory` (required) — bundle-plugin project root, single skill directory, or SKILL.md file path (local, GitHub URL, or archive)
+
+## Outputs
+
+- `audit-report` — scored report with findings across 9 categories (full project) or 4 categories (single skill), written to `.bundles-forge/` by the auditor agent. Consumed by `bundles-forge:optimizing` for targeted fixes
+
 ## Integration
+
+<!-- cycle:auditing,optimizing -->
 
 **Called by:**
 - **bundles-forge:scaffolding** — post-scaffold verification

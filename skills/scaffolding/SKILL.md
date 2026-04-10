@@ -148,6 +148,15 @@ Dispatch the `inspector` agent (`agents/inspector.md`) for automated validation 
 | Forgetting commands for entry-point skills | Each entry-point skill gets a matching command file |
 | Generating optional components not in the design | Only create what the design document specifies |
 
+## Inputs
+
+- `design-document` (required) — design summary from `bundles-forge:blueprinting` containing project mode, name, platforms, skill inventory, bootstrap strategy, and advanced components
+
+## Outputs
+
+- `scaffold-output` — generated project directory structure including skills/, hooks/, manifests, and version infrastructure
+- `inspector-report` (optional) — post-scaffold validation report written to `.bundles-forge/` by the inspector agent
+
 ## Integration
 
 **Called by:**

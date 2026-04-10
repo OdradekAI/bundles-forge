@@ -15,24 +15,23 @@ When auditing a project, you will:
    - `skills/auditing/references/security-checklist.md` for security criteria
 
 2. **Execute all 9 categories**:
-   - **Structure** (High weight): Directory layout, required files, skill organization
-   - **Platform Manifests** (High weight): Format, paths, metadata for each target platform
-   - **Version Sync** (High weight): `.version-bump.json` completeness, drift detection
-   - **Skill Quality** (Medium weight): Frontmatter, descriptions, token efficiency
-   - **Cross-References** (Medium weight): `project:skill-name` resolution, broken links
-   - **Hooks** (Medium weight): Bootstrap injection, platform detection, JSON escaping
-   - **Testing** (Low weight): Test directory, platform coverage
-   - **Documentation** (Low weight): README, install docs, CHANGELOG
-   - **Security** (High weight): 5 attack surfaces — hook scripts, plugin code, agent prompts, skill content, bundled scripts
+   - **Structure** (High, weight 3): Directory layout, required files, skill organization
+   - **Platform Manifests** (Medium, weight 2): Format, paths, metadata for each target platform
+   - **Version Sync** (High, weight 3): `.version-bump.json` completeness, drift detection
+   - **Skill Quality** (Medium, weight 2): Frontmatter, descriptions, token efficiency
+   - **Cross-References** (Medium, weight 2): `project:skill-name` resolution, broken links
+   - **Hooks** (Medium, weight 2): Bootstrap injection, platform detection, JSON escaping
+   - **Testing** (Medium, weight 2): Test directory, test prompts, A/B eval results, platform coverage
+   - **Documentation** (Low, weight 1): README, install docs, CHANGELOG
+   - **Security** (High, weight 3): 5 attack surfaces — hook scripts, plugin code, agent prompts, skill content (including references/*.md), bundled scripts
 
-3. **Score each category** on a 0-10 scale:
-   - 10: All checks pass, exemplary
-   - 7-9: Minor issues only
-   - 4-6: Has warnings
-   - 1-3: Critical issues
-   - 0: Category missing entirely
+3. **Score each category** using the hybrid approach:
+   - Scripts compute a **baseline score**: `max(0, 10 - (critical × 3 + warning × 1))`
+   - You may adjust the baseline by **±2 points** for qualitative factors the formula cannot capture
+   - Any adjustment must include a one-sentence rationale
+   - **Overall score** = weighted average: `sum(score_i × weight_i) / sum(weight_i)` (total weight = 20)
 
-4. **Compile the report** using the template from the audit checklist:
+4. **Compile the report** using `skills/auditing/references/report-template.md` (core structure). For worked examples and context-specific sections, see `skills/auditing/references/report-examples.md`:
    - Overall weighted score
    - Critical issues (must fix)
    - Warnings (should fix)

@@ -31,7 +31,9 @@ _BLOCK_SCALAR_RE = re.compile(r"^[|>][+-]?\d*$")
 WORKFLOW_SUMMARY_PHRASES = re.compile(
     r"first\b.*then\b.*finally|step\s+\d|phase\s+\d|"
     r"scans?\s+.*checks?\s+.*generates?|"
-    r"reads?\s+.*writes?\s+.*outputs?",
+    r"reads?\s+.*writes?\s+.*outputs?|"
+    r"\d\)\s+\w+.*\d\)\s+\w+|"
+    r"\b\w+(?:e?s)\b[,;]\s+\w+(?:e?s)\b[,;]\s+(?:and\s+)?\w+(?:e?s)\b",
     re.IGNORECASE,
 )
 KEBAB_CASE_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
@@ -84,6 +86,28 @@ def parse_frontmatter(content):
             block_join = " "
     body_start = m.end()
     return fm, content[body_start:]
+
+
+_CODE_BLOCK_RE = re.compile(r"```[\s\S]*?```")
+_TABLE_ROW_RE = re.compile(r"^\|.+\|$", re.MULTILINE)
+
+
+def estimate_tokens(content):
+    """Estimate token count with separate rates for code, tables, and prose."""
+    code_blocks = _CODE_BLOCK_RE.findall(content)
+    table_rows = _TABLE_ROW_RE.findall(content)
+
+    code_chars = sum(len(b) for b in code_blocks)
+    table_chars = sum(len(r) for r in table_rows)
+
+    code_tokens = int(code_chars / 3.5)
+    table_tokens = int(table_chars / 3.0)
+
+    prose_content = _CODE_BLOCK_RE.sub("", content)
+    prose_content = _TABLE_ROW_RE.sub("", prose_content)
+    prose_tokens = int(len(prose_content.split()) * 1.3)
+
+    return prose_tokens + code_tokens + table_tokens
 
 
 # ---------------------------------------------------------------------------
@@ -163,6 +187,14 @@ def lint_skill(skill_dir, project_root, project_name, project_abbreviation=None)
     if not is_bootstrap and "## Common Mistakes" not in content and "common mistakes" not in content.lower():
         findings.append(dict(check="Q11", severity="info", message="Missing Common Mistakes section"))
 
+    # Q16: Inputs section (skip for bootstrap skills)
+    if not is_bootstrap and "## Inputs" not in content:
+        findings.append(dict(check="Q16", severity="info", message="Missing Inputs section"))
+
+    # Q17: Outputs section (skip for bootstrap skills)
+    if not is_bootstrap and "## Outputs" not in content:
+        findings.append(dict(check="Q17", severity="info", message="Missing Outputs section"))
+
     # X1: Cross-reference resolution (supports both full name and abbreviation)
     skills_root = project_root / "skills"
     valid_prefixes = {project_name}
@@ -199,16 +231,16 @@ def lint_skill(skill_dir, project_root, project_name, project_abbreviation=None)
 
     # Q13: Static token budget (bootstrap skills have a tighter 200-line budget)
     body_lines = len(body.splitlines())
-    word_count = len(body.split())
-    estimated_tokens = int(word_count * 1.3)
+    estimated_tokens = estimate_tokens(body)
     if is_bootstrap and body_lines > 200:
         findings.append(dict(check="Q13", severity="warning",
                              message=f"Bootstrap skill body is {body_lines} lines "
-                                     f"(~{estimated_tokens} tokens); budget is 200 lines"))
+                                     f"(~{estimated_tokens} tokens, estimated); "
+                                     f"budget is 200 lines"))
     elif not is_bootstrap and estimated_tokens > 4000:
         findings.append(dict(check="Q13", severity="info",
                              message=f"SKILL.md body ~{estimated_tokens} estimated tokens "
-                                     f"({word_count} words, {body_lines} lines)"))
+                                     f"({body_lines} lines); actual may vary by model"))
 
     # Q14: allowed-tools dependency existence
     allowed_tools = fm.get("allowed-tools", "")
@@ -310,6 +342,298 @@ def run_lint(project_root):
             skill_result["counts"][f["severity"]] += 1
             results["summary"][f["severity"]] += 1
         results["skills"].append(skill_result)
+
+    # -----------------------------------------------------------------------
+    # Cross-skill consistency checks (C1-C3) — project-level only
+    # -----------------------------------------------------------------------
+    if len(results["skills"]) >= 2:
+        consistency = []
+
+        # Gather per-skill traits (skip bootstrap skills for structural checks)
+        has_overview = []
+        has_subagent_fallback = []
+        desc_verb_forms = []  # "gerund" or "bare" after "Use when"
+        for sr in results["skills"]:
+            sname = sr["skill"]
+            sdir = skills_dir / sname
+            smd = sdir / "SKILL.md"
+            if not smd.exists():
+                continue
+            scontent = smd.read_text(encoding="utf-8", errors="replace")
+
+            is_bootstrap = sname.startswith("using-")
+            if not is_bootstrap:
+                has_overview.append(
+                    "## Overview" in scontent or "## overview" in scontent.lower())
+                has_subagent_fallback.append(
+                    "subagent" in scontent.lower()
+                    and ("unavailable" in scontent.lower()
+                         or "not available" in scontent.lower()))
+
+            sfm, _ = parse_frontmatter(scontent)
+            if sfm:
+                desc = sfm.get("description", "")
+                after_when = re.sub(r"(?i)^use\s+when\s+", "", desc).strip()
+                if after_when:
+                    first_word = after_when.split()[0].lower()
+                    if first_word.endswith("ing"):
+                        desc_verb_forms.append("gerund")
+                    else:
+                        desc_verb_forms.append("bare")
+
+        # C1: Overview section consistency
+        if has_overview and not all(has_overview) and any(has_overview):
+            with_count = sum(has_overview)
+            without_count = len(has_overview) - with_count
+            consistency.append(dict(
+                check="C1", severity="info",
+                message=f"Inconsistent Overview sections: {with_count} skills "
+                        f"have it, {without_count} do not"))
+
+        # C2: Subagent fallback consistency
+        users = [sr["skill"] for sr, has in
+                 zip(results["skills"], has_subagent_fallback)
+                 if has] if has_subagent_fallback else []
+        if has_subagent_fallback and any(has_subagent_fallback) \
+                and not all(has_subagent_fallback):
+            consistency.append(dict(
+                check="C2", severity="info",
+                message="Inconsistent subagent fallback patterns: "
+                        "some skills handle 'subagent unavailable', others don't"))
+
+        # C3: Description verb form consistency
+        if desc_verb_forms and len(set(desc_verb_forms)) > 1:
+            gerund_n = desc_verb_forms.count("gerund")
+            bare_n = desc_verb_forms.count("bare")
+            consistency.append(dict(
+                check="C3", severity="info",
+                message=f"Mixed verb forms after 'Use when': "
+                        f"{gerund_n} gerund (-ing) vs {bare_n} bare infinitive"))
+
+        results["consistency"] = consistency
+        for f in consistency:
+            results["summary"][f["severity"]] += 1
+
+    # -------------------------------------------------------------------
+    # Graph analysis (G1-G4) — workflow DAG checks
+    # -------------------------------------------------------------------
+    if len(results["skills"]) >= 2:
+        graph_findings = []
+
+        graph_valid_prefixes = {project_name}
+        if project_abbreviation:
+            graph_valid_prefixes.add(project_abbreviation)
+
+        # Build directed graph from the ## Integration section's
+        # **Calls:** block. This is the authoritative source for workflow
+        # edges — body references and "Pairs with" are informational.
+        _CALLS_HEADER_RE = re.compile(r"\*\*Calls?:?\*\*", re.IGNORECASE)
+        # Integration sections use **project:skill** (bold), not backticks
+        _BOLD_REF_RE = re.compile(r"\*\*([a-z0-9-]+):([a-z0-9-]+)\*\*")
+
+        def _extract_calls(content):
+            """Extract outgoing skill refs from the Integration Calls block."""
+            calls = set()
+            lines = content.splitlines()
+            in_calls = False
+            for line in lines:
+                if _CALLS_HEADER_RE.search(line):
+                    in_calls = True
+                    for m in _BOLD_REF_RE.finditer(line):
+                        if m.group(1) in graph_valid_prefixes:
+                            calls.add(m.group(2))
+                    for m in CROSS_REF_RE.finditer(line):
+                        if m.group(1) in graph_valid_prefixes:
+                            calls.add(m.group(2))
+                    continue
+                if in_calls:
+                    if line.startswith("- ") or line.startswith("  "):
+                        for m in _BOLD_REF_RE.finditer(line):
+                            if m.group(1) in graph_valid_prefixes:
+                                calls.add(m.group(2))
+                        for m in CROSS_REF_RE.finditer(line):
+                            if m.group(1) in graph_valid_prefixes:
+                                calls.add(m.group(2))
+                    elif line.strip() and not line.startswith("-"):
+                        in_calls = False
+            return calls
+
+        graph = {}
+        skill_contents = {}
+        for sr in results["skills"]:
+            sname = sr["skill"]
+            sdir = skills_dir / sname
+            smd = sdir / "SKILL.md"
+            if not smd.exists():
+                continue
+            scontent = smd.read_text(encoding="utf-8", errors="replace")
+            skill_contents[sname] = scontent
+            refs = _extract_calls(scontent)
+            refs.discard(sname)
+            existing_refs = {r for r in refs
+                            if (skills_dir / r).is_dir()}
+            graph[sname] = existing_refs
+
+        all_skill_names = set(graph.keys())
+
+        # G1: Cycle detection — find minimal cycles using Johnson's
+        # approach simplified: for each edge A->B where B->...->A exists,
+        # find the shortest back-path. Only report unique minimal cycles.
+        CYCLE_DECL_RE = re.compile(r"<!--\s*cycle:([\w,-]+)\s*-->")
+
+        def _get_declared_cycle_sets(content):
+            """Return all declared cycle sets from a skill's content."""
+            result = []
+            for m in CYCLE_DECL_RE.finditer(content):
+                result.append(set(m.group(1).split(",")))
+            return result
+
+        def _find_minimal_cycles(g):
+            """Find shortest elementary cycles (no redundant sub-paths)."""
+            seen_cycle_sets = set()
+            cycles = []
+            for start in sorted(g):
+                from collections import deque
+                for neighbor in g.get(start, set()):
+                    queue = deque([(neighbor, [start, neighbor])])
+                    visited_in_search = {start, neighbor}
+                    while queue:
+                        node, path = queue.popleft()
+                        for nxt in g.get(node, set()):
+                            if nxt == start:
+                                canon = tuple(sorted(path))
+                                if canon not in seen_cycle_sets:
+                                    seen_cycle_sets.add(canon)
+                                    cycles.append(tuple(path))
+                                break
+                            if nxt not in visited_in_search \
+                                    and nxt in g:
+                                visited_in_search.add(nxt)
+                                queue.append((nxt, path + [nxt]))
+                        else:
+                            continue
+                        break
+            return cycles
+
+        for cycle in _find_minimal_cycles(graph):
+            cycle_set = set(cycle)
+            declared = True
+            for node in cycle_set:
+                content = skill_contents.get(node, "")
+                decl_sets = _get_declared_cycle_sets(content)
+                if any(cycle_set.issubset(ds) for ds in decl_sets):
+                    continue
+                declared = False
+                break
+            sev = "info" if declared else "warning"
+            chain = " -> ".join(cycle) + " -> " + cycle[0]
+            msg = f"Circular dependency: {chain}"
+            if declared:
+                msg += " (declared feedback loop)"
+            graph_findings.append(dict(check="G1", severity=sev, message=msg))
+
+        # G2: Reachability from entry points
+        # Entry points = skills referenced by using-* bootstrap skills
+        entry_points = set()
+        for sname, scontent in skill_contents.items():
+            if sname.startswith("using-"):
+                for match in CROSS_REF_RE.finditer(scontent):
+                    proj, skill_ref = match.group(1), match.group(2)
+                    if proj in graph_valid_prefixes and skill_ref in all_skill_names:
+                        entry_points.add(skill_ref)
+                entry_points.add(sname)
+
+        if entry_points:
+            reachable = set(entry_points)
+            queue = list(entry_points)
+            while queue:
+                current = queue.pop(0)
+                for neighbor in graph.get(current, set()):
+                    if neighbor not in reachable:
+                        reachable.add(neighbor)
+                        queue.append(neighbor)
+
+            for sname in sorted(all_skill_names - reachable):
+                content = skill_contents.get(sname, "")
+                if "Called by: user directly" in content:
+                    continue
+                graph_findings.append(dict(
+                    check="G2", severity="info",
+                    message=f"Skill '{sname}' is not reachable from any "
+                            "entry point (add to bootstrap routing or declare "
+                            "'Called by: user directly' in Integration)"))
+
+        # G3: Terminal skills (no outgoing edges) without Outputs section
+        for sname in sorted(all_skill_names):
+            if not graph.get(sname):
+                content = skill_contents.get(sname, "")
+                if "## Outputs" not in content and not sname.startswith("using-"):
+                    graph_findings.append(dict(
+                        check="G3", severity="info",
+                        message=f"Terminal skill '{sname}' has no outgoing "
+                                "references and no ## Outputs section"))
+
+        # G4: Skills with incoming edges but no Inputs section
+        has_incoming = set()
+        for sname, refs in graph.items():
+            has_incoming.update(refs)
+        for sname in sorted(has_incoming):
+            content = skill_contents.get(sname, "")
+            if "## Inputs" not in content:
+                graph_findings.append(dict(
+                    check="G4", severity="info",
+                    message=f"Skill '{sname}' is referenced by other skills "
+                            "but has no ## Inputs section"))
+
+        # G5: Artifact identifier matching (experimental) — check that
+        # for each edge A->B, A's Outputs contain at least one artifact
+        # identifier that also appears in B's Inputs.
+        _SECTION_RE = re.compile(r"^## (Inputs|Outputs)\s*$", re.MULTILINE)
+        _ARTIFACT_ID_RE = re.compile(r"`([a-z][a-z0-9-]*)`")
+
+        def _extract_artifact_ids(content, section_name):
+            """Extract backtick-wrapped artifact IDs from a named section."""
+            ids = set()
+            lines = content.splitlines()
+            in_section = False
+            for line in lines:
+                if line.strip() == f"## {section_name}":
+                    in_section = True
+                    continue
+                if in_section:
+                    if line.startswith("## "):
+                        break
+                    for m in _ARTIFACT_ID_RE.finditer(line):
+                        candidate = m.group(1)
+                        if candidate not in graph_valid_prefixes \
+                                and ":" not in candidate:
+                            ids.add(candidate)
+            return ids
+
+        skill_outputs = {}
+        skill_inputs = {}
+        for sname, scontent in skill_contents.items():
+            skill_outputs[sname] = _extract_artifact_ids(scontent, "Outputs")
+            skill_inputs[sname] = _extract_artifact_ids(scontent, "Inputs")
+
+        for src, targets in graph.items():
+            src_out = skill_outputs.get(src, set())
+            if not src_out:
+                continue
+            for tgt in targets:
+                tgt_in = skill_inputs.get(tgt, set())
+                if not tgt_in:
+                    continue
+                if not src_out & tgt_in:
+                    graph_findings.append(dict(
+                        check="G5", severity="info",
+                        message=f"No matching artifact IDs between "
+                                f"'{src}' outputs {sorted(src_out)} and "
+                                f"'{tgt}' inputs {sorted(tgt_in)}"))
+
+        results["graph"] = graph_findings
+        for f in graph_findings:
+            results["summary"][f["severity"]] += 1
 
     return results
 

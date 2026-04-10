@@ -110,3 +110,11 @@ These thoughts mean STOP — you're skipping a skill you should use:
 | "This project is too small for all this" | Small projects grow. Set up right from the start. |
 | "This skill is from a trusted source" | Trust but verify. Auditing includes security scanning. |
 | "I'll just apply the feedback directly" | Unvalidated changes may harm the skill. Use the optimizing skill. |
+
+## Inputs
+
+- (none — bootstrap skill, auto-loaded on session start)
+
+## Outputs
+
+- `routing-context` — skill routing table, platform adaptation guidance, and instruction priority for the current session
