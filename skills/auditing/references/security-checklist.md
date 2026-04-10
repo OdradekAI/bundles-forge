@@ -153,6 +153,7 @@ Scan `agents/*.md` and any `*-prompt.md` files within skill directories.
 | AG4 | Warning | Instructions that expand scope beyond the agent's stated role |
 | AG5 | Warning | Instructions that claim elevated permissions ("you have full system access") |
 | AG6 | Info | Missing scope constraints (agent prompt doesn't limit what files/actions are in scope) |
+| AG7 | Warning | Agent prompt instructs dispatching other agents/subagents — subagents cannot nest; orchestration must stay in the parent skill |
 
 ---
 

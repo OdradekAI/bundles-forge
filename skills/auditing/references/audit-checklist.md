@@ -7,8 +7,10 @@ Structured criteria for evaluating a bundle-plugin. Each category has specific c
 Each category is scored 0-10. Scripts compute a **baseline score** using the formula:
 
 ```
-baseline = max(0, 10 - (critical_count × 3 + warning_count × 1))
+baseline = max(0, 10 - (critical_count × 3 + capped_warning_penalty))
 ```
+
+where `capped_warning_penalty = sum(min(count_per_check_id, 3))` — warnings from the same check ID are capped at -3 penalty per ID. This prevents a single conceptual gap (e.g. missing prompt files for N skills) from producing N × -1 multiplicative punishment.
 
 The auditor agent (or inline auditor) may adjust the baseline by **±2 points** to account for qualitative factors the formula cannot capture (e.g. a critical that is a confirmed false positive, or a warning-free category that still has poor design). Any adjustment must include a one-sentence rationale in the report.
 
@@ -174,6 +176,7 @@ CLAUDE_PLUGIN_ROOT="$(pwd)" bash hooks/session-start | python3 -m json.tool
 | T6 | Info | Test prompts include both should-trigger and should-not-trigger samples |
 | T7 | Info | Test prompts cover all major branch paths of the skill |
 | T8 | Warning | Most recent A/B eval result exists in `.bundles-forge/` |
+| T9 | Info | Most recent chain eval result exists in `.bundles-forge/` |
 
 ---
 

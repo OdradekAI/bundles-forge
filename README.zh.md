@@ -54,6 +54,104 @@ cd your-bundle-plugin-project
 
 执行 10 大类质量评估，含 5 大攻击面安全扫描。
 
+## 核心概念
+
+[Claude Code 插件生态](https://code.claude.com/docs/en/plugins)由多个相互协作的构建块组成。理解这些概念有助于看清 bundles-forge 的技能、Agent 和钩子如何嵌入更大的体系。
+
+```mermaid
+graph TB
+    subgraph dist ["分发层"]
+        Marketplace["Marketplace"]
+        Plugin["Plugin"]
+    end
+
+    subgraph comp ["Plugin 内部组件"]
+        Skill["Skill"]
+        Subagent["Subagent"]
+        Hook["Hook"]
+        MCPServer["MCP Server"]
+        LSPServer["LSP Server"]
+        Command["Command"]
+    end
+
+    Marketplace -->|hosts| Plugin
+    Plugin -->|bundles| Skill
+    Plugin -->|bundles| Subagent
+    Plugin -->|bundles| Hook
+    Plugin -->|bundles| MCPServer
+    Plugin -->|bundles| LSPServer
+    Plugin -->|bundles| Command
+
+    Skill -->|"runs in via context:fork"| Subagent
+    Subagent -->|"preloads via skills field"| Skill
+    Subagent -->|"scoped mcpServers"| MCPServer
+    Subagent -->|"scoped hooks"| Hook
+    Hook -->|"reacts to lifecycle of"| Subagent
+    Skill -->|"chains to via prose"| Skill
+```
+
+### 核心概念
+
+**[Skill（技能）](https://code.claude.com/docs/en/skills)** — 原子能力单元。一个 `SKILL.md` 文件加 YAML frontmatter（`name`、`description`、`allowed-tools` 等），Agent 通过 `description` 自动发现并按需加载。技能可以在主对话中内联运行，也可以通过 `context: fork` 在隔离的子代理中运行。技能之间通过文字指令（而非代码 API）链式调用。
+
+> **在 bundles-forge 中：** 8 个技能组成生命周期工作流 — 每个技能在指令中用 `bundles-forge:<name>` 约定告知 Agent 下一步调用哪个技能。详见[技能链式调用](#技能链式调用)。
+
+**[Plugin（插件）](https://code.claude.com/docs/en/plugins)** — 打包分发单元。一个包含 `.claude-plugin/plugin.json`（清单）的目录，可组合技能、Agent、钩子、MCP 服务器、LSP 服务器、命令和输出风格。插件对组件进行命名空间化（`/plugin-name:skill-name`）以避免冲突，通过 marketplace 分发。
+
+> **在 bundles-forge 中：** 项目自身就是一个拥有 5 个平台清单的插件，同时也是*构建*其他插件的工具包 — 一个用来造 bundle-plugin 的 bundle-plugin。
+
+**[Subagent（子代理）](https://code.claude.com/docs/en/sub-agents)** — 运行在独立上下文窗口中的专用 AI 助手，拥有自定义系统提示词、工具权限和模型选择。主对话将任务委托给子代理，只接收摘要。内置子代理包括 Explore（只读、快速）、Plan（研究规划用）和 general-purpose（完整工具）。自定义子代理以 Markdown 文件形式定义在 `agents/` 目录。
+
+> **在 bundles-forge 中：** 三个只读子代理 — `inspector`、`auditor`、`evaluator` — 由技能派遣执行隔离的验证工作。详见 [Agent 调度](#agent-调度)。
+>
+> **设计决策：** 用户始终通过技能（斜杠命令）交互，不直接调用 agent。技能在主对话中编排 agent 派遣，因为需要前置/后置逻辑（范围检测、报告合并）。子代理不可嵌套派遣其他子代理 — 所有编排权必须保留在技能层。
+
+**[Hook（钩子）](https://code.claude.com/docs/en/hooks)** — 在特定生命周期事件（`SessionStart`、`PreToolUse`、`PostToolUse`、`Stop`、`SubagentStart` 等）上自动执行的 shell 命令、HTTP 端点或 LLM prompt。钩子可以拦截操作、注入上下文或触发副作用。定义在 `hooks/hooks.json` 或设置中。
+
+> **在 bundles-forge 中：** `session-start` 钩子读取引导技能并注入 Agent 上下文，使其在每个会话开始时就获得所有可用技能的信息。详见[会话引导](#会话引导)。
+
+**[MCP（Model Context Protocol）](https://code.claude.com/docs/en/mcp)** — 连接 Claude 与外部工具和数据源（数据库、API、问题追踪器）的开放标准。MCP 服务器通过 `.mcp.json` 配置，提供工具、资源和提示词。插件可以捆绑 MCP 服务器，在启用时自动启动。
+
+> **在 bundles-forge 中：** 工具包本身不自带 MCP 服务器，但 `auditing` 技能会检查目标项目的 MCP 配置安全性，覆盖 5 大攻击面。
+
+### 补充概念
+
+**[Command（命令）](https://code.claude.com/docs/en/skills)** — 斜杠命令（`/deploy`、`/audit`）用于调用技能。命令已合并入技能体系 — `.claude/commands/deploy.md` 和 `.claude/skills/deploy/SKILL.md` 创建相同的 `/deploy` 命令。插件的 `commands/` 目录仍然受支持。
+
+> **在 bundles-forge 中：** 6 个 `/bundles-*` 命令作为薄入口，重定向到对应的技能。详见[命令执行](#命令执行)。
+
+**[Marketplace（市场）](https://code.claude.com/docs/en/discover-plugins)** — 托管可安装插件的目录/市场。支持 GitHub 仓库、Git URL、本地路径和远程 URL。官方 Anthropic 市场默认可用，团队也可创建私有市场。
+
+> **在 bundles-forge 中：** 通过官方 Anthropic 市场分发（`claude plugin install bundles-forge`）。
+
+**[LSP Server](https://code.claude.com/docs/en/plugins-reference#lsp-servers)** — Language Server Protocol 集成，为 Claude 提供实时代码智能：编辑后诊断、跳转定义、查找引用和悬停信息。通过插件中的 `.lsp.json` 配置。
+
+> **在 bundles-forge 中：** 未使用 — 工具包聚焦于技能/插件工程，而非语言相关的代码智能。
+
+**[Output Style（输出风格）](https://code.claude.com/docs/en/plugins-reference#plugin-directory-structure)** — 存储在 `output-styles/` 中的自定义响应格式指令，改变 Claude 呈现输出的方式。
+
+> **在 bundles-forge 中：** 未使用。
+
+### 在 bundles-forge 中的协作方式
+
+```mermaid
+flowchart LR
+    MP["Official Marketplace"] -->|distributes| BF
+
+    subgraph BF ["bundles-forge Plugin"]
+        HK["session-start Hook"]
+        CMD["6 /bundles-* Commands"]
+        SK["8 Skills"]
+        AG["3 Subagents"]
+    end
+
+    HK -->|"injects bootstrap context"| SK
+    CMD -->|"invokes via bundles-forge:name"| SK
+    SK -->|"dispatches read-only tasks"| AG
+    AG -->|"writes reports to .bundles-forge/"| SK
+    SK -->|"chains via prose instructions"| SK
+```
+
 ## 技能
 
 8 个技能覆盖 bundle-plugin 项目的完整生命周期：

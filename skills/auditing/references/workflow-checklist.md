@@ -9,8 +9,10 @@ This checklist complements `audit-checklist.md` (which covers 10 project-level c
 Each layer is scored 0-10 using the same baseline formula as the project audit:
 
 ```
-baseline = max(0, 10 - (critical_count × 3 + warning_count × 1))
+baseline = max(0, 10 - (critical_count × 3 + capped_warning_penalty))
 ```
+
+where `capped_warning_penalty = sum(min(count_per_check_id, 3))` — warnings from the same check ID are capped at -3 per ID.
 
 **Overall workflow score** = weighted average of the three layers:
 

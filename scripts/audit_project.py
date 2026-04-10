@@ -47,12 +47,21 @@ CATEGORY_WEIGHTS = {
 
 
 def compute_baseline_score(findings):
-    """Deterministic baseline: 10 minus penalties for critical/warning findings."""
+    """Deterministic baseline: 10 minus penalties for critical/warning findings.
+
+    Warnings from the same check-ID are capped at -3 penalty per ID to prevent
+    a single conceptual gap (e.g. missing prompt files for N skills) from
+    producing N × -1 multiplicative punishment.
+    """
+    from collections import Counter
     critical = sum(1 for f in findings
                    if f.get("severity", f.get("risk", "info")) == "critical")
-    warning = sum(1 for f in findings
-                  if f.get("severity", f.get("risk", "info")) == "warning")
-    return max(0, 10 - (critical * 3 + warning * 1))
+    warning_checks = Counter(
+        f.get("check", "?") for f in findings
+        if f.get("severity", f.get("risk", "info")) == "warning"
+    )
+    warning_penalty = sum(min(count, 3) for count in warning_checks.values())
+    return max(0, 10 - (critical * 3 + warning_penalty))
 
 
 def compute_weighted_average(scores):

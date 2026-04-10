@@ -131,7 +131,7 @@ Scans 5 attack surfaces. See `references/security-checklist.md` for the full pat
 
 ### Step 4: Score
 
-Each category: 0-10 scale. Scripts compute baseline via `max(0, 10 - (critical × 3 + warning × 1))`. The auditor may adjust by ±2 with rationale. Overall = weighted average (High=3, Medium=2, Low=1).
+Each category: 0-10 scale. Scripts compute baseline via `max(0, 10 - (critical × 3 + capped_warning_penalty))` where warnings from the same check ID are capped at -3 per ID. The auditor may adjust by ±2 with rationale. Overall = weighted average (High=3, Medium=2, Low=1).
 
 ### Step 5: Report
 
@@ -156,6 +156,14 @@ Compile findings into the six-layer report format defined in `references/report-
 **Qualitative summaries** are produced by the auditor agent or inline by the main agent. Scripts output per-skill findings and counts but not qualitative judgments.
 
 **Audit context adaptation:** The template has conditional sections for pre-release (release readiness), post-change (regression check), and third-party evaluation (install safety). Choose the context that matches the audit trigger.
+
+### Step 5b: Behavioral Verification (Optional)
+
+If subagents are available, dispatch the `evaluator` agent (`agents/evaluator.md`) with label "chain" to run behavioral verification (W11-W12) on workflow chains. This validates that skill handoffs work end-to-end, not just structurally. Append evaluator results to the Workflow category in the audit report.
+
+**When to run:** Pre-release audits, or when the Workflow category (W1-W10) has warnings that suggest structural issues may affect runtime behavior.
+
+**When to skip:** Quick post-change checks, when evaluator dispatch is unavailable, or when static and semantic layers show no issues. Note the skip in the report — the Workflow score excludes skipped layers from its weighted average.
 
 ### Step 6: Fix or Optimize
 
@@ -246,7 +254,14 @@ python scripts/audit_workflow.py --focus-skills skill-a,skill-b <root>   # focus
 python scripts/audit_workflow.py --json <project-root>                   # machine-readable
 ```
 
-Dispatch the `auditor` agent (`agents/auditor.md`) in Workflow Audit Mode for automated assessment if subagents are available.
+Dispatch the `auditor` agent (`agents/auditor.md`) in Workflow Audit Mode for automated assessment if subagents are available. The auditor handles W1-W10 (Static Structure + Semantic Interface).
+
+**Phase 2 — Behavioral Verification (W11-W12):**
+After the auditor returns the workflow report, dispatch `evaluator` agent (`agents/evaluator.md`) with label "chain" for each workflow chain involving focus skills. Use the chain list and focus skills from the auditor's report. Skip if subagent dispatch is unavailable — note the skip in the final report. Append evaluator results to the workflow audit report.
+
+**Why two phases:** Subagents cannot dispatch other subagents, so the evaluator must be dispatched from this skill (main conversation), not from within the auditor.
+
+**If subagent dispatch is unavailable:** Ask the user — "Subagents are not available. I can run the workflow checks inline. Proceed?" If confirmed, perform the W1-W12 checks directly using the workflow checklist reference.
 
 ### Three-Layer Checks
 

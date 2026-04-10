@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.5.3] - 2026-04-11
+
+### Added
+
+- **"Key Concepts" section** in both READMEs (en/zh) — explains Skill, Plugin, Subagent, Hook, MCP, Command, Marketplace, LSP Server, and Output Style with Mermaid architecture diagrams showing how they work together in bundles-forge.
+- **`maxTurns` limits** on all 3 subagents — auditor (40), evaluator (30), inspector (15) — prevents runaway agent sessions.
+- **Step 5b: Behavioral Verification** in `auditing/SKILL.md` — optional evaluator dispatch for W11-W12 chain validation, with two-phase workflow design (auditor handles W1-W10, evaluator handles W11-W12 from parent skill since subagents cannot nest).
+- **New audit checks** — T9 (chain eval results), AG7 (subagent nesting detection in agent prompts).
+- **Test prompts** — `tests/prompts/` directory with trigger/non-trigger YAML files for all 8 skills.
+- **Workflow audit scripts** — `scripts/audit_project.py` and `scripts/audit_workflow.py` now included in the repository.
+
+### Changed
+
+- **Scoring formula** — warnings from the same check ID are now capped at -3 penalty per ID (prevents N skills × -1 multiplicative punishment for a single conceptual gap like missing test prompts). Updated in `audit_project.py`, `audit_workflow.py`, `audit-checklist.md`, and `workflow-checklist.md`.
+- **`audit_workflow.py`** — skipped layers now report `None` score instead of defaulting to 10/10; weighted average excludes skipped layers.
+- **`auditor.md`** — category weights moved from inline to `audit-checklist.md` reference; W11-W12 behavioral verification delegated to parent skill; report tail uses actionable `/bundles-optimize` command.
+- **Audit reports** relocated from `docs/` to `examples/` for clarity.
+
 ## [1.5.0] - 2026-04-10
 
 ### Added

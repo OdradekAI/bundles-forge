@@ -1,0 +1,14 @@
+# Test prompts for the using-bundles-forge skill.
+# should-trigger: inputs that should activate this skill.
+# should-not-trigger: inputs that should NOT activate this skill.
+
+should-trigger:
+  - "I want to work on my bundle-plugin but I'm not sure which skill to use"
+  - "How do I use bundles-forge?"
+  - "I need to do something with my bundle-plugin project"
+  - "Which bundles-forge skill handles platform manifests?"
+
+should-not-trigger:
+  - "Audit this project for quality issues"
+  - "Write the SKILL.md for my new skill"
+  - "Release version 1.5.0"

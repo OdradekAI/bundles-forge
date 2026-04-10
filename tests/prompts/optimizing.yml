@@ -1,0 +1,15 @@
+# Test prompts for the optimizing skill.
+# should-trigger: inputs that should activate this skill.
+# should-not-trigger: inputs that should NOT activate this skill.
+
+should-trigger:
+  - "My skill description doesn't trigger reliably, fix it"
+  - "Reduce the token usage of my SKILL.md"
+  - "The audit found warnings, help me fix them"
+  - "Users say my skill gives confusing output, can we iterate on it?"
+  - "Optimize the workflow chain between auditing and releasing"
+
+should-not-trigger:
+  - "Plan a new bundle-plugin from scratch"
+  - "Write the SKILL.md content for a new skill"
+  - "Run a full audit on this project"

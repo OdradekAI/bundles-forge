@@ -1,0 +1,14 @@
+# Test prompts for the scaffolding skill.
+# should-trigger: inputs that should activate this skill.
+# should-not-trigger: inputs that should NOT activate this skill.
+
+should-trigger:
+  - "Generate the project structure from this design document"
+  - "Scaffold a minimal bundle-plugin for my skill"
+  - "Create the full project with hooks, bootstrap, and version infrastructure"
+  - "I finished the blueprint, now generate the scaffolding"
+
+should-not-trigger:
+  - "Help me plan what skills to include"
+  - "Write the content for my SKILL.md"
+  - "Check this project for security risks"

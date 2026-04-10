@@ -54,6 +54,104 @@ cd your-bundle-plugin-project
 
 Runs a 10-category quality assessment with security scanning across 5 attack surfaces.
 
+## Key Concepts
+
+The [Claude Code plugin ecosystem](https://code.claude.com/docs/en/plugins) comprises several building blocks that work together. Understanding these concepts helps you see how bundles-forge's skills, agents, and hooks fit into the bigger picture.
+
+```mermaid
+graph TB
+    subgraph dist ["Distribution"]
+        Marketplace["Marketplace"]
+        Plugin["Plugin"]
+    end
+
+    subgraph comp ["Components bundled inside a Plugin"]
+        Skill["Skill"]
+        Subagent["Subagent"]
+        Hook["Hook"]
+        MCPServer["MCP Server"]
+        LSPServer["LSP Server"]
+        Command["Command"]
+    end
+
+    Marketplace -->|hosts| Plugin
+    Plugin -->|bundles| Skill
+    Plugin -->|bundles| Subagent
+    Plugin -->|bundles| Hook
+    Plugin -->|bundles| MCPServer
+    Plugin -->|bundles| LSPServer
+    Plugin -->|bundles| Command
+
+    Skill -->|"runs in via context:fork"| Subagent
+    Subagent -->|"preloads via skills field"| Skill
+    Subagent -->|"scoped mcpServers"| MCPServer
+    Subagent -->|"scoped hooks"| Hook
+    Hook -->|"reacts to lifecycle of"| Subagent
+    Skill -->|"chains to via prose"| Skill
+```
+
+### Core Concepts
+
+**[Skill](https://code.claude.com/docs/en/skills)** — The atomic capability unit. A `SKILL.md` file with YAML frontmatter (`name`, `description`, `allowed-tools`, etc.) that the agent discovers by its `description` and loads on demand. Skills can run inline in the main conversation or in an isolated subagent via `context: fork`. Skills chain to each other through prose instructions, not code APIs.
+
+> **In bundles-forge:** 8 skills form a lifecycle workflow — each skill's instructions tell the agent which skill to invoke next using the `bundles-forge:<name>` convention. See [How Skills Chain](#how-skills-chain).
+
+**[Plugin](https://code.claude.com/docs/en/plugins)** — The packaging and distribution unit. A directory containing `.claude-plugin/plugin.json` (manifest) plus any combination of skills, agents, hooks, MCP servers, LSP servers, commands, and output styles. Plugins namespace their components (`/plugin-name:skill-name`) to avoid conflicts. Distributed via marketplaces.
+
+> **In bundles-forge:** The project itself is a plugin with manifests for 5 platforms. It's also a toolkit for *building* other plugins — a bundle-plugin that builds bundle-plugins.
+
+**[Subagent](https://code.claude.com/docs/en/sub-agents)** — A specialized AI assistant running in its own context window with a custom system prompt, tool restrictions, and model selection. The main conversation delegates tasks to a subagent and receives only a summary back. Built-in subagents include Explore (read-only, fast), Plan (research for planning), and general-purpose (full tools). Custom subagents are defined as Markdown files in `agents/`.
+
+> **In bundles-forge:** Three read-only subagents — `inspector`, `auditor`, `evaluator` — are dispatched by skills for isolated validation work. See [Agent Dispatch](#agent-dispatch).
+>
+> **Design decision:** Users always interact through skills (slash commands), never by invoking agents directly. Skills orchestrate agent dispatch from the main conversation because they need pre/post logic (scope detection, report merging). Subagents cannot spawn other subagents — all orchestration stays in the skill layer.
+
+**[Hook](https://code.claude.com/docs/en/hooks)** — A shell command, HTTP endpoint, or LLM prompt that executes automatically at specific lifecycle events (`SessionStart`, `PreToolUse`, `PostToolUse`, `Stop`, `SubagentStart`, etc.). Hooks can block operations, inject context, or trigger side effects. Defined in `hooks/hooks.json` or settings.
+
+> **In bundles-forge:** The `session-start` hook reads the bootstrap skill and injects it into the agent's context, giving it awareness of all available skills at the start of every session. See [Session Bootstrap](#session-bootstrap).
+
+**[MCP (Model Context Protocol)](https://code.claude.com/docs/en/mcp)** — An open standard for connecting Claude to external tools and data sources (databases, APIs, issue trackers). MCP servers are configured via `.mcp.json` and provide tools, resources, and prompts. Plugins can bundle MCP servers that start automatically when the plugin is enabled.
+
+> **In bundles-forge:** The toolkit doesn't ship its own MCP server, but the `auditing` skill checks target projects for MCP configuration security issues across 5 attack surfaces.
+
+### Supplementary Concepts
+
+**[Command](https://code.claude.com/docs/en/skills)** — Slash commands (`/deploy`, `/audit`) that invoke skills. Commands have been merged into the skill system — a file at `.claude/commands/deploy.md` and a skill at `.claude/skills/deploy/SKILL.md` create the same `/deploy` command. Plugin `commands/` directories are still supported.
+
+> **In bundles-forge:** 6 `/bundles-*` commands serve as thin entry points that redirect to the corresponding skill. See [Command Execution](#command-execution).
+
+**[Marketplace](https://code.claude.com/docs/en/discover-plugins)** — A plugin catalog that hosts installable plugins. Supports GitHub repos, Git URLs, local paths, and remote URLs. The official Anthropic marketplace is available by default; teams can create private marketplaces.
+
+> **In bundles-forge:** Distributed through the official Anthropic marketplace (`claude plugin install bundles-forge`).
+
+**[LSP Server](https://code.claude.com/docs/en/plugins-reference#lsp-servers)** — Language Server Protocol integration that gives Claude real-time code intelligence: diagnostics after edits, go-to-definition, find-references, and hover information. Configured via `.lsp.json` in the plugin.
+
+> **In bundles-forge:** Not used — the toolkit focuses on skill/plugin engineering rather than language-specific code intelligence.
+
+**[Output Style](https://code.claude.com/docs/en/plugins-reference#plugin-directory-structure)** — Custom response formatting directives stored in `output-styles/` that change how Claude presents its output.
+
+> **In bundles-forge:** Not used.
+
+### How They Work Together in bundles-forge
+
+```mermaid
+flowchart LR
+    MP["Official Marketplace"] -->|distributes| BF
+
+    subgraph BF ["bundles-forge Plugin"]
+        HK["session-start Hook"]
+        CMD["6 /bundles-* Commands"]
+        SK["8 Skills"]
+        AG["3 Subagents"]
+    end
+
+    HK -->|"injects bootstrap context"| SK
+    CMD -->|"invokes via bundles-forge:name"| SK
+    SK -->|"dispatches read-only tasks"| AG
+    AG -->|"writes reports to .bundles-forge/"| SK
+    SK -->|"chains via prose instructions"| SK
+```
+
 ## Skills
 
 The 8 skills cover the full lifecycle of a bundle-plugin project:

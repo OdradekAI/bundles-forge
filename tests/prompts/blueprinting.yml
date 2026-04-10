@@ -1,0 +1,15 @@
+# Test prompts for the blueprinting skill.
+# should-trigger: inputs that should activate this skill.
+# should-not-trigger: inputs that should NOT activate this skill.
+
+should-trigger:
+  - "I want to create a new bundle-plugin for code review"
+  - "Help me plan a bundle-plugin that packages my existing skills"
+  - "I have a complex skill I want to split into a bundle-plugin"
+  - "I want to add three new skills to my existing bundle-plugin project"
+  - "I have a vague idea about packaging my skills, can you help?"
+
+should-not-trigger:
+  - "Generate the scaffolding for this project now"
+  - "Audit this project for security vulnerabilities"
+  - "Optimize my skill description for better triggering"

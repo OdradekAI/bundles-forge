@@ -1,0 +1,15 @@
+# Test prompts for the releasing skill.
+# should-trigger: inputs that should activate this skill.
+# should-not-trigger: inputs that should NOT activate this skill.
+
+should-trigger:
+  - "Release version 2.0.0 of my bundle-plugin"
+  - "Bump the version across all manifests"
+  - "I have version drift between my platform manifests"
+  - "Update the CHANGELOG and publish to the marketplace"
+  - "Set up version sync infrastructure for my project"
+
+should-not-trigger:
+  - "Plan a new bundle-plugin project"
+  - "Add Gemini CLI support to my project"
+  - "Optimize my skill description for better triggering"

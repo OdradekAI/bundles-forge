@@ -4,7 +4,7 @@ auditor-platform: "Cursor"
 auditor-model: "claude-4.6-opus"
 bundles-forge-version: "1.5.1"
 source-type: "local-directory"
-source-uri: "d:\\Luiz\\Odradek\\bundles-forge"
+source-uri: "~/Odradek/bundles-forge"
 os: "Windows 10 (10.0.22631)"
 python: "3.12.7"
 ---
@@ -15,7 +15,7 @@ python: "3.12.7"
 
 | Field | Value |
 |-------|-------|
-| **Target** | `d:\Luiz\Odradek\bundles-forge` |
+| **Target** | `~/Odradek/bundles-forge` |
 | **Version** | `1.5.1` |
 | **Commit** | `f89d457` |
 | **Date** | `2026-04-10` |

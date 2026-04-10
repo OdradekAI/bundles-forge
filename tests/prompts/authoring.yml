@@ -1,0 +1,14 @@
+# Test prompts for the authoring skill.
+# should-trigger: inputs that should activate this skill.
+# should-not-trigger: inputs that should NOT activate this skill.
+
+should-trigger:
+  - "Help me write the SKILL.md for my new skill"
+  - "Improve the description in my skill's frontmatter"
+  - "My skill instructions are too long, help me restructure them"
+  - "What's the correct format for a SKILL.md frontmatter?"
+
+should-not-trigger:
+  - "Audit this project for quality issues"
+  - "Generate the project scaffolding from this design"
+  - "Add Cursor support to my bundle-plugin"

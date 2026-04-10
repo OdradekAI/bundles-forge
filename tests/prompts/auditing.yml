@@ -1,0 +1,15 @@
+# Test prompts for the auditing skill.
+# should-trigger: inputs that should activate this skill.
+# should-not-trigger: inputs that should NOT activate this skill.
+
+should-trigger:
+  - "Audit this bundle-plugin project for quality issues"
+  - "Run a security scan on my bundle-plugin"
+  - "Check this project for version drift and structural problems"
+  - "Review this skill for security risks before I install it"
+  - "Is this third-party bundle-plugin safe to use?"
+
+should-not-trigger:
+  - "Help me write a new SKILL.md file"
+  - "I want to plan a new bundle-plugin from scratch"
+  - "Bump the version to 2.0.0 and publish"

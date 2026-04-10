@@ -56,15 +56,26 @@ _BACKTICK_REF_RE = re.compile(r"`([a-z0-9-]+):([a-z0-9-]+)`")
 # ---------------------------------------------------------------------------
 
 def compute_baseline_score(findings):
+    """Deterministic baseline: 10 minus capped penalties.
+
+    Warnings from the same check-ID are capped at -3 per ID.
+    """
+    from collections import Counter
     critical = sum(1 for f in findings if f.get("severity") == "critical")
-    warning = sum(1 for f in findings if f.get("severity") == "warning")
-    return max(0, 10 - (critical * 3 + warning * 1))
+    warning_checks = Counter(
+        f.get("check", "?") for f in findings
+        if f.get("severity") == "warning"
+    )
+    warning_penalty = sum(min(count, 3) for count in warning_checks.values())
+    return max(0, 10 - (critical * 3 + warning_penalty))
 
 
 def compute_weighted_average(scores):
     total_weight = 0
     weighted_sum = 0.0
     for layer, score in scores.items():
+        if score is None:
+            continue
         w = LAYER_WEIGHTS.get(layer, 1)
         weighted_sum += score * w
         total_weight += w
@@ -335,10 +346,11 @@ def run_workflow_audit(project_root, focus_skills=None):
     scores = {}
     for layer_name, layer_data in layers.items():
         if layer_data.get("skipped"):
-            scores[layer_name] = 10
+            scores[layer_name] = None
+            layer_data["baseline_score"] = None
         else:
             scores[layer_name] = compute_baseline_score(layer_data["findings"])
-        layer_data["baseline_score"] = scores[layer_name]
+            layer_data["baseline_score"] = scores[layer_name]
 
     overall_score = compute_weighted_average(scores)
 
@@ -430,9 +442,11 @@ def format_markdown(results, project_name):
     for layer_name, data in results["layers"].items():
         c = data["counts"]
         w = LAYER_WEIGHTS.get(layer_name, 1)
-        s = data.get("baseline_score", "—")
-        skipped = " (skipped)" if data.get("skipped") else ""
-        out.append(f"| {layer_name}{skipped} | {w} | {s}/10 "
+        skipped = data.get("skipped", False)
+        s = data.get("baseline_score")
+        score_str = "—/10 (skipped)" if skipped else f"{s}/10"
+        label = f"{layer_name} (skipped)" if skipped else layer_name
+        out.append(f"| {label} | {w} | {score_str} "
                    f"| {c.get('critical', 0)} | {c.get('warning', 0)} "
                    f"| {c.get('info', 0)} |")
 
