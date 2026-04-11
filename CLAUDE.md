@@ -28,6 +28,7 @@ python scripts/scan_security.py [project-root]     # 5-surface security scan
 python scripts/audit_project.py [project-root]     # combined audit (calls lint + scan + workflow)
 python scripts/audit_skill.py [skill-dir]          # single skill audit (4 categories)
 python scripts/audit_workflow.py [project-root]    # workflow integration audit (W1-W12)
+python scripts/check_docs.py [project-root]        # documentation consistency (6 checks: D1-D6)
 ```
 
 All scripts accept `--json` for machine-readable output. Exit codes: 0 = pass, 1 = warnings, 2 = critical.
@@ -89,6 +90,7 @@ Version is synchronized across these files (declared in `.version-bump.json`):
 - **Version bumps:** never edit version numbers manually — use `bump_version.py`
 - **Pre-commit:** run `python scripts/bump_version.py --check` to detect version drift
 - **Pre-release:** run `bundles-forge:auditing` for full quality + security check
+- **Pre-release:** run `python scripts/check_docs.py` to verify documentation consistency
 
 ## Security Rules
 

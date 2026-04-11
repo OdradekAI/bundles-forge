@@ -1,0 +1,283 @@
+# Releasing Guide
+
+Comprehensive guide to releasing bundle-plugins with Bundles Forge. Covers the full pipeline from pre-flight checks through publishing, including documentation consistency verification and change coherence review.
+
+## Overview
+
+The release pipeline is designed as a quality gate — not a formality. It ensures that every release is internally consistent, well-documented, and free of known defects. Users should complete all agent, skill, and workflow (plugin) development before starting the release process.
+
+| Phase | Steps | Tools | Blocking? |
+|-------|-------|-------|-----------|
+| Prerequisites | Clean git status, branch check, tag check | `git status`, `git tag -l` | Yes (dirty tree blocks) |
+| Pre-flight | Version drift, full audit, documentation consistency | `bump_version.py`, `audit_project.py`, `check_docs.py` | Yes (critical findings block) |
+| Address findings | Review and fix critical/warning issues | Manual + `bundles-forge:optimizing` | Yes (critical must resolve) |
+| Documentation sync | Change coherence review, doc updates | AI review + `check_docs.py` | Yes (contradictions block) |
+| Version bump | Update all manifests | `bump_version.py` | — |
+| Documentation update | CHANGELOG, README | Manual | — |
+| Final verification | Re-run all checks | `bump_version.py`, `check_docs.py` | Yes (must pass) |
+| Publish | Commit, tag, push, platform publish | `git`, `gh`, platform CLIs | — |
+
+---
+
+## Before You Start
+
+### Development Must Be Complete
+
+The releasing skill is the **last step** in the development lifecycle. Before invoking it, ensure:
+
+- All skill content is written and reviewed (`bundles-forge:authoring`)
+- Quality issues are resolved (`bundles-forge:auditing` → `bundles-forge:optimizing`)
+- Platform adapters are in place (`bundles-forge:porting`)
+- All changes are committed — `git status` shows a clean working tree
+
+### Choosing a Version Number
+
+| Change Type | Version Bump | Examples |
+|-------------|-------------|---------|
+| Breaking changes to skill behavior or structure | **Major** (X.0.0) | Renamed skills, changed workflow chain, removed skills |
+| New skills, new platform support, significant improvements | **Minor** (0.X.0) | Added a skill, added Gemini support, new agent |
+| Bug fixes, description improvements, doc updates | **Patch** (0.0.X) | Fixed description, updated README, typo fixes |
+
+---
+
+## The Pipeline Step by Step
+
+### Step 0: Prerequisites
+
+```bash
+# Working tree must be clean
+git status
+
+# Verify target tag doesn't exist
+git tag -l v1.6.0
+
+# Check current branch
+git branch --show-current
+```
+
+| Check | Requirement | If Failed |
+|-------|------------|-----------|
+| Working tree clean | Hard — pipeline blocked | Commit or stash all changes |
+| Target tag free | Soft — warning | Choose a different version number |
+| On main branch | Soft — warning | Confirm with user before proceeding |
+
+### Step 1: Pre-flight Checks
+
+Run all automated checks before proceeding:
+
+```bash
+# Version drift detection
+python scripts/bump_version.py --check
+
+# Full quality + security audit
+python scripts/audit_project.py .
+
+# Documentation consistency (6 checks)
+python scripts/check_docs.py .
+```
+
+**`check_docs.py` checks (D1–D6):**
+
+| Check | What It Verifies |
+|-------|-----------------|
+| D1 — Skill list sync | `skills/` directory matches CLAUDE.md, AGENTS.md, README.md, README.zh.md |
+| D2 — Cross-reference validity | All `bundles-forge:<name>` references point to existing `skills/<name>/` |
+| D3 — Platform manifest sync | CLAUDE.md Platform Manifests table matches `.version-bump.json` |
+| D4 — Script accuracy | Scripts referenced in CLAUDE.md exist in `scripts/` |
+| D5 — Agent list sync | Agents in CLAUDE.md match `agents/` directory |
+| D6 — README data sync | Hard data (skill names, commands, links) consistent between README.md and README.zh.md |
+
+### Step 2: Address Findings
+
+All findings from Step 1 are grouped by severity:
+
+| Severity | Action | Examples |
+|----------|--------|---------|
+| **Critical** | Must fix before release | Broken cross-references, security vulnerabilities, missing skills |
+| **Warning** | Recommend fixing, user decides | Documentation drift, missing table entries |
+| **Info** | Note for future | Undocumented scripts, minor inconsistencies |
+
+For quality fixes, invoke `bundles-forge:optimizing`.
+
+### Step 3: Documentation Sync
+
+This step combines automated checking with AI judgment.
+
+**3a. Change Coherence Review**
+
+Review the diff from the last release to HEAD:
+
+```bash
+# Summary of changed files
+git diff $(git describe --tags --abbrev=0)..HEAD --stat
+
+# Full diff for review
+git diff $(git describe --tags --abbrev=0)..HEAD
+```
+
+Look for:
+
+| Issue | Example | Severity |
+|-------|---------|----------|
+| Contradictions | "supports 5 platforms" in one file, "supports 4 platforms" in another | Critical |
+| Redundancy | Duplicated paragraphs across two SKILL.md files | Warning |
+| Over-engineering | Complex abstraction for a trivial feature | Warning |
+| Missing registrations | New skill not added to bootstrap routing, README, AGENTS.md | Critical |
+| Stale references | Old skill name used in prose after rename | Critical |
+
+**3b. Documentation Update**
+
+After resolving coherence issues, sync all project documentation:
+
+1. **`docs/`** — Fix outdated references to skills, scripts, architecture
+2. **`CLAUDE.md`** — Update skill count, lifecycle flow, commands, agents, manifests
+3. **`AGENTS.md`** — Update Available Skills table
+4. **`README.md` + `README.zh.md`** — Update Skills table, Agents table, Commands table, code blocks
+
+Re-run `check_docs.py` after making changes to confirm consistency.
+
+### Step 4: Version Bump
+
+```bash
+python scripts/bump_version.py <new-version>
+```
+
+This updates all files declared in `.version-bump.json` and runs a post-bump audit to catch any missed files.
+
+### Step 5: Documentation Update
+
+**CHANGELOG.md** — Use [Keep a Changelog](https://keepachangelog.com/) format:
+
+```markdown
+## [1.6.0] - 2026-04-11
+
+### Added
+- New documentation consistency checker (`check_docs.py`)
+- Enhanced releasing pipeline with 8-step verification
+
+### Changed
+- Releasing skill now requires clean git status before starting
+
+### Fixed
+- Cross-reference validation now excludes CHANGELOG.md historical entries
+```
+
+**Validation checklist:**
+- [ ] Format follows `## [version] - YYYY-MM-DD`
+- [ ] Version number matches the bumped version
+- [ ] Date is today
+- [ ] No duplicate version entries
+- [ ] Categories are valid (Added, Changed, Deprecated, Removed, Fixed, Security)
+
+### Step 6: Final Verification
+
+```bash
+python scripts/bump_version.py --check   # No version drift
+python scripts/bump_version.py --audit   # No stray version strings
+python scripts/check_docs.py .           # Documentation consistent
+```
+
+All three must exit with code 0 (clean) before publishing.
+
+### Step 7: Publish
+
+**Git + GitHub Release:**
+
+```bash
+git add -A
+git commit -m "release: v<version>"
+git tag v<version>
+git push origin main --tags
+```
+
+**GitHub Release (recommended):**
+
+```bash
+gh release create v<version> --title "v<version>" --notes-file CHANGELOG-EXCERPT.md
+```
+
+Generate `CHANGELOG-EXCERPT.md` from the current version's section in CHANGELOG.md. Delete the file after the release is created.
+
+**Platform-specific:**
+
+| Platform | Publishing Method |
+|----------|------------------|
+| Claude Code | `claude plugin publish` |
+| Cursor | Submit via Cursor plugin marketplace |
+| Codex | GitHub Release (users pull from git) |
+| OpenCode | GitHub Release (users pull from git) |
+| Gemini CLI | GitHub Release (users install from git URL) |
+
+---
+
+## Hotfix Releases
+
+For urgent fixes between planned releases:
+
+1. Fix the issue on `main` (or a dedicated hotfix branch)
+2. Run abbreviated pipeline:
+   - `bump_version.py --check` (version drift)
+   - `scan_security.py .` (security only)
+   - `check_docs.py .` (documentation consistency)
+3. Bump patch version
+4. Update CHANGELOG with `### Fixed` section only
+5. Publish
+
+Skip the full audit and change coherence review for hotfixes — speed matters. Run the full audit on the next regular release.
+
+---
+
+## Version Infrastructure Setup
+
+For new projects that don't have version management yet:
+
+1. Create `.version-bump.json` with entries for all version-bearing manifests
+2. Add `scripts/bump_version.py` (from scaffold templates or copy from bundles-forge)
+3. Verify: `python scripts/bump_version.py --check`
+4. Audit: `python scripts/bump_version.py --audit`
+
+See `bundles-forge:scaffolding` for full project setup including version infrastructure.
+
+---
+
+## Troubleshooting
+
+| Problem | Cause | Fix |
+|---------|-------|-----|
+| `bump_version.py --check` finds drift | Manual edit or missed file | Run `bump_version.py <correct-version>` to re-sync |
+| `check_docs.py` reports broken cross-refs | Skill renamed without updating references | Find-and-replace old name across all `.md` files |
+| `check_docs.py` reports skill list mismatch | New skill added but docs not updated | Add skill to AGENTS.md table, README tables, CLAUDE.md |
+| Tag already exists | Previous release attempt or version collision | Choose a different version or delete the tag with `git tag -d` |
+| `gh release create` fails | `gh` CLI not installed or not authenticated | Install with `gh auth login` or create release manually on GitHub web UI |
+| CHANGELOG has wrong format | Missing date, wrong version, invalid category | Follow Keep a Changelog format strictly |
+| Releasing from wrong branch | Feature branch instead of main | Merge to main first, or confirm with user that branch release is intentional |
+
+---
+
+## Quick Reference
+
+### Commands
+
+```bash
+python scripts/bump_version.py --check     # Detect version drift
+python scripts/bump_version.py --audit     # Find undeclared version strings
+python scripts/bump_version.py <version>   # Bump all manifests
+python scripts/check_docs.py .             # Documentation consistency check
+python scripts/audit_project.py .          # Full quality + security audit
+```
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | Clean — no issues found |
+| 1 | Warnings — review recommended |
+| 2 | Critical — must resolve before release |
+
+### Severity Levels
+
+| Level | Release Impact |
+|-------|---------------|
+| Critical | **Blocks release** — must fix |
+| Warning | **Review** — fix recommended, user decides |
+| Info | **Note** — no action required for release |

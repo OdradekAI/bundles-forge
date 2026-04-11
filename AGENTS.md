@@ -12,6 +12,7 @@ This is a bundle-plugin engineering toolkit supporting 5 platforms. It contains 
 - Cross-references: use `bundles-forge:<skill-name>` format
 - Run `python scripts/bump_version.py --check` before committing
 - Run `bundles-forge:auditing` before releases
+- Run `python scripts/check_docs.py` before releases (documentation consistency)
 
 ## Available Skills
 
