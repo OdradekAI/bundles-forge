@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.5.6] - 2026-04-11
+
+### Added
+
+- **`docs/concepts-guide.md`** — comprehensive concepts guide extracted from README, covering core concepts (Skill, Plugin, Subagent, Hook, MCP), key distinctions, design decisions, and architecture diagrams with links to official Claude documentation.
+- **`docs/blueprinting-guide.md`** — user-oriented guide for the blueprinting skill covering scenario selection, interview flow, tips, and troubleshooting.
+- **`docs/optimizing-guide.md`** — user-oriented guide for the optimizing skill covering 6 optimization targets, A/B evaluation, feedback iteration, and the audit-optimize cycle.
+- **Bilingual documentation** — Chinese translations (`.zh.md`) for all guides: concepts, auditing, releasing, blueprinting, and optimizing.
+- **`check_docs.py` D7 check** — guide language sync validation ensuring consistency between English and Chinese guide pairs in `docs/`.
+
+### Changed
+
+- **README.md / README.zh.md** — extracted Key Concepts into a concise summary table linking to `docs/concepts-guide.md`; removed redundant architecture sub-sections (Session Bootstrap, Skill Routing, How Skills Chain, Agent Dispatch) reducing file size by ~82 lines; fixed flowchart labels for precision (`pre-release check`, `platform targets`, `post-adaptation`).
+- **`CLAUDE.md`** — added `docs/` directory to layout; updated `check_docs.py` description to 7 checks (D1-D7).
+- **`docs/releasing-guide.md`** — updated to reflect D7 check in `check_docs.py` checks table.
+
 ## [1.5.5] - 2026-04-11
 
 ### Added
