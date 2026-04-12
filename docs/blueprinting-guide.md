@@ -2,15 +2,33 @@
 
 [中文](blueprinting-guide.zh.md)
 
-A user-oriented guide to planning bundle-plugins with Bundles Forge. Covers all three entry scenarios, decision-making guidance, real-world examples, and common pitfalls.
+A user-oriented guide to planning bundle-plugins with Bundles Forge. Covers scenario selection, the design interview, the automated creation pipeline, and common pitfalls.
 
 ## Overview
 
-Blueprinting is the **new-project orchestrator**: it runs the design interview and, after you approve the design document, coordinates the full creation pipeline. It turns a vague idea into a concrete design document through structured interview — before any code or project structure is generated.
+Blueprinting is the **new-project orchestrator**: it runs a structured design interview and, after you approve the design document, coordinates the full creation pipeline — scaffolding, content authoring, workflow wiring, and initial quality check. It turns a vague idea into a concrete design document before any code or project structure is generated.
 
 **Why it matters:** Five minutes of blueprinting saves hours of rework. Skipping this step is the #1 cause of poorly structured bundle-plugins that need complete restructuring later.
 
 > **Canonical source:** The full execution protocol (interview questions, scenario analysis steps, design document template) lives in `skills/blueprinting/SKILL.md`. This guide helps you decide *which* path to take and *what to expect* — the skill itself handles execution.
+
+---
+
+## Quick Start
+
+The fastest way to start a new bundle-plugin:
+
+1. **Invoke** `/bundles-blueprint` (or ask the agent to plan a new bundle-plugin)
+2. **Answer** the structured interview — one question at a time
+3. **Review and approve** the design document the agent produces
+4. **The agent takes over** — it automatically runs scaffolding → authoring → workflow design → auditing
+
+Two key decisions to make upfront:
+
+- **Minimal vs intelligent mode?** Minimal is for packaging a few standalone skills quickly (Claude Code only, no bootstrap). Intelligent is for orchestrated multi-skill projects with workflow chains. The agent asks you this as the first question.
+- **Already have a project?** Blueprinting creates *new* projects. To add skills, restructure workflows, or improve an existing project, use `/bundles-optimize` instead — see Target 7 in the [optimizing guide](optimizing-guide.md).
+
+For details on each step, read on.
 
 ---
 
@@ -42,9 +60,9 @@ Do you have an existing bundle-plugin project?
 
 ---
 
-## Scenario A: New Project from Scratch
+## The Interview
 
-**The most common path.** You have an idea for a bundle-plugin and want to plan it properly.
+**The most common path (Scenario A).** You have an idea for a bundle-plugin and want to plan it properly.
 
 ### What to Expect
 
@@ -69,6 +87,7 @@ Questions 3b, 4, 5, and 6 are only asked in **intelligent mode** (orchestrated m
 |---|---|---|
 | **Use when** | Bundling standalone skills for distribution | Building an orchestrated workflow |
 | **Interview depth** | 4 questions (name, platforms, skills, done) | 7+ questions with conditional follow-ups |
+| **Default platform** | Claude Code only | User-selected |
 | **Bootstrap** | Skipped (not needed) | Recommended for 3+ skills |
 | **Commands** | Not generated | Entry-point skills get matching commands |
 | **Duration** | 2-3 minutes | 5-10 minutes |
@@ -84,11 +103,15 @@ Questions 3b, 4, 5, and 6 are only asked in **intelligent mode** (orchestrated m
 
 ---
 
-## Scenario B: Decomposition (Splitting a Large Skill)
+## Advanced Scenarios
+
+Most users follow the standard interview (Scenario A). These two scenarios handle specialized starting points — both feed into the same interview to finalize project details.
+
+### Scenario B: Decomposition (Splitting a Large Skill)
 
 **You have a SKILL.md that has grown too complex** — too many responsibilities, branching logic, or approaching the 500-line limit.
 
-### Signs You Need Decomposition
+**Signs you need decomposition:**
 
 | Signal | What It Means |
 |--------|--------------|
@@ -97,30 +120,20 @@ Questions 3b, 4, 5, and 6 are only asked in **intelligent mode** (orchestrated m
 | Steps that can be skipped entirely in some cases | Optional steps should be separate skills in a chain |
 | Heavy reference material for specific subtasks | Subtask should be its own skill with its own `references/` |
 
-### What to Expect
+**What to expect:**
 
 1. The skill reads your existing SKILL.md and maps its responsibilities
 2. It identifies natural split points based on the signals above
 3. It proposes a decomposition: which pieces become skills, which become shared resources
-4. After you approve, it transitions into the Scenario A interview for remaining project details
+4. After you approve, it transitions into the standard interview for remaining project details
 
-### Common Decomposition Patterns
+**Common patterns:** branch split (if/else branches → separate skills), pipeline extract (sequential phases → chained skills), reference extraction (inline tables → `references/` files). Not every large skill needs decomposition — if the skill is long but has a single clear responsibility, extract to `references/` instead.
 
-| Pattern | Before | After |
-|---------|--------|-------|
-| **Branch split** | One skill with 3 major if/else branches | 3 skills, each handling one branch, orchestrated by a parent |
-| **Pipeline extract** | One skill with sequential phases | Phase skills chained via workflow |
-| **Reference extraction** | One skill with inline reference tables | Core skill + reference files in `references/` (not a separate skill) |
-
-**Important:** Not every large skill needs decomposition. If the skill is long but has a single clear responsibility, extract to `references/` instead of splitting into multiple skills.
-
----
-
-## Scenario C: Composition (Combining Multiple Skills)
+### Scenario C: Composition (Combining Multiple Skills)
 
 **You have several independent skills and want them to work as a coordinated bundle-plugin.**
 
-### What to Expect
+**What to expect:**
 
 1. The skill inventories all candidate skills (source, structure, quality, license)
 2. It checks compatibility (naming conflicts, overlapping responsibilities, style consistency)
@@ -128,17 +141,17 @@ Questions 3b, 4, 5, and 6 are only asked in **intelligent mode** (orchestrated m
    - **Repackage as-is** — bundle without modification (source attribution added)
    - **Integrate into workflow** — adapt descriptions, cross-references, and handoffs
 4. It designs the orchestration (workflow chains, glue skills, shared resources, bootstrap)
-5. After you approve, it transitions into the Scenario A interview for remaining details
+5. After you approve, it transitions into the standard interview for remaining details
 
-### Third-Party Skill Handling
+**Third-party skill handling:**
 
 | Step | Required? | Purpose |
 |------|:-:|---------|
 | License check | Yes | Ensure license compatibility before copying |
 | Security audit | Yes | Run `bundles-forge:auditing` on imported content |
 | Source attribution | Yes | Add provenance header to copied SKILL.md |
-| Description rewrite | Only for Intent B | Adapt triggering conditions to new context |
-| Cross-reference rewrite | Only for Intent B | Change `old-project:skill` → `new-project:skill` |
+| Description rewrite | Only for workflow integration | Adapt triggering conditions to new context |
+| Cross-reference rewrite | Only for workflow integration | Change `old-project:skill` → `new-project:skill` |
 
 **Never auto-install third-party skills with unresolved critical security findings.**
 
@@ -181,7 +194,7 @@ All scenarios produce a design document with this structure:
 
 ---
 
-## After Blueprinting
+## The Pipeline: What Happens After Approval
 
 When the design document is approved, **blueprinting orchestrates** a four-phase pipeline. This is not a single automatic handoff only to scaffolding; the orchestrator drives each stage in order:
 
@@ -198,14 +211,40 @@ The agent carries your approved design document through these phases. **Authorin
 
 ---
 
-## Troubleshooting
+## FAQ
 
-| Problem | Cause | Fix |
-|---------|-------|-----|
-| Agent jumps to scaffolding without interviewing | Skill wasn't loaded or user said "just generate it" | Explicitly invoke `/bundles-blueprint` |
-| Interview asks too many questions | Intelligent mode for a simple project | Answer "quick packaging" at question 0 |
-| Interview asks too few questions | Minimal mode for a complex project | Restart and answer "orchestrated multi-skill" at question 0 |
-| Design document has wrong platform | Answered platform question too quickly | Edit the design document before approving |
-| Third-party skill fails security audit | Imported skill has risky patterns | Fix the issues or exclude the skill |
-| Not sure which scenario to pick | Multiple apply | Follow the decision flowchart above |
-| Want to add skills to an existing project | Used blueprinting instead of optimizing | Use `/bundles-optimize` — Target 7 handles skill integration |
+**Q: The agent jumps straight to scaffolding without interviewing me. What happened?**
+
+The skill wasn't loaded, or you said something like "just generate it" that bypassed the interview. Explicitly invoke `/bundles-blueprint` to ensure the full interview runs.
+
+**Q: The interview is asking too many questions for my simple project.**
+
+You're in intelligent mode. At question 0, answer "quick packaging" (or "minimal") to use the shorter interview flow with only 4 questions.
+
+**Q: The interview is too short — it skipped important questions.**
+
+You're in minimal mode. Restart and answer "orchestrated multi-skill" at question 0 to get the full intelligent-mode interview with conditional follow-ups.
+
+**Q: The design document has the wrong platform listed.**
+
+Edit the design document before approving — the agent presents it for your review. You can change platforms, skill names, or any other field before giving approval.
+
+**Q: A third-party skill fails the security audit.**
+
+Fix the security issues in the imported skill, or exclude it from the composition. Never approve a design that includes third-party skills with unresolved critical security findings.
+
+**Q: I'm not sure which scenario to pick.**
+
+Follow the decision flowchart in the "Choosing a Scenario" section. When in doubt, start with Scenario A (new project) — the agent can adapt if it turns out you need decomposition or composition.
+
+**Q: I want to add skills to an existing project, not create a new one.**
+
+Use `/bundles-optimize` instead — Target 7 (Skill & Workflow Restructuring) handles adding, replacing, and reorganizing skills in existing projects. Blueprinting is only for creating new projects.
+
+**Q: What's the difference between blueprinting and scaffolding?**
+
+Blueprinting is the *planning* phase — it interviews you and produces a design document. Scaffolding is the *execution* phase — it reads the design and generates the actual project files. For platform adaptation on existing projects, you skip blueprinting entirely and invoke scaffolding directly.
+
+**Q: Can I skip blueprinting and scaffold directly?**
+
+Yes, but only for platform adaptation (adding/removing platform support on an existing project). For new projects, skipping the interview means the agent has to guess your requirements — which leads to rework. Five minutes of blueprinting is almost always worth it.
