@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.6.2] - 2026-04-12
+
+### Changed
+
+- **`scripts/scan_security.py` confidence layer** — rules now carry a `confidence` field (`deterministic` or `suspicious`). Context-sensitive regex matches in natural-language content (SKILL.md, references/, agent prompts) are classified as `suspicious` and excluded from scoring and exit codes. Deterministic rules in executable code (hooks, plugins, scripts) remain fully scored. Report output separates suspicious items into a "needs review" section.
+- **`scripts/audit_project.py` scoring** — `compute_baseline_score()` filters out suspicious findings; `_flat_findings()` propagates confidence; markdown output adds a "Suspicious (needs review)" section; T8 (missing A/B eval) downgraded from warning to info.
+- **`scripts/audit_skill.py` scoring** — `compute_baseline_score()` aligned with audit_project.py to filter suspicious findings.
+- **`scripts/check_docs.py` D6 bilingual link comparison** — `.zh.md` suffix now treated as equivalent to `.md` when comparing README link sets, eliminating false asymmetry reports.
+
+### Fixed
+
+- **Security scan false positives** — SEC-001 through SEC-004 (4 critical findings in reference docs) no longer inflate scores or block CI/CD. Root cause: regex patterns matched documentation *about* security risks, not actual risk instructions.
+
+### Added
+
+- **Pure-Python bootstrap tests** — `TestBootstrapInjection` rewritten to simulate hook logic in Python, removing bash dependency. All 5 previously-skipped tests now run on Windows. Original bash tests retained as additional validation when bash is available.
+- **Confidence field tests** — 4 new tests in `TestScanSecurity` verify confidence field presence, suspicious exclusion from exit code, and summary structure.
+- **`examples/bundles-forge-v1.6.1-audit.zh.md`** — v1.6.1 audit report (Chinese).
+
 ## [1.6.1] - 2026-04-12
 
 ### Added
