@@ -7,11 +7,17 @@ Scans 7 attack surfaces — SKILL.md files, hook scripts, hook configs
 MCP configs — for patterns that could exfiltrate data, destroy
 resources, install backdoors, or override safety controls.
 
+Each rule has a confidence level:
+  - deterministic: unambiguous in executable code; affects score and exit code.
+  - suspicious: context-sensitive (e.g. docs referencing .env); shown in
+    report as "needs review" but does NOT affect score or exit code.
+
 Usage:
     python scripts/scan_security.py [project-root]
     python scripts/scan_security.py --json [project-root]
 
 Exit codes: 0 = clean, 1 = warnings only, 2 = critical findings
+           (only deterministic findings affect exit codes)
 """
 
 import json
@@ -20,84 +26,93 @@ import sys
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
-# Rule definitions — (check_id, risk, regex_pattern, description)
+# Rule definitions — (check_id, risk, regex_pattern, description, confidence)
+#
+# confidence: "deterministic" = unambiguous in executable code, counts toward
+#             score and exit code.  "suspicious" = context-sensitive, needs
+#             model review; shown in report but does NOT affect score/exit.
 # Rules with pattern=None use custom logic in scan_file().
 # ---------------------------------------------------------------------------
 
+_DET = "deterministic"
+_SUS = "suspicious"
+
+
 def _compile(pairs):
-    return [(cid, risk, re.compile(pat, re.IGNORECASE) if pat else None, desc)
-            for cid, risk, pat, desc in pairs]
+    return [(cid, risk, re.compile(pat, re.IGNORECASE) if pat else None, desc, conf)
+            for cid, risk, pat, desc, conf in pairs]
 
 SKILL_CONTENT_RULES = _compile([
     ("SC1", "critical", r"\.(env|ssh/|credentials|secrets|tokens|api_key)\b",
-     "References to sensitive files/directories"),
+     "References to sensitive files/directories", _SUS),
     ("SC2", "critical", r"send.*(external|remote|server)|exfiltrat|upload.*secret",
-     "Instructions to send data externally"),
+     "Instructions to send data externally", _SUS),
     ("SC3", "warning", r"~/\.(config|aws|kube|gcloud)/",
-     "References to user config directories"),
+     "References to user config directories", _SUS),
     ("SC4", "warning", r"process\.env|(\$ENV\b)|\$[A-Z_]*API[_]?KEY",
-     "Environment variable access beyond documented needs"),
+     "Environment variable access beyond documented needs", _SUS),
     ("SC5", "critical", r"rm\s+-rf\s+[/~]|rmdir\s+/s|del\s+/[fq]",
-     "Destructive file deletion on broad paths"),
+     "Destructive file deletion on broad paths", _DET),
     ("SC6", "critical", r"git\s+push\s+--force|git\s+reset\s+--hard",
-     "Force push or hard reset"),
+     "Force push or hard reset", _DET),
     ("SC7", "critical", r"DROP\s+TABLE|DELETE\s+FROM(?!.*WHERE)",
-     "Destructive database operations"),
+     "Destructive database operations", _DET),
     ("SC8", "warning", r"overwrite.*outside|modify.*outside.*project",
-     "Modifying files outside the project directory"),
+     "Modifying files outside the project directory", _DET),
     ("SC9", "critical", r"ignore\s+(previous\s+)?instructions|override\s+safety|disable\s+verification",
-     "Safety override instructions"),
+     "Safety override instructions", _DET),
     ("SC10", "critical", r"--no-verify|bypass\s+lint|disable\s+test|skip\s+hook",
-     "Instructions to skip safety checks"),
+     "Instructions to skip safety checks", _DET),
     ("SC11", "warning", r"highest\s+priority|override\s+(all|user)|supersede",
-     "Claims priority over user instructions"),
-    ("SC15", "info", None, "Excessively long line (>500 chars)"),
+     "Claims priority over user instructions", _SUS),
+    ("SC15", "info", None, "Excessively long line (>500 chars)", _SUS),
 ])
 
 HOOK_RULES = _compile([
     ("HK1", "critical", r"\b(curl|wget|nc|ncat|telnet)\b",
-     "Network command in hook script"),
+     "Network command in hook script", _DET),
     ("HK2", "critical", r"https?://(?!localhost|127\.0\.0\.1)",
-     "External URL"),
+     "External URL", _DET),
     ("HK3", "critical", r"\$[A-Z_]+.*\|\s*(curl|wget|nc)|cat.*\|\s*(curl|wget|nc)",
-     "Piping data to network commands"),
+     "Piping data to network commands", _DET),
     ("HK4", "warning", r"\b(dig|nslookup|host)\s",
-     "DNS lookup that could encode data"),
+     "DNS lookup that could encode data", _DET),
     ("HK5", "critical", r"(ANTHROPIC|OPENAI|GITHUB|AZURE|GCP|AWS)_?(API_?)?KEY|GITHUB_TOKEN",
-     "Reading API keys or secrets"),
-    ("HK6", "warning", None, "Env var access beyond allowed set (custom check)"),
-    ("HK7", "info", None, "Missing set -euo pipefail"),
+     "Reading API keys or secrets", _DET),
+    ("HK6", "warning", None,
+     "Env var access beyond allowed set (custom check)", _DET),
+    ("HK7", "info", None, "Missing set -euo pipefail", _DET),
     ("HK8", "critical", r"\.(bashrc|zshrc|profile|bash_profile)\b",
-     "Writing to shell config files"),
+     "Writing to shell config files", _DET),
     ("HK9", "critical", r"\b(crontab|systemctl|launchctl)\b",
-     "Creating persistent services"),
+     "Creating persistent services", _DET),
     ("HK10", "critical", r"npm\s+(-g|install\s+-g)|pip\s+install\s+--user",
-     "Installing global packages"),
+     "Installing global packages", _DET),
     ("HK11", "warning", r"(?<![a-zA-Z_-])(>|>>)\s*/(?!dev/null)|mkdir\s+-p\s+/(?!tmp)",
-     "Creating files outside project directory"),
+     "Creating files outside project directory", _DET),
     ("HK12", "warning", r"chmod\s+[2467]",
-     "chmod with setuid/setgid bits"),
+     "chmod with setuid/setgid bits", _DET),
 ])
 
 OPENCODE_RULES = _compile([
     ("OC1", "critical", r"\beval\s*\(|new\s+Function\s*\(|vm\.runIn",
-     "Dynamic code execution"),
+     "Dynamic code execution", _DET),
     ("OC2", "critical", r"child_process\.(exec|spawn)|execSync",
-     "Child process execution"),
+     "Child process execution", _DET),
     ("OC3", "critical", r"require\s*\(\s*['\"]child_process|import\s*\(\s*['\"]child_process",
-     "Importing child_process module"),
+     "Importing child_process module", _DET),
     ("OC4", "warning", r"require\s*\([^'\"]+\)|import\s*\([^'\"]+\)",
-     "Dynamic require/import with variable paths"),
+     "Dynamic require/import with variable paths", _DET),
     ("OC5", "critical", r"\bfetch\s*\(|http\.request|https\.request|net\.connect",
-     "Network requests"),
+     "Network requests", _DET),
     ("OC6", "critical", r"\bWebSocket\b",
-     "WebSocket connections"),
+     "WebSocket connections", _DET),
     ("OC7", "warning", r"require\s*\(\s*['\"](?:http|https|net|dgram|dns)['\"]",
-     "Network-related module imports"),
+     "Network-related module imports", _DET),
     ("OC8", "critical", r"process\.env\.(ANTHROPIC|OPENAI|GITHUB|AZURE|AWS)",
-     "Accessing API key environment variables"),
+     "Accessing API key environment variables", _DET),
     ("OC9", "warning", r"process\.env\b",
-     "Broad process.env access"),
+     "Broad process.env access", _DET),
 ])
 
 MCP_RULES = [
@@ -105,28 +120,28 @@ MCP_RULES = [
         r"""(?:['"](?:Authorization|api[_-]?key|token|secret|password)['"]"""
         r"""\s*:\s*['"][^${']+['"])""",
         re.IGNORECASE),
-     "Hardcoded credential in MCP server config"),
+     "Hardcoded credential in MCP server config", _DET),
     ("MC2", "critical", re.compile(r'"headersHelper"', re.IGNORECASE),
-     "headersHelper field executes arbitrary shell commands"),
+     "headersHelper field executes arbitrary shell commands", _DET),
     ("MC3", "warning", None,
-     "Env var value embedded directly instead of using ${VAR} expansion"),
+     "Env var value embedded directly instead of using ${VAR} expansion", _DET),
     ("MC4", "warning", re.compile(r'"url"\s*:\s*"http://(?!localhost|127\.0\.0\.1)', re.IGNORECASE),
-     "MCP server URL uses plain HTTP instead of HTTPS"),
+     "MCP server URL uses plain HTTP instead of HTTPS", _DET),
     ("MC5", "info", re.compile(r'"command"\s*:\s*"/(?!dev/null)', re.IGNORECASE),
-     "Absolute path in command field (may not be portable)"),
+     "Absolute path in command field (may not be portable)", _DET),
 ]
 
 AGENT_RULES = _compile([
     ("AG1", "critical", r"ignore.*(safety|guideline|instruction)|override.*(safety|rule)|bypass.*(safety|security)",
-     "Safety override instructions in agent prompt"),
+     "Safety override instructions in agent prompt", _SUS),
     ("AG2", "critical", r"(access|read|use).*(credential|secret|api.?key|token)",
-     "Instructions to access credentials"),
+     "Instructions to access credentials", _SUS),
     ("AG3", "critical", r"(make|send|perform).*(network|http|request)|exfiltrat|upload",
-     "Instructions to make network requests"),
+     "Instructions to make network requests", _SUS),
     ("AG4", "warning", r"full\s+(system\s+)?access|unrestricted|any\s+file",
-     "Overly broad permission claims"),
+     "Overly broad permission claims", _SUS),
     ("AG5", "warning", r"elevated\s+perm|admin\s+access|root\s+access|sudo",
-     "Elevated permission claims"),
+     "Elevated permission claims", _SUS),
 ])
 
 _NEGATIVE_CONTEXT_RE = re.compile(
@@ -141,16 +156,16 @@ _USER_PRIORITY_CONTEXT_RE = re.compile(
 
 SCRIPT_RULES = _compile([
     ("BS1", "critical", r"\b(curl|wget)\b",
-     "Network calls in bundled script"),
+     "Network calls in bundled script", _DET),
     ("BS2", "critical", r"\.(bashrc|zshrc|profile)|crontab|systemctl|npm\s+-g",
-     "System modification patterns"),
+     "System modification patterns", _DET),
     ("BS3", "critical", r"(ANTHROPIC|OPENAI|GITHUB)_?(API_?)?KEY|\.(env|ssh/|credentials)",
-     "Accessing sensitive files or secrets"),
+     "Accessing sensitive files or secrets", _DET),
     ("BS4", "warning", r"\beval\b.*\$|exec\b.*\$",
-     "Unsanitized input passed to eval/exec"),
+     "Unsanitized input passed to eval/exec", _DET),
     ("BS5", "warning", r"curl.*\|\s*(ba)?sh|wget.*\|\s*(ba)?sh",
-     "Download and execute remote code"),
-    ("BS6", "info", None, "Missing set -euo pipefail"),
+     "Download and execute remote code", _DET),
+    ("BS6", "info", None, "Missing set -euo pipefail", _DET),
 ])
 
 # ---------------------------------------------------------------------------
@@ -213,14 +228,14 @@ def _scan_mcp_config(path, rel_path):
     findings = []
     lines = content.splitlines()
 
-    for check_id, risk, pattern, desc in MCP_RULES:
+    for check_id, risk, pattern, desc, confidence in MCP_RULES:
         if pattern is None:
             continue
         for line_num, line in enumerate(lines, 1):
             if pattern.search(line):
                 findings.append(dict(
                     check_id=check_id, risk=risk, line=line_num,
-                    description=desc))
+                    description=desc, confidence=confidence))
 
     for srv_name, srv_cfg in servers.items():
         if not isinstance(srv_cfg, dict):
@@ -234,7 +249,8 @@ def _scan_mcp_config(path, rel_path):
                         findings.append(dict(
                             check_id="MC3", risk="warning", line=0,
                             description=f"Env var '{key}' in server '{srv_name}' "
-                                        f"may contain a secret — use ${{VAR}} expansion"))
+                                        f"may contain a secret — use ${{VAR}} expansion",
+                            confidence=_DET))
 
     return findings
 
@@ -259,14 +275,16 @@ def _scan_hook_config(path, rel_path):
         if http_re.search(line):
             findings.append(dict(
                 check_id="HK13", risk="critical", line=line_num,
-                description="HTTP hook detected — may exfiltrate tool input/output to external URL"))
+                description="HTTP hook detected — may exfiltrate tool input/output to external URL",
+                confidence=_DET))
 
     url_re = re.compile(r'"url"\s*:\s*"https?://(?!localhost|127\.0\.0\.1)', re.IGNORECASE)
     for line_num, line in enumerate(lines, 1):
         if url_re.search(line):
             findings.append(dict(
                 check_id="HK14", risk="critical", line=line_num,
-                description="External URL in hook config — verify destination is trusted"))
+                description="External URL in hook config — verify destination is trusted",
+                confidence=_DET))
 
     return findings
 
@@ -304,13 +322,15 @@ def scan_file(path, rel_path, file_type):
                           0x202A, 0x202B, 0x202C, 0x202D, 0x202E):
                     findings.append(dict(
                         check_id="SC13", risk="critical", line=line_num,
-                        description=f"Unicode control character U+{cp:04X}"))
+                        description=f"Unicode control character U+{cp:04X}",
+                        confidence=_DET))
 
         # SC15: long lines
         if file_type == "skill_content" and len(line) > 500:
             findings.append(dict(
                 check_id="SC15", risk="info", line=line_num,
-                description=f"Line length {len(line)} chars"))
+                description=f"Line length {len(line)} chars",
+                confidence=_SUS))
             continue
 
         # HK6: env var allowlist (custom)
@@ -320,16 +340,18 @@ def scan_file(path, rel_path, file_type):
                 if var not in ALLOWED_HOOK_ENV_VARS:
                     findings.append(dict(
                         check_id="HK6", risk="warning", line=line_num,
-                        description=f"Env var access: ${var}"))
+                        description=f"Env var access: ${var}",
+                        confidence=_DET))
 
         # HK15: CLAUDE_ENV_FILE write detection
         if file_type == "hook_script":
             if re.search(r">>?\s*[\"']?\$\{?CLAUDE_ENV_FILE\}?", line):
                 findings.append(dict(
                     check_id="HK15", risk="warning", line=line_num,
-                    description="Writing to CLAUDE_ENV_FILE — injects env vars into all subsequent Bash commands"))
+                    description="Writing to CLAUDE_ENV_FILE — injects env vars into all subsequent Bash commands",
+                    confidence=_DET))
 
-        for check_id, risk, pattern, desc in rules:
+        for check_id, risk, pattern, desc, confidence in rules:
             if pattern is None or check_id == "HK6":
                 continue
             if pattern.search(line):
@@ -339,7 +361,7 @@ def scan_file(path, rel_path, file_type):
                     continue
                 findings.append(dict(
                     check_id=check_id, risk=risk, line=line_num,
-                    description=desc))
+                    description=desc, confidence=confidence))
 
     # HK7 / BS6: missing error handling
     if file_type in ("hook_script", "bundled_script") and not has_pipefail:
@@ -348,7 +370,8 @@ def scan_file(path, rel_path, file_type):
             cid = "HK7" if file_type == "hook_script" else "BS6"
             findings.append(dict(
                 check_id=cid, risk="info", line=1,
-                description="Missing set -euo pipefail"))
+                description="Missing set -euo pipefail",
+                confidence=_DET))
 
     return findings
 
@@ -386,7 +409,10 @@ def run_scan(project_root):
     project_root = Path(project_root).resolve()
     self_path = Path(__file__).resolve()
     all_files = collect_scannable_files(project_root)
-    results = {"files": [], "summary": {"critical": 0, "warning": 0, "info": 0}}
+    results = {"files": [], "summary": {
+        "critical": 0, "warning": 0, "info": 0,
+        "suspicious_critical": 0, "suspicious_warning": 0,
+    }}
 
     for f in all_files:
         if f.resolve() == self_path:
@@ -404,8 +430,12 @@ def run_scan(project_root):
             "counts": {"critical": 0, "warning": 0, "info": 0},
         }
         for finding in findings:
-            file_result["counts"][finding["risk"]] += 1
-            results["summary"][finding["risk"]] += 1
+            is_suspicious = finding.get("confidence") == "suspicious"
+            if is_suspicious and finding["risk"] in ("critical", "warning"):
+                results["summary"][f"suspicious_{finding['risk']}"] += 1
+            else:
+                file_result["counts"][finding["risk"]] += 1
+                results["summary"][finding["risk"]] += 1
         results["files"].append(file_result)
 
     return results
@@ -416,11 +446,17 @@ def run_scan(project_root):
 
 def format_markdown(results, project_name):
     s = results["summary"]
+    sus_c = s.get("suspicious_critical", 0)
+    sus_w = s.get("suspicious_warning", 0)
     out = [
         f"## Security Scan: {project_name}\n",
         f"**Files scanned:** {len(results['files'])}",
-        f"**Risk summary:** {s['critical']} critical, {s['warning']} warnings, {s['info']} info\n",
+        f"**Risk summary:** {s['critical']} critical, {s['warning']} warnings, {s['info']} info",
     ]
+    if sus_c or sus_w:
+        out.append(f"**Suspicious (needs review):** {sus_c} critical, {sus_w} warnings")
+    out.append("")
+
     for level, heading in [
         ("critical", "### Critical Risks"),
         ("warning", "### Warnings"),
@@ -429,13 +465,25 @@ def format_markdown(results, project_name):
         items = []
         for fr in results["files"]:
             for f in fr["findings"]:
-                if f["risk"] == level:
+                if f["risk"] == level and f.get("confidence") != "suspicious":
                     items.append(
                         f"- [{f['check_id']}] {fr['file']}:{f['line']} — {f['description']}")
         if items:
             out.append(heading)
             out.extend(items)
             out.append("")
+
+    sus_items = []
+    for fr in results["files"]:
+        for f in fr["findings"]:
+            if f.get("confidence") == "suspicious" and f["risk"] in ("critical", "warning"):
+                sus_items.append(
+                    f"- [{f['check_id']}] {fr['file']}:{f['line']} — "
+                    f"{f['description']} ({f['risk']})")
+    if sus_items:
+        out.append("### Suspicious (needs review)\n")
+        out.extend(sus_items)
+        out.append("")
 
     out.append("### Files Scanned\n")
     out.append("| File | Type | Critical | Warning | Info |")

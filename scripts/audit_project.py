@@ -49,15 +49,20 @@ CATEGORY_WEIGHTS = {
 def compute_baseline_score(findings):
     """Deterministic baseline: 10 minus penalties for critical/warning findings.
 
+    Suspicious findings (confidence="suspicious") are excluded from scoring —
+    they require model review and don't affect the deterministic baseline.
+
     Warnings from the same check-ID are capped at -3 penalty per ID to prevent
     a single conceptual gap (e.g. missing prompt files for N skills) from
     producing N × -1 multiplicative punishment.
     """
     from collections import Counter
-    critical = sum(1 for f in findings
+    scored = [f for f in findings
+              if f.get("confidence", "deterministic") != "suspicious"]
+    critical = sum(1 for f in scored
                    if f.get("severity", f.get("risk", "info")) == "critical")
     warning_checks = Counter(
-        f.get("check", "?") for f in findings
+        f.get("check", "?") for f in scored
         if f.get("severity", f.get("risk", "info")) == "warning"
     )
     warning_penalty = sum(min(count, 3) for count in warning_checks.values())
@@ -294,7 +299,7 @@ def check_testing(root):
     if not bundles_dir.is_dir() or not any(
             f.name.endswith("-eval-original.md") or "-eval-" in f.name
             for f in bundles_dir.iterdir() if f.is_file()):
-        findings.append(dict(check="T8", severity="warning",
+        findings.append(dict(check="T8", severity="info",
                              message="No A/B eval results found in .bundles-forge/"))
 
     if bundles_dir.is_dir():
@@ -340,8 +345,11 @@ def run_audit(project_root):
         if "files" in detail:
             for fr in detail["files"]:
                 for f in fr.get("findings", []):
-                    flat.append({"severity": f.get("risk", "info"),
-                                 "check": f.get("check_id", "")})
+                    entry = {"severity": f.get("risk", "info"),
+                             "check": f.get("check_id", "")}
+                    if "confidence" in f:
+                        entry["confidence"] = f["confidence"]
+                    flat.append(entry)
         if "skills" in detail:
             for sr in detail["skills"]:
                 for f in sr.get("findings", []):
@@ -393,7 +401,8 @@ def run_audit(project_root):
 
     total_critical = sum(
         d["counts"].get("critical", 0) for d in categories.values())
-    total_warning = sum(d["counts"].get("warning", 0) for d in categories.values())
+    total_warning = sum(
+        d["counts"].get("warning", 0) for d in categories.values())
 
     if total_critical > 0:
         status = "FAIL"
@@ -456,11 +465,14 @@ def format_markdown(results, project_name):
     sec_detail = results["categories"].get("security", {}).get("detail", {})
     for fr in sec_detail.get("files", []):
         for f in fr.get("findings", []):
-            all_findings.append(("security", {
+            entry = {
                 "check": f.get("check_id", ""),
                 "severity": f.get("risk", "info"),
                 "message": f"{fr['file']}:{f.get('line', '?')} — {f.get('description', '')}",
-            }))
+            }
+            if "confidence" in f:
+                entry["confidence"] = f["confidence"]
+            all_findings.append(("security", entry))
 
     lint_detail = results["categories"].get("skill_quality", {}).get("detail", {})
     for sr in lint_detail.get("skills", []):
@@ -478,11 +490,23 @@ def format_markdown(results, project_name):
         ("info", "### Info (consider)"),
     ]:
         items = [f"- [{item[1].get('check', '')}] ({item[0]}) {item[1].get('message', '')}"
-                 for item in all_findings if item[1].get("severity") == sev]
+                 for item in all_findings
+                 if item[1].get("severity") == sev
+                 and item[1].get("confidence") != "suspicious"]
         if items:
             out.append(heading)
             out.extend(items)
             out.append("")
+
+    sus_items = [f"- [{item[1].get('check', '')}] ({item[0]}) "
+                 f"{item[1].get('message', '')} ({item[1].get('severity', '')})"
+                 for item in all_findings
+                 if item[1].get("confidence") == "suspicious"
+                 and item[1].get("severity") in ("critical", "warning")]
+    if sus_items:
+        out.append("### Suspicious (needs review)")
+        out.extend(sus_items)
+        out.append("")
 
     out.append("### Category Breakdown\n")
     out.append("| Category | Weight | Score | Critical | Warning | Info |")

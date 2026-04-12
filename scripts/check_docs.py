@@ -487,7 +487,15 @@ def check_readme_sync(root, findings):
     zh_file_links = {l for l in zh_links
                      if not l.startswith("http") and not l.startswith("#")}
 
-    missing_links = en_file_links - zh_file_links
+    def _normalize_link(link):
+        """Treat foo.zh.md as equivalent to foo.md for bilingual comparison."""
+        if link.endswith(".zh.md"):
+            return link[:-6] + ".md"
+        return link
+
+    en_normalized = {_normalize_link(l) for l in en_file_links}
+    zh_normalized = {_normalize_link(l) for l in zh_file_links}
+    missing_links = en_normalized - zh_normalized
     # Exclude README cross-links (README.md ↔ README.zh.md)
     missing_links = {l for l in missing_links
                      if "README" not in l}

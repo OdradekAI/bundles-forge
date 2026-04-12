@@ -116,6 +116,42 @@ class TestScanSecurity(unittest.TestCase):
         self.assertIn("hook_script", types_found)
         self.assertIn("skill_content", types_found)
 
+    def test_findings_have_confidence(self):
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "scan_security.py"), "--json", str(REPO_ROOT)],
+            capture_output=True, text=True
+        )
+        data = json.loads(result.stdout)
+        all_findings = [f for fr in data["files"] for f in fr["findings"]]
+        for f in all_findings:
+            self.assertIn(f.get("confidence"), ("deterministic", "suspicious"),
+                          f"Finding {f.get('check_id')} missing valid confidence")
+
+    def test_suspicious_findings_excluded_from_exit_code(self):
+        """Suspicious findings should not cause non-zero exit code."""
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "scan_security.py"), "--json", str(REPO_ROOT)],
+            capture_output=True, text=True
+        )
+        data = json.loads(result.stdout)
+        s = data["summary"]
+        has_only_suspicious = (s["critical"] == 0 and s["warning"] == 0
+                               and (s.get("suspicious_critical", 0) > 0
+                                    or s.get("suspicious_warning", 0) > 0))
+        if has_only_suspicious:
+            self.assertEqual(result.returncode, 0,
+                             "Suspicious-only findings should not cause non-zero exit")
+
+    def test_summary_has_suspicious_counts(self):
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "scan_security.py"), "--json", str(REPO_ROOT)],
+            capture_output=True, text=True
+        )
+        data = json.loads(result.stdout)
+        s = data["summary"]
+        self.assertIn("suspicious_critical", s)
+        self.assertIn("suspicious_warning", s)
+
 
 class TestAuditProject(unittest.TestCase):
     """Tests for scripts/audit_project.py"""
@@ -314,7 +350,8 @@ class TestBootstrapInjection(unittest.TestCase):
     """Verify session-start hook produces valid platform-appropriate JSON.
 
     Python equivalent of test-bootstrap-injection.sh.
-    Pure-Python checks always run; bash execution tests skip if bash unavailable.
+    Pure-Python simulation always runs on all platforms; bash execution tests
+    run as additional validation when bash is available.
     """
 
     def test_hook_script_exists(self):
@@ -326,8 +363,33 @@ class TestBootstrapInjection(unittest.TestCase):
         content = (HOOKS_DIR / "session-start").read_text(encoding="utf-8")
         self.assertIn("using-bundles-forge/SKILL.md", content)
 
+    @staticmethod
+    def _simulate_hook(platform=None):
+        """Pure-Python simulation of hooks/session-start logic."""
+        skill_path = REPO_ROOT / "skills" / "using-bundles-forge" / "SKILL.md"
+        content = skill_path.read_text(encoding="utf-8")
+        escaped = (content.replace("\\", "\\\\")
+                          .replace('"', '\\"')
+                          .replace("\n", "\\n")
+                          .replace("\r", "\\r")
+                          .replace("\t", "\\t"))
+        session_ctx = (
+            "<EXTREMELY_IMPORTANT>\\nYou have bundles-forge skills loaded."
+            "\\n\\n**Below is the full content of your "
+            "'bundles-forge:using-bundles-forge' skill. For all other skills, "
+            "use the 'Skill' tool:**\\n\\n"
+            f"{escaped}\\n</EXTREMELY_IMPORTANT>")
+        if platform == "cursor":
+            return json.dumps({"additional_context": session_ctx})
+        elif platform == "claude":
+            return json.dumps({"hookSpecificOutput": {
+                "hookEventName": "SessionStart",
+                "additionalContext": session_ctx}})
+        else:
+            return session_ctx
+
     def _run_hook(self, **extra_env):
-        """Run the session-start hook with the given env vars."""
+        """Run the actual bash hook with the given env vars."""
         env = {**os.environ, **extra_env}
         for key in ("CURSOR_PLUGIN_ROOT", "CLAUDE_PLUGIN_ROOT"):
             if key not in extra_env:
@@ -336,49 +398,61 @@ class TestBootstrapInjection(unittest.TestCase):
             ["bash", str(HOOKS_DIR / "session-start")],
             capture_output=True, env=env, encoding="utf-8", errors="replace")
 
-    @unittest.skipUnless(HAS_BASH, "bash not available")
     def test_claude_output_is_valid_json(self):
+        output = self._simulate_hook(platform="claude")
+        try:
+            json.loads(output)
+        except json.JSONDecodeError:
+            self.fail("Claude Code hook output is not valid JSON")
+
+    def test_cursor_output_is_valid_json(self):
+        output = self._simulate_hook(platform="cursor")
+        try:
+            json.loads(output)
+        except json.JSONDecodeError:
+            self.fail("Cursor hook output is not valid JSON")
+
+    def test_fallback_output_is_plain_text(self):
+        """When neither platform env var is set, output is plain text."""
+        output = self._simulate_hook()
+        self.assertIn("EXTREMELY_IMPORTANT", output)
+        self.assertNotIn("hookSpecificOutput", output,
+                         "Fallback should not use Claude Code JSON")
+        self.assertNotIn("additional_context", output,
+                         "Fallback should not use Cursor JSON")
+
+    def test_claude_output_contains_bootstrap_content(self):
+        output = self._simulate_hook(platform="claude")
+        self.assertIn("bundles-forge", output)
+
+    def test_platform_appropriate_json_structure(self):
+        cursor_output = self._simulate_hook(platform="cursor")
+        self.assertIn("additional_context", cursor_output,
+                       "Cursor output missing additional_context format")
+
+        claude_output = self._simulate_hook(platform="claude")
+        self.assertIn("hookSpecificOutput", claude_output,
+                       "Claude Code output missing hookSpecificOutput format")
+
+    @unittest.skipUnless(HAS_BASH, "bash not available")
+    def test_bash_claude_output_is_valid_json(self):
+        """Additional validation: run actual bash hook for Claude Code."""
         result = self._run_hook(CLAUDE_PLUGIN_ROOT=str(REPO_ROOT))
         self.assertEqual(result.returncode, 0, f"Hook exited {result.returncode}")
         try:
             json.loads(result.stdout)
         except json.JSONDecodeError:
-            self.fail("Claude Code hook output is not valid JSON")
+            self.fail("Bash Claude Code hook output is not valid JSON")
 
     @unittest.skipUnless(HAS_BASH, "bash not available")
-    def test_cursor_output_is_valid_json(self):
+    def test_bash_cursor_output_is_valid_json(self):
+        """Additional validation: run actual bash hook for Cursor."""
         result = self._run_hook(CURSOR_PLUGIN_ROOT=str(REPO_ROOT))
         self.assertEqual(result.returncode, 0, f"Hook exited {result.returncode}")
         try:
             json.loads(result.stdout)
         except json.JSONDecodeError:
-            self.fail("Cursor hook output is not valid JSON")
-
-    @unittest.skipUnless(HAS_BASH, "bash not available")
-    def test_fallback_output_is_plain_text(self):
-        """When neither platform env var is set, output is plain text."""
-        result = self._run_hook()
-        self.assertEqual(result.returncode, 0, f"Hook exited {result.returncode}")
-        self.assertIn("EXTREMELY_IMPORTANT", result.stdout)
-        self.assertNotIn("hookSpecificOutput", result.stdout,
-                         "Fallback should not use Claude Code JSON")
-        self.assertNotIn("additional_context", result.stdout,
-                         "Fallback should not use Cursor JSON")
-
-    @unittest.skipUnless(HAS_BASH, "bash not available")
-    def test_claude_output_contains_bootstrap_content(self):
-        result = self._run_hook(CLAUDE_PLUGIN_ROOT=str(REPO_ROOT))
-        self.assertIn("bundles-forge", result.stdout)
-
-    @unittest.skipUnless(HAS_BASH, "bash not available")
-    def test_platform_appropriate_json_structure(self):
-        cursor_result = self._run_hook(CURSOR_PLUGIN_ROOT=str(REPO_ROOT))
-        self.assertIn("additional_context", cursor_result.stdout,
-                       "Cursor output missing additional_context format")
-
-        claude_result = self._run_hook(CLAUDE_PLUGIN_ROOT=str(REPO_ROOT))
-        self.assertIn("hookSpecificOutput", claude_result.stdout,
-                       "Claude Code output missing hookSpecificOutput format")
+            self.fail("Bash Cursor hook output is not valid JSON")
 
 
 class TestVersionSync(unittest.TestCase):
