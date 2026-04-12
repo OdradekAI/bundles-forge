@@ -61,7 +61,7 @@
 1. **核心** — `package.json`、`.gitignore`、`.version-bump.json`、`scripts/bump_version.py`、技能、命令
 2. **平台适配器** — 仅针对所选平台（清单、钩子、安装文档）
 3. **引导** — 如果有 3 个以上技能或工作流链
-4. **可选组件** — 仅在 Agent 检测到需要时（MCP 服务器、可执行文件、输出样式等）
+4. **可选组件** — 仅在 Agent 检测到需要时（MCP 服务器、LSP 服务器、可执行文件、输出样式、默认设置、用户配置、市场条目）
 
 ### Custom 模式
 
@@ -107,6 +107,40 @@
 
 ---
 
+## 可选组件
+
+大多数项目只需要核心文件和平台适配器。可选组件仅在设计文档指定或 Agent 在 intelligent/custom 模式中检测到明确需要时才会生成。
+
+### 组件总览
+
+| 组件 | 文件 | 何时包含 |
+|------|------|---------|
+| 可执行文件 | `bin/<tool-name>` | 技能引用需要加入 `$PATH` 的 CLI 工具 |
+| MCP 服务器 | `.mcp.json` | 技能需要有状态连接、丰富发现或认证的外部服务 |
+| LSP 服务器 | `.lsp.json` | 技能涉及语言级代码智能 |
+| 输出样式 | `output-styles/<style>.md` | 自定义 Agent 响应的输出格式 |
+| 默认设置 | `settings.json` | 插件根目录的默认 Agent 激活 |
+| 用户配置 | `plugin.json` 中的 `userConfig` | 技能需要用户提供的 API 密钥、端点或令牌（仅 Claude Code） |
+| 市场条目 | `.claude-plugin/marketplace.json` | 插件目标为市场发布 |
+
+### 选择正确的集成级别
+
+当技能需要访问外部工具时，选择能满足需求的最轻量集成：
+
+```
+技能是否需要外部工具访问？
+├─ 否 → 无需集成
+└─ 是 → 它是无状态、单次执行、输入输出明确的吗？
+   ├─ 是 → Level 1: CLI（bin/ 可执行文件 + allowed-tools）
+   └─ 否 → 它需要持久连接、丰富查询或认证服务吗？
+      ├─ 是 → Level 2: MCP 服务器（.mcp.json）
+      └─ 兼有 → Level 3: CLI 封装启动 MCP stdio 服务器
+```
+
+完整的决策树（含示例和平台特定的接线细节）详见脚手架技能中的 `references/external-integration.md`。
+
+---
+
 ## 平台适配
 
 使用脚手架在现有项目上添加或移除平台支持。这是最主要的直接调用场景。
@@ -129,24 +163,49 @@
 ```
 用户："移除 Codex 支持"
   → 脚手架检测到现有项目
-  → 删除 Codex 清单文件（.codex/INSTALL.md、AGENTS.md）
+  → 删除 Codex 清单文件（.codex/INSTALL.md）
   → 从 .version-bump.json 中移除条目
   → 清理平台特定的钩子配置
   → 从 README 中移除安装说明
   → 运行验证
 ```
 
+### 管理可选组件
+
+除了平台之外，脚手架还可以在现有项目上添加或移除可选组件。
+
+**添加组件：**
+
+```
+用户："给我的项目添加 MCP 服务器支持"
+  → 脚手架检测到现有项目
+  → 参考 external-integration.md 决策树
+  → 从模板生成 .mcp.json
+  → 更新插件清单（Cursor 需要显式路径）
+  → 更新技能 frontmatter（allowed-tools）
+  → 在 README 中添加设置说明
+  → 运行验证
+```
+
+**移除组件：**
+
+脚手架可以移除 MCP 服务器、CLI 可执行文件或 LSP 服务器 — 包括在不再需要完整服务器时将 MCP 降级为更轻量的 CLI 替代方案。移除流程会清理清单条目、技能引用和文档。详见 `references/external-integration.md` 的逐步移除说明。
+
 ### 各平台生成的文件
 
 | 平台 | 清单 | 钩子 | 安装文档 | 版本追踪 |
 |------|------|------|---------|:--------:|
-| Claude Code | `.claude-plugin/plugin.json` | `hooks/hooks.json` + 共享钩子 | — | 是 |
+| Claude Code | `.claude-plugin/plugin.json`、`.claude-plugin/marketplace.json`（可选） | `hooks/hooks.json` + 共享钩子 | — | 是 |
 | Cursor | `.cursor-plugin/plugin.json` | `hooks/hooks-cursor.json` + 共享钩子 | — | 是 |
-| Codex | — | — | `.codex/INSTALL.md` + `AGENTS.md` | 否 |
+| Codex | — | — | `.codex/INSTALL.md` | 否 |
 | OpenCode | `.opencode/plugins/<name>.js` | —（JS 插件处理引导） | `.opencode/INSTALL.md` | 否 |
 | Gemini CLI | `gemini-extension.json` | — | `GEMINI.md` | 是 |
 
 **共享钩子：** `hooks/session-start` 和 `hooks/run-hook.cmd` 在 Claude Code 和 Cursor 之间共享。当任一平台被选为目标时都会创建。
+
+**`marketplace.json`：** 仅在插件目标为市场发布时生成。它声明市场索引的插件元数据，并通过 `.version-bump.json` 进行版本追踪。
+
+**`AGENTS.md`：** 如果项目根目录还没有 `AGENTS.md`，脚手架会生成一个指向 `CLAUDE.md` 的轻量级版本。该文件是共享的项目文档（被 Codex 和其他平台使用），而非某个平台的专属安装产物 — 移除单个平台时不应删除它。
 
 **钩子配置特性：** Claude Code 的 `hooks.json` 支持顶层 `description` 字段（显示在 `/hooks` 菜单中）和每个 handler 的 `timeout`（默认 600 秒 — 快速引导钩子建议设为 10）。详见 `platform-adapters.md` 的完整字段参考和 Claude vs Cursor 对比表。
 
@@ -180,6 +239,16 @@
 - **Cursor** 在会话中途清除上下文后不会重新注入引导。
 - **OpenCode** 的引导通过 JS 转换注入，而非 Shell 钩子。
 
+### 插件缓存
+
+当插件通过市场安装时，它会被复制到平台管理的缓存目录。这对脚手架有重要影响：
+
+- **`${CLAUDE_PLUGIN_ROOT}`** 指向缓存副本，每次插件更新都会变化。不要用于持久化存储。
+- **`${CLAUDE_PLUGIN_DATA}`** 是稳定的持久化目录，用于缓存、已安装的依赖和生成的状态。需要跨插件更新保留的数据都应存放在这里。
+- **禁止 `../` 路径** — 市场安装后，插件被隔离在缓存目录中。引用插件根目录外的文件路径（如 `../shared-lib/`）会失效。所有文件必须保持在插件根目录内。
+
+这些约束适用于通过市场分发的插件。开发安装（`claude --plugin-dir .`）直接使用项目目录。
+
 ---
 
 ## 常见错误
@@ -193,6 +262,9 @@
 | 引导技能超过 200 行 | 路由表塞了太多内容 | 保持精简 — 重内容提取到 `references/` |
 | 对简单打包使用 intelligent 模式 | 想为 1-2 个技能搭建完整基础设施 | Minimal 模式就是为了避免过度工程化 |
 | 忘记 `chmod +x` session-start | 在 Windows 上创建文件 | 在脚手架后检查清单中注明 — git 可以保留执行位 |
+| CLI 就够时使用 MCP | 想为简单工具搭建丰富集成 | 参考 `references/external-integration.md` 决策树 — 无状态单次工具优先用 CLI |
+| 使用 `../` 路径引用插件外的文件 | 想跨项目共享文件 | 市场安装后插件被缓存 — `../` 路径会失效。所有文件保持在插件根目录内 |
+| 向 `${CLAUDE_PLUGIN_ROOT}` 写入持久化数据 | 把插件根目录当作稳定存储 | `PLUGIN_ROOT` 每次更新会变。使用 `${CLAUDE_PLUGIN_DATA}` 存放缓存和生成状态 |
 
 ---
 
@@ -218,9 +290,8 @@
 
 ## 相关技能
 
-| 技能 | 何时使用 |
-|------|---------|
-| `bundles-forge:blueprinting` | 你需要在生成之前*规划*新项目 |
-| `bundles-forge:authoring` | 由编排技能在脚手架完成后调度；编写技能与代理内容（`SKILL.md`、`agents/*.md`） |
-| `bundles-forge:auditing` | 验证现有项目的结构 |
-| `bundles-forge:releasing` | 发布 — 包含版本同步和文档检查 |
+| 技能 | 关系 |
+|------|------|
+| `bundles-forge:blueprinting` | 上游 — 规划新项目，然后调度脚手架生成结构 |
+| `bundles-forge:optimizing` | 上游 — 调度脚手架进行平台覆盖改进 |
+| `bundles-forge:authoring` | 下游 — 脚手架完成后编写技能与代理内容（`SKILL.md`、`agents/*.md`） |

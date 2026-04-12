@@ -61,7 +61,7 @@ Best for: most new projects. Tell the agent what you're building and it recommen
 1. **Core** — `package.json`, `.gitignore`, `.version-bump.json`, `scripts/bump_version.py`, skills, commands
 2. **Platform adapters** — only for selected platforms (manifests, hooks, install docs)
 3. **Bootstrap** — if you have 3+ skills or a workflow chain
-4. **Optional components** — only if the agent detects a need (MCP servers, executables, output styles, etc.)
+4. **Optional components** — only if the agent detects a need (MCP servers, LSP servers, executables, output styles, default settings, user configuration, marketplace entry)
 
 ### Custom Mode
 
@@ -107,6 +107,40 @@ If subagents aren't available, the agent offers to run validation inline.
 
 ---
 
+## Optional Components
+
+Most projects only need core files and platform adapters. Optional components are generated only when the design document specifies them or the agent detects a clear need during intelligent/custom mode.
+
+### Component Overview
+
+| Component | Files | When to Include |
+|-----------|-------|-----------------|
+| Executables | `bin/<tool-name>` | Skills reference CLI tools that should be added to `$PATH` |
+| MCP servers | `.mcp.json` | Skills need stateful connections, rich discovery, or authenticated external services |
+| LSP servers | `.lsp.json` | Skills involve language-specific code intelligence |
+| Output styles | `output-styles/<style>.md` | Custom output formatting for agent responses |
+| Default settings | `settings.json` | Default agent activation at plugin root |
+| User configuration | `userConfig` in `plugin.json` | Skills need user-provided API keys, endpoints, or tokens (Claude Code only) |
+| Marketplace entry | `.claude-plugin/marketplace.json` | Plugin targets marketplace distribution |
+
+### Choosing the Right Integration Level
+
+When a skill needs external tool access, choose the lightest integration that meets the requirement:
+
+```
+Does the skill need external tool access?
+├─ No → No integration needed
+└─ Yes → Is it stateless, single-execution, with clear input/output?
+   ├─ Yes → Level 1: CLI (bin/ executable + allowed-tools)
+   └─ No → Does it need persistent connection, rich querying, or authenticated service?
+      ├─ Yes → Level 2: MCP server (.mcp.json)
+      └─ Both → Level 3: CLI wrapper launching MCP stdio server
+```
+
+For the full decision tree with examples and platform-specific wiring details, see `references/external-integration.md` in the scaffolding skill.
+
+---
+
 ## Platform Adaptation
 
 Use scaffolding to add or remove platform support on an existing project. This is the primary direct-invocation use case.
@@ -129,24 +163,49 @@ User: "Add Cursor support to my project"
 ```
 User: "Remove Codex support"
   → Scaffolding detects existing project
-  → Deletes Codex manifest files (.codex/INSTALL.md, AGENTS.md)
+  → Deletes Codex manifest files (.codex/INSTALL.md)
   → Removes entries from .version-bump.json
   → Cleans up any platform-specific hook config
   → Removes install section from README
   → Runs validation
 ```
 
+### Managing Optional Components
+
+Beyond platforms, scaffolding can add or remove optional components on an existing project.
+
+**Adding a component:**
+
+```
+User: "Add MCP server support to my project"
+  → Scaffolding detects existing project
+  → Consults external-integration.md decision tree
+  → Generates .mcp.json from template
+  → Updates plugin manifests (Cursor needs explicit paths)
+  → Updates skill frontmatter (allowed-tools)
+  → Updates README with setup instructions
+  → Runs validation
+```
+
+**Removing a component:**
+
+Scaffolding can remove MCP servers, CLI executables, or LSP servers — including downgrading MCP to a lighter CLI alternative when the full server is no longer needed. The removal flow cleans up manifest entries, skill references, and documentation. See `references/external-integration.md` for step-by-step removal instructions.
+
 ### What Gets Created Per Platform
 
 | Platform | Manifest | Hooks | Install Doc | Version Tracked |
 |----------|----------|-------|-------------|:---------------:|
-| Claude Code | `.claude-plugin/plugin.json` | `hooks/hooks.json` + shared hooks | — | Yes |
+| Claude Code | `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json` (optional) | `hooks/hooks.json` + shared hooks | — | Yes |
 | Cursor | `.cursor-plugin/plugin.json` | `hooks/hooks-cursor.json` + shared hooks | — | Yes |
-| Codex | — | — | `.codex/INSTALL.md` + `AGENTS.md` | No |
+| Codex | — | — | `.codex/INSTALL.md` | No |
 | OpenCode | `.opencode/plugins/<name>.js` | — (JS plugin handles bootstrap) | `.opencode/INSTALL.md` | No |
 | Gemini CLI | `gemini-extension.json` | — | `GEMINI.md` | Yes |
 
 **Shared hooks:** `hooks/session-start` and `hooks/run-hook.cmd` are shared between Claude Code and Cursor. They're created when either platform is targeted.
+
+**`marketplace.json`:** Only generated when the plugin targets marketplace distribution. It declares plugin metadata for the marketplace index and is version-tracked via `.version-bump.json`.
+
+**`AGENTS.md`:** If the project doesn't already have a root-level `AGENTS.md`, scaffolding generates a lightweight version that points to `CLAUDE.md`. This file is shared project documentation (used by Codex and other platforms), not a platform-specific install artifact — it should not be deleted when removing a single platform.
 
 **Hook config features:** Claude Code's `hooks.json` supports a top-level `description` field (shown in the `/hooks` menu) and per-handler `timeout` (default 600s — set to 10 for fast bootstrap hooks). See `platform-adapters.md` for the full field reference and Claude vs Cursor comparison table.
 
@@ -180,6 +239,16 @@ Understanding platform differences helps you choose which to support.
 - **Cursor** doesn't re-inject bootstrap after context clear mid-session.
 - **OpenCode** bootstrap is injected via JS transform, not shell hooks.
 
+### Plugin Caching
+
+When a plugin is installed via the marketplace, it gets copied to a platform-managed cache directory. This has important implications for scaffolding:
+
+- **`${CLAUDE_PLUGIN_ROOT}`** points to the cached copy and changes on each plugin update. Do not use it for persistent storage.
+- **`${CLAUDE_PLUGIN_DATA}`** is a stable, persistent directory for caches, installed dependencies, and generated state. Use this for any data that must survive plugin updates.
+- **No `../` paths** — after marketplace install, the plugin is isolated in its cache directory. Paths referencing files outside the plugin root (`../shared-lib/`) will break. Keep all files within the plugin root.
+
+These constraints apply to marketplace-distributed plugins. Development installs (`claude --plugin-dir .`) use the project directory directly.
+
 ---
 
 ## Common Mistakes
@@ -193,6 +262,9 @@ Understanding platform differences helps you choose which to support.
 | Bootstrap skill > 200 lines | Packing too much into the routing table | Keep lean — extract heavy content to `references/` |
 | Using intelligent mode for simple packaging | Wanting full infrastructure for 1-2 skills | Minimal mode exists to avoid over-engineering |
 | Forgetting `chmod +x` on `session-start` | Creating the file on Windows | Note in post-scaffold checklist — git can preserve the execute bit |
+| Using MCP when CLI suffices | Wanting rich integration for simple tools | Consult `references/external-integration.md` decision tree — prefer CLI for stateless, single-shot tools |
+| Using `../` paths to reference files outside the plugin | Wanting to share files across projects | After marketplace install, plugins are cached — `../` paths break. Keep all files within the plugin root |
+| Writing persistent data to `${CLAUDE_PLUGIN_ROOT}` | Treating plugin root as stable storage | `PLUGIN_ROOT` changes on each update. Use `${CLAUDE_PLUGIN_DATA}` for caches and generated state |
 
 ---
 
@@ -218,9 +290,8 @@ Run `/bundles-audit` — the auditing skill checks manifest validity, version sy
 
 ## Related Skills
 
-| Skill | When to Use Instead |
-|-------|-------------------|
-| `bundles-forge:blueprinting` | You need to *plan* a new project before generating it |
-| `bundles-forge:authoring` | Dispatched by the orchestrating skill after scaffolding completes; writes skill and agent content (`SKILL.md`, `agents/*.md`) |
-| `bundles-forge:auditing` | To validate an existing project's structure |
-| `bundles-forge:releasing` | To publish — includes version sync and documentation checks |
+| Skill | Relationship |
+|-------|-------------|
+| `bundles-forge:blueprinting` | Upstream — plans new projects, then dispatches scaffolding to generate structure |
+| `bundles-forge:optimizing` | Upstream — dispatches scaffolding for platform coverage improvements |
+| `bundles-forge:authoring` | Downstream — writes skill and agent content (`SKILL.md`, `agents/*.md`) after scaffolding completes |

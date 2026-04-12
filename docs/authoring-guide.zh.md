@@ -256,10 +256,9 @@ authoring 是*内容编写者* — 创建和改进 SKILL.md 文件。optimizing 
 
 ## 相关技能
 
-| 技能 | 何时使用 |
-|------|---------|
-| `bundles-forge:blueprinting` | 你需要在编写内容之前*规划*新项目 |
-| `bundles-forge:scaffolding` | 你需要先生成目录结构再填充内容 |
-| `bundles-forge:optimizing` | 你需要*诊断*改进方向，而不仅是编写内容 |
-| `bundles-forge:auditing` | 验证编写内容的质量和安全性 |
-| `bundles-forge:releasing` | 发布 — 包含审计、优化和版本同步 |
+| 技能 | 关系 |
+|------|------|
+| `bundles-forge:blueprinting` | 上游 — 在新项目流水线中作为 Phase 2 调度 authoring |
+| `bundles-forge:optimizing` | 上游 — 调度 authoring 进行内容重写和改进 |
+| `bundles-forge:scaffolding` | 上游 — 生成目录结构，authoring 填充内容 |
+| `bundles-forge:auditing` | 下游 — 验证编写内容的质量和安全性 |

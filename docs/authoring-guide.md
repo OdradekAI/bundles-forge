@@ -256,10 +256,9 @@ Yes. Blueprinting dispatches authoring as Phase 2 (after scaffolding). Optimizin
 
 ## Related Skills
 
-| Skill | When to Use Instead |
-|-------|-------------------|
-| `bundles-forge:blueprinting` | You need to *plan* a new project before writing content |
-| `bundles-forge:scaffolding` | You need directory structure generated before filling it with content |
-| `bundles-forge:optimizing` | You need *diagnosis* of what to improve, not just content writing |
-| `bundles-forge:auditing` | To validate authored content for quality and security |
-| `bundles-forge:releasing` | To publish — includes audit, optimization, and version sync |
+| Skill | Relationship |
+|-------|-------------|
+| `bundles-forge:blueprinting` | Upstream — dispatches authoring as Phase 2 of the new-project pipeline |
+| `bundles-forge:optimizing` | Upstream — dispatches authoring for content rewriting and improvements |
+| `bundles-forge:scaffolding` | Upstream — generates directory structure that authoring fills with content |
+| `bundles-forge:auditing` | Downstream — validates authored content for quality and security |

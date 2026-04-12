@@ -338,3 +338,14 @@ All scripts support `--json`. JSON output includes:
 - `overall_score` — weighted average (0-10)
 - `summary` — `{critical: N, warning: N}`
 - `categories` / `layers` — per-category/layer breakdown with findings and scores
+
+---
+
+## Related Skills
+
+| Skill | Relationship |
+|-------|-------------|
+| `bundles-forge:blueprinting` | Upstream — dispatches auditing as Phase 4 for initial quality check on new projects |
+| `bundles-forge:optimizing` | Upstream — dispatches auditing for post-change verification |
+| `bundles-forge:releasing` | Upstream — dispatches auditing as pre-release quality and security gate |
+| `bundles-forge:authoring` | Upstream — produces the skill and agent content that auditing validates |

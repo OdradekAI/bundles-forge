@@ -338,3 +338,14 @@ python scripts/audit_project.py . ; [ $? -ne 2 ] || exit 1
 - `overall_score` — 加权平均（0-10）
 - `summary` — `{critical: N, warning: N}`
 - `categories` / `layers` — 各类别/层的分解，含发现和评分
+
+---
+
+## 相关技能
+
+| 技能 | 关系 |
+|------|------|
+| `bundles-forge:blueprinting` | 上游 — 在新项目流水线中作为 Phase 4 调度审计进行初始质量检查 |
+| `bundles-forge:optimizing` | 上游 — 调度审计进行变更后验证 |
+| `bundles-forge:releasing` | 上游 — 调度审计作为发布前的质量和安全关卡 |
+| `bundles-forge:authoring` | 上游 — 产出审计所验证的技能和代理内容 |
