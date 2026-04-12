@@ -50,6 +50,7 @@ The auditor agent (or inline auditor) may adjust the baseline by **±2 points** 
 | S11 | Warning | Skills that dispatch agents do not duplicate the agent's execution details (scoring formulas, report format, process steps). Agent file is the single source of truth |
 | S12 | Info | Skill inline fallback blocks (handling "subagent unavailable") reference the corresponding agent file (`agents/*.md`) rather than re-implementing the execution logic |
 | S13 | Info | Each skill-agent pair has clear responsibility separation — skill handles orchestration (scope detection, dispatch, result composition), agent handles execution (checks, scoring, reporting) |
+| S14 | Warning | Writable agents (those without `disallowedTools: Edit` or `disallowedTools: Write`) have `isolation: "worktree"` set to prevent main working tree conflicts |
 
 ---
 
@@ -65,6 +66,7 @@ Run these checks only for platforms the project claims to support.
 | P4 | Warning | Manifest metadata (name, version, description) is filled in |
 | P5 | Warning | Author and repository fields are populated |
 | P6 | Info | Manifest keywords are relevant |
+| P7 | Info | `claude plugin validate` (or `/plugin validate`) passes without errors — quick schema check for `plugin.json`, frontmatter, and `hooks.json` (Claude Code environments only) |
 
 **Platform manifest locations:**
 - Claude Code: `.claude-plugin/plugin.json`
@@ -163,9 +165,13 @@ Run only if the project uses session bootstrap hooks.
 | H3 | Critical | `hooks/hooks-cursor.json` is valid JSON (if Cursor targeted) |
 | H4 | Critical | `session-start` reads the correct bootstrap SKILL.md path |
 | H5 | Warning | `hooks/run-hook.cmd` exists (Windows support) |
-| H6 | Warning | `session-start` handles all target platforms (env var detection) |
+| H6 | Warning | `session-start` handles all target platforms (three-way: CURSOR_PLUGIN_ROOT, CLAUDE_PLUGIN_ROOT, fallback) |
 | H7 | Warning | JSON escaping is correct (backslashes, quotes, newlines, tabs) |
 | H8 | Info | Uses `printf` instead of heredoc (bash 5.3+ compatibility) |
+| H9 | Warning | `hooks.json` includes top-level `description` field and per-handler `timeout` |
+| H10 | Warning | No `type: "http"` hooks sending data to external URLs (data exfiltration risk) |
+| H11 | Warning | No hook scripts write to `CLAUDE_ENV_FILE` without explicit justification (env injection risk) |
+| H12 | Info | `session-start` exits 0 on read failure (no-op, does not block session) |
 
 **Quick hook test:**
 ```bash
@@ -204,7 +210,7 @@ CLAUDE_PLUGIN_ROOT="$(pwd)" bash hooks/session-start | python3 -m json.tool
 
 ## Category 10: Security (Weight: High)
 
-Run security checks on all executable code, agent instructions, and hook scripts. See `references/security-checklist.md` for the full pattern list.
+Run security checks on all executable code, agent instructions, and hook scripts. See `references/security-checklist.md` for the full pattern list (Categories 1-6, including plugin configuration safety: path traversal, userConfig, persistent data).
 
 | Check | Severity | Criteria |
 |-------|----------|----------|

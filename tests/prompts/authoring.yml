@@ -7,8 +7,15 @@ should-trigger:
   - "Improve the description in my skill's frontmatter"
   - "My skill instructions are too long, help me restructure them"
   - "What's the correct format for a SKILL.md frontmatter?"
+  - "Write an agent definition for my inspector subagent"
+  - "Adapt this external skill to fit my project conventions"
+  - "Rewrite this skill description to improve triggering accuracy"
+  - "Fill in the content for these scaffolded skill stubs"
+  - "This skill's body is 600 lines, help me extract to references"
 
 should-not-trigger:
   - "Audit this project for quality issues"
   - "Generate the project scaffolding from this design"
   - "Add Cursor support to my bundle-plugin"
+  - "Optimize the workflow chain between auditing and releasing"
+  - "Release version 2.0.0 of my bundle-plugin"

@@ -4,7 +4,7 @@ For full contributor guidelines, see [CLAUDE.md](CLAUDE.md).
 
 ## Quick Reference
 
-This is a bundle-plugin engineering toolkit supporting 5 platforms. It contains 8 skills covering the full lifecycle of bundle-plugin development.
+This is a bundle-plugin engineering toolkit supporting 5 platforms. It contains 7 skills covering the full lifecycle of bundle-plugin development.
 
 **Key rules:**
 - Skill naming: lowercase with hyphens, directory name must match frontmatter `name` field
@@ -16,13 +16,12 @@ This is a bundle-plugin engineering toolkit supporting 5 platforms. It contains 
 
 ## Available Skills
 
-| Skill | Purpose |
-|-------|---------|
-| `blueprinting` | Plan a new bundle-plugin through structured interview |
-| `scaffolding` | Generate project structure from design |
-| `authoring` | Guide SKILL.md authoring |
-| `auditing` | Quality assessment and security scanning |
-| `optimizing` | Engineering optimization and feedback iteration |
-| `porting` | Add platform support |
-| `releasing` | Version management and release pipeline |
-| `using-bundles-forge` | Bootstrap meta-skill: skill discovery and routing |
+| Skill | Layer | Purpose |
+|-------|-------|---------|
+| `blueprinting` | Orchestrator | Plan new bundle-plugins and orchestrate the creation pipeline (scaffolding → authoring → auditing) |
+| `optimizing` | Orchestrator | Diagnose and orchestrate improvements; delegates content changes to authoring |
+| `releasing` | Orchestrator | Release pipeline: audit, version bump, publish |
+| `scaffolding` | Executor | Generate project structure, add or remove platform support |
+| `authoring` | Executor | Write/improve SKILL.md and agents/*.md content |
+| `auditing` | Executor | Pure diagnostics: quality assessment, security scanning, reporting |
+| `using-bundles-forge` | Meta-skill | Bootstrap: skill discovery and routing |

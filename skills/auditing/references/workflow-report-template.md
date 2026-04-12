@@ -190,5 +190,5 @@ This does not affect the Go/No-Go recommendation for static and semantic layers.
 | `lint_skills.py` | Graph analysis (G1-G5 → W1-W5) |
 | `evaluator` agent | Chain A/B eval (W11-W12), if available |
 
-For improvement, invoke `bundles-forge:optimizing` (Target 4: Workflow Chain Integrity).
+Findings are diagnostic. The calling context decides follow-up actions.
 ```

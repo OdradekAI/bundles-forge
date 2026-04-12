@@ -227,6 +227,24 @@ def check_hooks(root):
         findings.append(dict(check="H5", severity="info",
                              message="Missing hooks/run-hook.cmd (Windows support)"))
 
+    hooks_json = hooks_dir / "hooks.json"
+    if hooks_json.exists():
+        try:
+            data = json.loads(hooks_json.read_text(encoding="utf-8", errors="replace"))
+            if "description" not in data:
+                findings.append(dict(check="H9", severity="info",
+                                     message="hooks.json missing top-level 'description' field"))
+            hooks_block = data.get("hooks", {})
+            for event_name, groups in hooks_block.items():
+                if isinstance(groups, list):
+                    for group in groups:
+                        for handler in group.get("hooks", []):
+                            if isinstance(handler, dict) and "timeout" not in handler:
+                                findings.append(dict(check="H9", severity="info",
+                                                     message=f"hooks.json handler in {event_name} missing 'timeout' field"))
+        except (json.JSONDecodeError, OSError):
+            pass
+
     return findings
 
 

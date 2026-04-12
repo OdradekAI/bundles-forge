@@ -8,6 +8,8 @@ should-trigger:
   - "The audit found warnings, help me fix them"
   - "Users say my skill gives confusing output, can we iterate on it?"
   - "Optimize the workflow chain between auditing and releasing"
+  - "I want to add three new skills to my existing bundle-plugin project"
+  - "Replace this skill with a better one and update the workflow"
 
 should-not-trigger:
   - "Plan a new bundle-plugin from scratch"

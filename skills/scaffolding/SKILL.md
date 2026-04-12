@@ -1,7 +1,6 @@
 ---
 name: scaffolding
-description: "Use when generating project structure for new bundle-plugins — supports minimal packaging (skills + manifest) and full multi-platform projects with hooks, bootstrap, and version infrastructure. Use after design is complete"
-user-invocable: false
+description: "Use when generating project structure for new bundle-plugins, adding or removing platform support (Claude Code, Cursor, Codex, OpenCode, Gemini CLI), updating platform manifests, or migrating hooks and configuration between platforms"
 allowed-tools: Python(scripts/bump_version.py *)
 ---
 
@@ -9,29 +8,29 @@ allowed-tools: Python(scripts/bump_version.py *)
 
 ## Overview
 
-Generate a bundle-plugin project from a design blueprint. Supports two modes: **minimal** (quick packaging of standalone skills) and **intelligent** (full multi-platform project with hooks, bootstrap, and version infrastructure).
+Generate new bundle-plugin projects and manage platform support across their lifecycle. Handles initial project generation (greenfield) and ongoing platform adaptation (add, fix, migrate, remove).
 
 **Core principle:** Generate only what's needed. Every platform, every file has a reason to exist.
 
-**Announce at start:** "I'm using the scaffolding skill to generate your project."
+**Announce at start:** "I'm using the scaffolding skill to [generate your project / add <platform> support / remove <platform> support]."
 
-## Prerequisites
+## Entry Detection
 
-A design document from `bundles-forge:blueprinting` or equivalent information:
-- Project mode (minimal / intelligent)
-- Project name (kebab-case)
-- Target platforms (minimal mode defaults to Claude Code only)
-- Skill inventory (with visibility classification for intelligent mode)
-- Bootstrap strategy (yes/no — always no in minimal mode)
-- Advanced components list (intelligent mode only)
+Determine the operation based on context:
 
-## Scaffold Layers
+1. **Design document provided** (from `bundles-forge:blueprinting`) → **New Project** flow (minimal / intelligent mode as specified)
+2. **User request + no existing project** → **New Project** flow (ask mode: intelligent or custom)
+3. **User request + existing project** → **Platform Adaptation** flow (add / fix / migrate / remove)
 
-Generate only what's needed — layers activate based on the design mode.
+For new projects invoked directly by users (not via blueprinting), choose between:
+- **intelligent** — recommend architecture based on user description, avoid unnecessary components
+- **custom** — present the full architecture option set, ask the user about each component
+
+## New Project: Scaffold Layers
 
 ### Minimal Mode (quick packaging)
 
-Only generated when design specifies minimal mode. Produces a lean plugin ready for marketplace distribution:
+Lean plugin for marketplace distribution:
 
 | File | Purpose |
 |------|---------|
@@ -40,7 +39,7 @@ Only generated when design specifies minimal mode. Produces a lean plugin ready 
 | `README.md` | Installation instructions and skill catalog |
 | `LICENSE` | Default MIT unless specified |
 
-No hooks, no bootstrap, no version infrastructure. Users can add these later via `bundles-forge:porting` or by re-running with intelligent mode.
+No hooks, no bootstrap, no version infrastructure. Add these later by re-running scaffolding in platform adaptation mode.
 
 ### Intelligent Mode — Core
 
@@ -55,9 +54,9 @@ Generated for all intelligent-mode projects regardless of platform selection:
 | `.version-bump.json` | Version sync manifest |
 | `scripts/bump_version.py` | Version management tool |
 | `skills/<skill-name>/SKILL.md` | One directory per skill |
-| `commands/<entry-skill>.md` | One command per entry-point skill (from visibility classification) |
+| `commands/<entry-skill>.md` | One command per entry-point skill |
 
-### Intelligent Mode — Platform Adapters (only for selected platforms)
+### Intelligent Mode — Platform Adapters (selected platforms only)
 
 | Platform | Files |
 |----------|-------|
@@ -67,67 +66,107 @@ Generated for all intelligent-mode projects regardless of platform selection:
 | OpenCode | `.opencode/plugins/<name>.js`, `.opencode/INSTALL.md` |
 | Gemini CLI | `gemini-extension.json`, `GEMINI.md` |
 
+For platform-specific wiring details, read `references/platform-adapters.md`.
+
 ### Intelligent Mode — Bootstrap (if requested)
 
 | File | Purpose |
 |------|---------|
-| `skills/using-<project>/SKILL.md` | Meta-skill: instruction priority, skill access, routing table |
-| `skills/using-<project>/references/` | Per-platform tool mappings (only for selected platforms) |
+| `skills/using-<project>/SKILL.md` | Meta-skill: instruction priority, skill routing table |
+| `skills/using-<project>/references/` | Per-platform tool mappings |
 
-### Intelligent Mode — Optional Components (only if specified in design)
+### Intelligent Mode — Optional Components (only if specified)
 
 | Component | Files | When to Include |
 |-----------|-------|-----------------|
-| Executables | `bin/<tool-name>` | Skills reference CLI tools that should be on PATH |
-| MCP servers | `.mcp.json` | Skills need external service integration |
-| LSP servers | `.lsp.json` | Skills involve language-specific code intelligence |
-| Output styles | `output-styles/<style>.md` | Project needs custom output formatting |
-| Default settings | `settings.json` | Project should activate a default agent |
+| Executables | `bin/<tool-name>` | Skills reference CLI tools (see `references/external-integration.md` decision tree) |
+| MCP servers | `.mcp.json` | Skills need external service integration (see `references/external-integration.md` decision tree) |
+| LSP servers | `.lsp.json` | Skills involve language-specific code intelligence (see `references/external-integration.md` LSP section) |
+| Output styles | `output-styles/<style>.md` | Custom output formatting (see `references/external-integration.md` Output Styles section) |
+| Default settings | `settings.json` | Default agent activation (see `references/external-integration.md` Default Settings section) |
+| User configuration | `userConfig` in `plugin.json` | Skills need user-provided API keys, endpoints, or tokens — Claude Code only (see `references/external-integration.md` userConfig section) |
+| Marketplace entry | `.claude-plugin/marketplace.json` | Plugin targets marketplace distribution — declares plugin metadata for the marketplace index |
 
-## Generation Process
+## New Project: Generation Process
 
 **Minimal mode:**
-1. **Create plugin manifest** — generate `.claude-plugin/plugin.json` with project metadata
-2. **Generate skill directories** — one directory per skill from the design
-3. **Generate README + LICENSE** — minimal docs with skill catalog
-4. **Done** — no further steps needed
+1. Create plugin manifest from `assets/platforms/claude-code/plugin.json` template
+2. Generate skill directories — one per skill
+3. Generate README + LICENSE
+4. `git init` + initial commit; validate manifest JSON
 
 **Intelligent mode:**
-1. **Read template index** — load `references/scaffold-templates.md` for the template inventory and placeholder reference
-2. **Read templates** — load the needed template files from `assets/` (infrastructure, docs, bootstrap)
-3. **Read platform templates** — for per-platform files, load from `porting/assets/<platform>/`
-4. **Read anatomy** — load `references/project-anatomy.md` for structure details
+1. **Read template index** — load `references/scaffold-templates.md`
+2. **Read templates** — load from `assets/` (infrastructure, docs, bootstrap)
+3. **Read platform templates** — load from `assets/platforms/<platform>/`
+4. **Read anatomy** — load `references/project-anatomy.md`
 5. **Replace placeholders** — substitute `<project-name>`, `<author-name>`, etc.
 6. **Generate per-platform** — only create files for target platforms
-7. **Generate skill stubs** — one directory per skill from the design
-8. **Generate commands** — one command file per entry-point skill
+7. **Generate skill stubs** — one directory per skill
+8. **Generate commands** — one command per entry-point skill
 9. **Generate bootstrap** — if requested, create meta-skill with routing table
-10. **Generate optional components** — create any advanced component files specified in the design
+10. **Generate optional components** — only what the design specifies. For MCP servers, use `assets/mcp-json.md` template and consult `references/external-integration.md` for transport selection and platform differences. When `userConfig` is specified, add the `userConfig` field to `plugin.json` with appropriate `sensitive` flags. When marketplace distribution is specified, generate `.claude-plugin/marketplace.json` with plugin metadata
+11. `git init` + initial commit; run `python scripts/bump_version.py --check`
 
-## Post-Scaffold Checklist
+## Platform Adaptation: Existing Projects
 
-**Minimal mode:**
-1. **Initialize git** — `git init`, create initial commit
-2. **Validate manifest** — confirm `.claude-plugin/plugin.json` is valid JSON with correct name
-3. **Report** — show the user the generated structure and next steps
+### Adding a Platform
 
-**Intelligent mode:**
-1. **Initialize git** — `git init`, create initial commit
-2. **Verify version sync** — run `python scripts/bump_version.py --check`
-3. **Validate manifests** — each platform manifest references correct paths
-4. **Test bootstrap** — if created, verify it loads on at least one target platform
-5. **Security baseline** — run `bundles-forge:auditing` on generated hooks and plugin code
-6. **Report** — show the user the generated structure and next steps
+1. **Detect current platforms** — scan for existing manifests (see detection table in `references/platform-adapters.md`)
+2. **Identify target** — read `references/platform-adapters.md` for wiring details
+3. **Generate adapter files** — from `assets/platforms/<platform>/`, replace `<project-name>` placeholders
+4. **Update version sync** — add version-bearing manifests to `.version-bump.json`
+5. **Update hooks** — if platform uses session hooks, ensure `session-start` handles its JSON format
+6. **Update documentation** — add install section to README; create platform-specific docs if needed
+7. **Verify** — validate manifests, `python scripts/bump_version.py --check`, test hooks
 
-Dispatch the `inspector` agent (`agents/inspector.md`) for automated validation if subagents are available. The inspector is the single source of truth for post-scaffold validation — structure, manifests, version sync, hooks, and skill quality checks.
+### Removing a Platform
 
-**If subagent dispatch is unavailable:** Ask the user — "Subagents are not available. I can run the post-scaffold validation inline. Proceed inline?" If confirmed, read `agents/inspector.md` and follow its validation instructions within this conversation context, then report PASS/FAIL.
+1. **Delete manifest files** — remove the platform's manifest directory or file
+2. **Update `.version-bump.json`** — remove entries for deleted manifests
+3. **Clean hooks** — delete platform-specific hook files; simplify `session-start` if branches removed
+4. **Update documentation** — remove install section from README and platform-specific docs
+5. **Verify** — `python scripts/bump_version.py --check`; run inspector validation
+
+**Announce at start:** "I'm using the scaffolding skill to remove <platform> support."
+
+### Adding Optional Components
+
+Add MCP servers, CLI executables, LSP servers, userConfig, output styles, or default settings to an existing project:
+
+1. **Determine component type** — read `references/external-integration.md` decision tree to choose the right integration level
+2. **Generate component files** — create the corresponding file(s) at their default location (`.mcp.json`, `.lsp.json`, `output-styles/`, `settings.json`, or `userConfig` in `plugin.json`)
+3. **Update plugin manifests** — add component declarations to `plugin.json` for platforms that require explicit paths (Cursor). For Claude Code, convention-based discovery handles most components automatically
+4. **Update skill references** — add `allowed-tools` frontmatter for new CLI/MCP tools, add `${user_config.KEY}` references where skills need user-provided values
+5. **Update README** — add setup instructions for the new component (especially MCP server config for non-Claude Code platforms, LSP binary installation)
+6. **Verify** — run inspector validation to confirm structural integrity
+
+**Announce at start:** "I'm using the scaffolding skill to add [MCP / CLI / LSP / userConfig / output-styles] to this project."
+
+### Removing Optional Components
+
+Remove MCP servers, CLI executables, or LSP servers from an existing project. Read `references/external-integration.md` "Optional Component Removal" section for step-by-step instructions covering:
+
+- Removing MCP servers (`.mcp.json`, `plugin.json mcpServers`, skill references, README)
+- Removing CLI executables (`bin/`, `allowed-tools`, skill body)
+- Removing LSP servers (`.lsp.json`, README)
+- Downgrading MCP to CLI (replace MCP with lighter CLI alternative)
+
+**Announce at start:** "I'm using the scaffolding skill to remove [MCP / CLI / LSP] components."
+
+## Post-Action Validation
+
+Dispatch the `inspector` agent (`agents/inspector.md`) for automated validation. The inspector adjusts scope based on context:
+- **New project** → full validation (structure, manifests, version sync, hooks, skill quality)
+- **Platform adaptation** → focused validation (affected manifests, hooks, version-bump entries)
+
+**If subagent dispatch is unavailable:** Ask — "Subagents are not available. Run validation inline?" If confirmed, read `agents/inspector.md` and follow its instructions within this conversation, then report PASS/FAIL.
 
 ## Quick Reference: Placeholder Map
 
 | Placeholder | Source |
 |-------------|--------|
-| `<project-name>` | Design: project name |
+| `<project-name>` | Design or existing project name |
 | `<Project Name>` | Title-cased project name |
 | `<author-name>` | User or git config |
 | `<author-email>` | User or git config |
@@ -139,33 +178,34 @@ Dispatch the `inspector` agent (`agents/inspector.md`) for automated validation 
 | Mistake | Fix |
 |---------|-----|
 | Generating all platforms regardless of design | Only create files for selected platforms |
-| Forgetting `.version-bump.json` entries for new platforms | Every version-bearing manifest needs an entry |
+| Forgetting `.version-bump.json` entries | Every version-bearing manifest needs an entry |
 | Hardcoding author in templates | Pull from git config or ask |
 | Missing `run-hook.cmd` for Windows | Always include if any hook-based platform is targeted |
 | Bootstrap skill > 200 lines | Keep lean — extract to `references/` |
-| Forgetting `chmod +x` on hook scripts | Note in post-scaffold checklist |
-| Using intelligent mode infrastructure for minimal projects | Minimal mode exists to avoid over-engineering |
-| Forgetting commands for entry-point skills | Each entry-point skill gets a matching command file |
-| Generating optional components not in the design | Only create what the design document specifies |
+| Wrong hook format (PascalCase vs camelCase) | Claude Code: `SessionStart`, Cursor: `sessionStart` |
+| Copying template without customizing | Replace every `<project-name>` placeholder |
+| Using intelligent mode infrastructure for minimal | Minimal mode avoids over-engineering |
+| Using MCP when CLI suffices | Consult `references/external-integration.md` decision tree — prefer CLI for stateless, single-shot tools |
+| Using `../` paths to reference files outside the plugin | After marketplace install, plugins are cached — `../` paths break. Keep all files within the plugin root |
+| Writing persistent data to `${CLAUDE_PLUGIN_ROOT}` | `PLUGIN_ROOT` changes on each update. Use `${CLAUDE_PLUGIN_DATA}` for caches, installed dependencies, and generated state |
 
 ## Inputs
 
-- `design-document` (required) — design summary from `bundles-forge:blueprinting` containing project mode, name, platforms, skill inventory, bootstrap strategy, and advanced components
+- `design-document` (optional) — from `bundles-forge:blueprinting` with project mode, name, platforms, skill inventory, bootstrap strategy, and components
+- `project-directory` (optional) — existing bundle-plugin project root for platform adaptation
+- `target-platform` (optional) — platform to add or remove
 
 ## Outputs
 
-- `scaffold-output` — generated project directory structure including skills/, hooks/, manifests, and version infrastructure
-- `inspector-report` (optional) — post-scaffold validation report written to `.bundles-forge/` by the inspector agent
+- `scaffold-output` — generated project structure or adapted platform files. Consumed by the orchestrating skill (blueprinting or optimizing) for subsequent phases
+- `inspector-report` (optional) — validation report in `.bundles-forge/`
 
 ## Integration
 
 **Called by:**
-- **bundles-forge:blueprinting** — after design approval
-
-**Calls:**
-- **bundles-forge:authoring** — after scaffold, users author SKILL.md content
-- **bundles-forge:auditing** — post-scaffold verification
+- **bundles-forge:blueprinting** — Phase 1 of the new-project pipeline
+- **bundles-forge:optimizing** — Target 5 (platform coverage) for adding new platforms
+- User directly — for platform adaptation or ad-hoc project generation
 
 **Pairs with:**
-- **bundles-forge:releasing** — version infrastructure setup
-- **bundles-forge:porting** — adding platforms later
+- **bundles-forge:releasing** — version infrastructure and sync

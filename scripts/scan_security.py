@@ -2,8 +2,9 @@
 """
 Security scanner for bundle-plugins.
 
-Scans SKILL.md files, hook scripts, OpenCode plugins, agent prompts,
-and bundled scripts for patterns that could exfiltrate data, destroy
+Scans 7 attack surfaces — SKILL.md files, hook scripts, hook configs
+(HTTP hooks), OpenCode plugins, agent prompts, bundled scripts, and
+MCP configs — for patterns that could exfiltrate data, destroy
 resources, install backdoors, or override safety controls.
 
 Usage:
@@ -99,6 +100,22 @@ OPENCODE_RULES = _compile([
      "Broad process.env access"),
 ])
 
+MCP_RULES = [
+    ("MC1", "critical", re.compile(
+        r"""(?:['"](?:Authorization|api[_-]?key|token|secret|password)['"]"""
+        r"""\s*:\s*['"][^${']+['"])""",
+        re.IGNORECASE),
+     "Hardcoded credential in MCP server config"),
+    ("MC2", "critical", re.compile(r'"headersHelper"', re.IGNORECASE),
+     "headersHelper field executes arbitrary shell commands"),
+    ("MC3", "warning", None,
+     "Env var value embedded directly instead of using ${VAR} expansion"),
+    ("MC4", "warning", re.compile(r'"url"\s*:\s*"http://(?!localhost|127\.0\.0\.1)', re.IGNORECASE),
+     "MCP server URL uses plain HTTP instead of HTTPS"),
+    ("MC5", "info", re.compile(r'"command"\s*:\s*"/(?!dev/null)', re.IGNORECASE),
+     "Absolute path in command field (may not be portable)"),
+]
+
 AGENT_RULES = _compile([
     ("AG1", "critical", r"ignore.*(safety|guideline|instruction)|override.*(safety|rule)|bypass.*(safety|security)",
      "Safety override instructions in agent prompt"),
@@ -142,6 +159,7 @@ SCRIPT_RULES = _compile([
 
 ALLOWED_HOOK_ENV_VARS = frozenset({
     "CLAUDE_PLUGIN_ROOT", "CURSOR_PLUGIN_ROOT",
+    "CLAUDE_PLUGIN_DATA", "CLAUDE_ENV_FILE",
     "SCRIPT_DIR", "PLUGIN_ROOT", "HOOK_NAME", "HOOK_PATH",
     "GIT_EXE", "GIT_DIR", "BASH_EXE",
 })
@@ -150,8 +168,14 @@ ALLOWED_HOOK_ENV_VARS = frozenset({
 def classify_file(rel_path):
     parts = rel_path.parts
     name = rel_path.name.lower()
+    if name == ".mcp.json" and len(parts) == 1:
+        return "mcp_config"
+    if name == "plugin.json" and len(parts) == 2:
+        return "mcp_config"
     if name.endswith(".js") and ".opencode" in parts:
         return "opencode_plugin"
+    if "hooks" in parts and name in ("hooks.json", "hooks-cursor.json"):
+        return "hook_config"
     if "hooks" in parts and name not in ("hooks.json", "hooks-cursor.json"):
         return "hook_script"
     if "agents" in parts and name.endswith(".md"):
@@ -170,7 +194,89 @@ def classify_file(rel_path):
 # Scanning engine
 # ---------------------------------------------------------------------------
 
+def _scan_mcp_config(path, rel_path):
+    """Scan .mcp.json or plugin.json for MCP security issues."""
+    try:
+        content = path.read_text(encoding="utf-8", errors="replace")
+    except (OSError, PermissionError):
+        return []
+
+    try:
+        data = json.loads(content)
+    except json.JSONDecodeError:
+        return []
+
+    servers = data.get("mcpServers", {})
+    if not isinstance(servers, dict) or not servers:
+        return []
+
+    findings = []
+    lines = content.splitlines()
+
+    for check_id, risk, pattern, desc in MCP_RULES:
+        if pattern is None:
+            continue
+        for line_num, line in enumerate(lines, 1):
+            if pattern.search(line):
+                findings.append(dict(
+                    check_id=check_id, risk=risk, line=line_num,
+                    description=desc))
+
+    for srv_name, srv_cfg in servers.items():
+        if not isinstance(srv_cfg, dict):
+            continue
+        env = srv_cfg.get("env", {})
+        if isinstance(env, dict):
+            for key, val in env.items():
+                if isinstance(val, str) and val and not val.startswith("${"):
+                    if any(kw in key.upper() for kw in
+                           ("KEY", "SECRET", "TOKEN", "PASSWORD", "CREDENTIAL")):
+                        findings.append(dict(
+                            check_id="MC3", risk="warning", line=0,
+                            description=f"Env var '{key}' in server '{srv_name}' "
+                                        f"may contain a secret — use ${{VAR}} expansion"))
+
+    return findings
+
+
+def _scan_hook_config(path, rel_path):
+    """Scan hooks.json / hooks-cursor.json for HTTP hooks (data exfiltration risk)."""
+    try:
+        content = path.read_text(encoding="utf-8", errors="replace")
+    except (OSError, PermissionError):
+        return []
+
+    try:
+        data = json.loads(content)
+    except json.JSONDecodeError:
+        return []
+
+    findings = []
+    lines = content.splitlines()
+
+    http_re = re.compile(r'"type"\s*:\s*"http"', re.IGNORECASE)
+    for line_num, line in enumerate(lines, 1):
+        if http_re.search(line):
+            findings.append(dict(
+                check_id="HK13", risk="critical", line=line_num,
+                description="HTTP hook detected — may exfiltrate tool input/output to external URL"))
+
+    url_re = re.compile(r'"url"\s*:\s*"https?://(?!localhost|127\.0\.0\.1)', re.IGNORECASE)
+    for line_num, line in enumerate(lines, 1):
+        if url_re.search(line):
+            findings.append(dict(
+                check_id="HK14", risk="critical", line=line_num,
+                description="External URL in hook config — verify destination is trusted"))
+
+    return findings
+
+
 def scan_file(path, rel_path, file_type):
+    if file_type == "mcp_config":
+        return _scan_mcp_config(path, rel_path)
+    if file_type == "hook_config":
+        return _scan_hook_config(path, rel_path)
+
     rule_map = {
         "skill_content": SKILL_CONTENT_RULES,
         "hook_script": HOOK_RULES,
@@ -216,6 +322,13 @@ def scan_file(path, rel_path, file_type):
                         check_id="HK6", risk="warning", line=line_num,
                         description=f"Env var access: ${var}"))
 
+        # HK15: CLAUDE_ENV_FILE write detection
+        if file_type == "hook_script":
+            if re.search(r">>?\s*[\"']?\$\{?CLAUDE_ENV_FILE\}?", line):
+                findings.append(dict(
+                    check_id="HK15", risk="warning", line=line_num,
+                    description="Writing to CLAUDE_ENV_FILE — injects env vars into all subsequent Bash commands"))
+
         for check_id, risk, pattern, desc in rules:
             if pattern is None or check_id == "HK6":
                 continue
@@ -256,6 +369,16 @@ def collect_scannable_files(project_root):
             for f in target.rglob("*"):
                 if f.is_file() and not f.name.startswith("."):
                     files.append(f)
+
+    mcp_json = project_root / ".mcp.json"
+    if mcp_json.is_file():
+        files.append(mcp_json)
+
+    for manifest_dir in (".claude-plugin", ".cursor-plugin"):
+        pj = project_root / manifest_dir / "plugin.json"
+        if pj.is_file():
+            files.append(pj)
+
     return sorted(files)
 
 

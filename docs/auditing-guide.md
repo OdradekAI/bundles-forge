@@ -13,7 +13,7 @@ Bundles Forge provides four audit scopes, each targeting a different level of gr
 | **Full Project** | Pre-release, major changes, initial review | 10 categories, 60+ checks | `audit_project.py` |
 | **Single Skill** | Reviewing one skill, third-party skill evaluation | 4 categories (Structure, Quality, Cross-Refs, Security) | `audit_skill.py` |
 | **Workflow** | After adding/removing skills, chain integration check | 3 layers (Static, Semantic, Behavioral), W1-W12 | `audit_workflow.py` |
-| **Security-Only** | Quick safety scan, pre-install check | 5 attack surfaces | `scan_security.py` |
+| **Security-Only** | Quick safety scan, pre-install check | 7 attack surfaces | `scan_security.py` |
 
 All scopes share the same scoring formula, severity levels, and report conventions. The agent auto-detects scope from the target path — or you can invoke scripts directly.
 
@@ -90,7 +90,7 @@ python scripts/audit_project.py --json <project-root>  # JSON output
 
 `audit_project.py` orchestrates three sub-scripts:
 - `lint_skills.py` — skill quality linting (Q1-Q17, S9, X1-X3, G1-G5)
-- `scan_security.py` — security pattern scanning (5 attack surfaces)
+- `scan_security.py` — security pattern scanning (7 attack surfaces)
 - `audit_workflow.py` — workflow integration analysis (W1-W12)
 
 Then adds its own checks for structure, manifests, version sync, hooks, testing, and documentation.
@@ -108,7 +108,7 @@ Then adds its own checks for structure, manifests, version sync, hooks, testing,
 | 7 | Hooks | Medium (2) | Bootstrap injection, platform detection |
 | 8 | Testing | Medium (2) | Test directory, prompts, A/B eval results |
 | 9 | Documentation | Low (1) | README, install docs, CHANGELOG |
-| 10 | Security | High (3) | 5 attack surfaces — skill content, hooks, plugins, agents, scripts |
+| 10 | Security | High (3) | 7 attack surfaces — skill content, hook scripts, HTTP hooks, CLAUDE_ENV_FILE injection, OpenCode plugins, agent prompts, bundled scripts |
 
 Total weight = 23. Overall score = `sum(score_i × weight_i) / 23`.
 
@@ -231,7 +231,7 @@ This enables incremental validation after adding new skills without missing casc
 **Typical workflow for adding third-party skills:**
 
 ```
-1. Run blueprinting Scenario D (integration planning)
+1. User or orchestrating skill decides preparation and next steps (e.g. workflow restructuring).
 2. Add skills to the project
 3. Run: python scripts/audit_workflow.py --focus-skills new-skill-a,new-skill-b .
 4. Fix focus area findings
@@ -258,7 +258,7 @@ Workflow audits use `skills/auditing/references/workflow-report-template.md` —
 /bundles-scan
 ```
 
-Maps to the `bundles-forge:auditing` skill in security-only mode — runs only Category 10 (Security) across all 5 attack surfaces.
+Maps to the `bundles-forge:auditing` skill in security-only mode — runs only Category 10 (Security) across all 7 attack surfaces.
 
 ### Via Script
 
@@ -268,33 +268,41 @@ python scripts/scan_security.py <skill-directory>         # single skill scan
 python scripts/scan_security.py --json <project-root>     # JSON output
 ```
 
-### 5 Attack Surfaces
+### 7 Attack Surfaces
 
 | Surface | Risk Level | Examples |
 |---------|-----------|---------|
 | SKILL.md content | High | Sensitive file access, destructive commands, safety overrides, encoding tricks |
 | Hook scripts | High | Network calls, env-var leakage, system config modification |
+| HTTP hooks | High | Data exfiltration via `type: "http"` hooks sending tool input/output to external URLs |
+| `CLAUDE_ENV_FILE` injection | High | Hook scripts writing to `CLAUDE_ENV_FILE` to inject env vars (including PATH modification) into all subsequent Bash commands |
 | OpenCode plugins | High | Dynamic code execution, network access, message manipulation |
 | Agent prompts | Medium | Privilege escalation, scope expansion, safety overrides |
 | Bundled scripts | Medium | Network calls, system modifications, unsanitized inputs |
 
+**Enterprise controls:** Administrators can set `allowManagedHooksOnly` in managed policy to disable all user/project/plugin hooks, permitting only organization-approved hooks distributed via `enabledPlugins`.
+
+**Cost awareness:** `prompt` and `agent` hook types invoke LLM calls on every matched event. A `PreToolUse` prompt hook matching all tools can generate significant token costs during intensive sessions.
+
 ### Checklist
 
-- **Security checklist:** `skills/auditing/references/security-checklist.md` — full pattern list for all 5 surfaces
+- **Security checklist:** `skills/auditing/references/security-checklist.md` — full pattern list for all 7 surfaces
 
 ---
 
 ## After the Audit
 
-| Report Source | Finding Level | Action |
-|--------------|--------------|--------|
-| Full project (`audit-report`) | Critical/Warning | `bundles-forge:optimizing` — Project Optimization (all 6 targets) |
-| Single skill (`skill-report`) | Critical/Warning | `bundles-forge:optimizing` — Skill Optimization (4 targets + feedback) |
-| Workflow (`workflow-report`) | W1-W12 findings | `bundles-forge:optimizing` Target 4 (Workflow Chain Integrity) |
-| Any scope | Info | Note for future consideration |
-| Any scope | All clear | `bundles-forge:releasing` for pre-release pipeline |
+Auditing is a **pure diagnostic** scope: it records findings, scores, and go/no-go style signals in the report. It does **not** suggest fixes, delegate work, or route you to other skills — the **user or an orchestrating skill** (e.g. `blueprinting`, `optimizing`, `releasing`) decides what happens next.
 
-**Re-audit rule:** After fixing critical/warning issues, run one re-audit to verify. Do not loop more than once — if the re-audit still has issues, present them to the user for manual decision.
+| Report Source | Finding Level | What the report gives you |
+|--------------|---------------|----------------------------|
+| Full project (`audit-report`) | Critical/Warning | Findings by category with severity; use the report as the source of truth for what failed checks showed. |
+| Single skill (`skill-report`) | Critical/Warning | Skill-scope findings and verdict vocabularies (self-check / third-party); no prescribed remediation path from auditing. |
+| Workflow (`workflow-report`) | W1-W12 findings | Layered workflow findings only; interpretation and next steps sit with the caller. |
+| Any scope | Info | Improvement opportunities noted in the report. |
+| Any scope | All clear | Pass state in the report; any follow-up (e.g. release prep) is chosen outside auditing. |
+
+**Verification after changes:** After you address issues, a **single** re-audit can confirm whether critical/warning items are resolved. Whether to run further audits is driven by the **caller** (user or orchestrating skill), not by an audit↔optimize loop.
 
 ---
 

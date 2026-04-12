@@ -13,7 +13,7 @@ Bundles Forge 提供四种审计范围，各自针对不同粒度：
 | **完整项目** | 发布前、重大变更后、初次审查 | 10 大类、60+ 项检查 | `audit_project.py` |
 | **单个技能** | 审查单个技能、评估第三方技能 | 4 类（结构、质量、交叉引用、安全） | `audit_skill.py` |
 | **工作流** | 添加/移除技能后、链路集成检查 | 3 层（静态、语义、行为）、W1-W12 | `audit_workflow.py` |
-| **仅安全扫描** | 快速安全检查、安装前检查 | 5 大攻击面 | `scan_security.py` |
+| **仅安全扫描** | 快速安全检查、安装前检查 | 7 大攻击面 | `scan_security.py` |
 
 所有范围共享相同的评分公式、严重级别和报告规范。Agent 根据目标路径自动检测范围 — 你也可以直接调用脚本。
 
@@ -90,7 +90,7 @@ python scripts/audit_project.py --json <project-root>  # JSON 输出
 
 `audit_project.py` 编排三个子脚本：
 - `lint_skills.py` — 技能质量 lint（Q1-Q17、S9、X1-X3、G1-G5）
-- `scan_security.py` — 安全模式扫描（5 大攻击面）
+- `scan_security.py` — 安全模式扫描（7 大攻击面）
 - `audit_workflow.py` — 工作流集成分析（W1-W12）
 
 然后添加自身的结构、清单、版本同步、钩子、测试和文档检查。
@@ -108,7 +108,7 @@ python scripts/audit_project.py --json <project-root>  # JSON 输出
 | 7 | 钩子 | 中 (2) | 引导注入、平台检测 |
 | 8 | 测试 | 中 (2) | 测试目录、提示词、A/B 评估结果 |
 | 9 | 文档 | 低 (1) | README、安装文档、CHANGELOG |
-| 10 | 安全 | 高 (3) | 5 大攻击面 — 技能内容、钩子、插件、Agent、脚本 |
+| 10 | 安全 | 高 (3) | 7 大攻击面 — 技能内容、Hook 脚本、HTTP hooks、CLAUDE_ENV_FILE 注入、OpenCode 插件、Agent 提示词、打包脚本 |
 
 总权重 = 23。总分 = `sum(score_i × weight_i) / 23`。
 
@@ -231,7 +231,7 @@ python scripts/audit_workflow.py --json <project-root>                   # JSON 
 **添加第三方技能的典型工作流：**
 
 ```
-1. 运行 blueprinting 场景 D（集成规划）
+1. 由用户或编排类技能决定准备工作与后续步骤（例如工作流重构）。
 2. 将技能添加到项目
 3. 运行：python scripts/audit_workflow.py --focus-skills new-skill-a,new-skill-b .
 4. 修复焦点区域发现
@@ -258,7 +258,7 @@ python scripts/audit_workflow.py --json <project-root>                   # JSON 
 /bundles-scan
 ```
 
-映射到 `bundles-forge:auditing` 技能的安全专用模式 — 仅运行类别 10（安全），覆盖全部 5 大攻击面。
+映射到 `bundles-forge:auditing` 技能的安全专用模式 — 仅运行类别 10（安全），覆盖全部 7 大攻击面。
 
 ### 通过脚本
 
@@ -268,33 +268,41 @@ python scripts/scan_security.py <skill-directory>         # 单技能扫描
 python scripts/scan_security.py --json <project-root>     # JSON 输出
 ```
 
-### 5 大攻击面
+### 7 大攻击面
 
 | 攻击面 | 风险等级 | 示例 |
 |--------|---------|------|
 | SKILL.md 内容 | 高 | 敏感文件访问、破坏性命令、安全覆盖、编码欺骗 |
 | Hook 脚本 | 高 | 网络调用、环境变量泄露、系统配置修改 |
+| HTTP hooks | 高 | 通过 `type: "http"` 钩子将工具输入/输出发送到外部 URL 进行数据泄露 |
+| `CLAUDE_ENV_FILE` 注入 | 高 | Hook 脚本写入 `CLAUDE_ENV_FILE` 向所有后续 Bash 命令注入环境变量（包括 PATH 修改） |
 | OpenCode 插件 | 高 | 动态代码执行、网络访问、消息操纵 |
 | Agent 提示词 | 中 | 权限提升、范围扩展、安全覆盖 |
 | 打包脚本 | 中 | 网络调用、系统修改、未消毒的输入 |
 
+**企业管控：** 管理员可在托管策略中设置 `allowManagedHooksOnly`，禁用所有用户/项目/插件钩子，仅允许通过 `enabledPlugins` 分发的组织审批钩子。
+
+**成本提示：** `prompt` 和 `agent` 类型的钩子在每次匹配事件时调用 LLM。匹配所有工具的 `PreToolUse` prompt 钩子在高强度会话中可能产生显著的 token 费用。
+
 ### 检查清单
 
-- **安全检查清单：** `skills/auditing/references/security-checklist.md` — 全部 5 个攻击面的完整模式列表
+- **安全检查清单：** `skills/auditing/references/security-checklist.md` — 全部 7 个攻击面的完整模式列表
 
 ---
 
 ## 审计之后
 
-| 报告来源 | 发现级别 | 操作 |
-|---------|---------|------|
-| 完整项目（`audit-report`） | Critical/Warning | `bundles-forge:optimizing` — 项目优化（全部 6 项目标） |
-| 单个技能（`skill-report`） | Critical/Warning | `bundles-forge:optimizing` — 技能优化（4 项目标 + 反馈） |
-| 工作流（`workflow-report`） | W1-W12 发现 | `bundles-forge:optimizing` 目标 4（工作流链路完整性） |
-| 任意范围 | Info | 记录待后续考虑 |
-| 任意范围 | 全部通过 | `bundles-forge:releasing` 进入发布前流水线 |
+审计是**纯诊断**范围：在报告中记录发现、评分以及 go/no-go 类信号。它**不**建议修复、不委派工作、也不将你路由到其他技能 —— **用户或编排类技能**（例如 `blueprinting`、`optimizing`、`releasing`）决定后续动作。
 
-**重审规则：** 修复 critical/warning 问题后，运行一次重审验证。不要循环超过一次 — 如果重审仍有问题，交给用户手动决定。
+| 报告来源 | 发现级别 | 报告提供的内容 |
+|---------|---------|----------------|
+| 完整项目（`audit-report`） | Critical/Warning | 按类别列出的发现与严重级别；以报告为未通过检查所呈现事实的权威依据。 |
+| 单个技能（`skill-report`） | Critical/Warning | 技能范围内的发现与判定用语（自检 / 第三方）；审计不规定补救路径。 |
+| 工作流（`workflow-report`） | W1-W12 发现 | 仅分层工作流发现；如何解读与跟进由调用方决定。 |
+| 任意范围 | Info | 报告中记为信息类的改进机会。 |
+| 任意范围 | 全部通过 | 报告中为通过状态；任何后续动作（例如发布前准备）在审计之外由调用方选择。 |
+
+**变更后的验证：** 处理问题后，可**再运行一次**审计以确认 critical/warning 项是否已解决。是否继续多次审计由**调用方**（用户或编排类技能）决定，而非审计与优化之间的往返循环。
 
 ---
 

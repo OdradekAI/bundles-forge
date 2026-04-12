@@ -25,7 +25,6 @@ EXPECTED_SKILLS=(
   releasing
   scaffolding
   using-bundles-forge
-  porting
 )
 
 echo "[1] Skills directory exists"

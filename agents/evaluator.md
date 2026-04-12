@@ -1,7 +1,7 @@
 ---
 name: evaluator
 description: |
-  Use this agent to run one side of an A/B skill evaluation. Dispatched by optimizing — load a skill version, execute test prompts, and document results for comparison.
+  Use when running one side of an A/B skill evaluation or chain verification. Dispatched by optimizing (A/B eval) and auditing (W11-W12 chain eval) — load a skill version, execute test prompts, and document results for comparison.
 model: inherit
 disallowedTools: Edit
 maxTurns: 30
@@ -68,6 +68,7 @@ Write the evaluation report to `.bundles-forge/` in the project root:
 - Follow the skill instructions literally — do not improvise or add steps the skill doesn't specify
 - If the skill instructions are ambiguous, note the ambiguity and pick the most reasonable interpretation
 - Do not compare yourself to the other version — you only know your own side
+- If you are approaching your turn limit, prioritize completing the report summary and saving the file over finishing remaining test prompts
 
 ---
 
@@ -131,3 +132,4 @@ Write the chain evaluation report to `.bundles-forge/` in the project root:
 - At each transition, evaluate artifact presence BEFORE starting the next skill
 - If a transition is "broken" (required artifact missing), still proceed to evaluate the remaining chain — note the gap
 - Do not compare chain results to single-skill results — chain evaluation measures workflow integration, not individual skill quality
+- If you are approaching your turn limit, prioritize completing the chain summary and saving the file over finishing remaining transitions

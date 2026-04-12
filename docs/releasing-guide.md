@@ -25,11 +25,11 @@ The release pipeline is designed as a quality gate — not a formality. It ensur
 
 ### Development Must Be Complete
 
-The releasing skill is the **last step** in the development lifecycle. Before invoking it, ensure:
+The **releasing** skill is the **release pipeline orchestrator** in the hub-and-spoke model: it sequences diagnostics, remediation, version bumps, and publishing. It does not replace earlier design and implementation work. Before invoking it, ensure:
 
 - All skill content is written and reviewed (`bundles-forge:authoring`)
-- Quality issues are resolved (`bundles-forge:auditing` → `bundles-forge:optimizing`)
-- Platform adapters are in place (`bundles-forge:porting`)
+- Quality issues are on track to resolution. **Releasing** orchestrates **`bundles-forge:auditing`** for diagnostics and directs you to **`bundles-forge:optimizing`** (and authoring as needed) for fixes — **auditing does not automatically route to optimizing**; the release pipeline (or you) decides that sequence.
+- Platform adapters are in place (`bundles-forge:scaffolding`)
 - All changes are committed — `git status` shows a clean working tree
 
 ### Choosing a Version Number
@@ -71,12 +71,11 @@ Run all automated checks before proceeding:
 # Version drift detection
 python scripts/bump_version.py --check
 
-# Full quality + security audit
-python scripts/audit_project.py .
-
 # Documentation consistency (7 checks)
 python scripts/check_docs.py .
 ```
+
+**Full audit:** Invoke `bundles-forge:auditing` (preferred — includes qualitative assessment via auditor subagent with 10-category scoring). Fallback: `python scripts/audit_project.py .` (automated checks only, no qualitative scoring).
 
 **`check_docs.py` checks (D1–D7):**
 
@@ -100,7 +99,7 @@ All findings from Step 1 are grouped by severity:
 | **Warning** | Recommend fixing, user decides | Documentation drift, missing table entries |
 | **Info** | Note for future | Undocumented scripts, minor inconsistencies |
 
-For quality fixes, invoke `bundles-forge:optimizing`.
+For quality fixes, invoke `bundles-forge:optimizing` as part of this pipeline. Auditing only surfaces findings; it does not hand off to optimizing automatically — **releasing** (or you) orchestrates that step.
 
 ### Step 3: Documentation Sync
 

@@ -7,8 +7,15 @@ should-trigger:
   - "Scaffold a minimal bundle-plugin for my skill"
   - "Create the full project with hooks, bootstrap, and version infrastructure"
   - "I finished the blueprint, now generate the scaffolding"
+  - "Add Cursor support to my bundle-plugin"
+  - "Port this Claude Code plugin to also work on Gemini CLI"
+  - "My OpenCode manifest is broken, help me fix it"
+  - "I want to support all five platforms"
+  - "Remove Codex support from this project"
 
 should-not-trigger:
   - "Help me plan what skills to include"
   - "Write the content for my SKILL.md"
   - "Check this project for security risks"
+  - "Audit this project for quality issues"
+  - "Bump the version and publish a release"

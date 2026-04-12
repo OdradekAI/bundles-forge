@@ -82,7 +82,7 @@ If the working tree is dirty, stop immediately and ask the user to commit or sta
          │
 1. Pre-flight checks
    ├── Version drift check (bump_version.py --check)
-   ├── Full audit (audit_project.py or bundles-forge:auditing)
+   ├── Full audit: bundles-forge:auditing (preferred) or audit_project.py (fallback)
    ├── Documentation consistency (check_docs.py)
    ├── Cross-reference validity (check_docs.py)
    └── Git tag conflict check (git tag -l v<version>)
@@ -145,12 +145,13 @@ Run all automated checks. If any critical issues are found, resolve them before 
 # Version drift
 python scripts/bump_version.py --check
 
-# Full audit (includes security scan + skill quality)
-python scripts/audit_project.py <project-root>
-
 # Documentation consistency (skill lists, cross-refs, manifests, READMEs)
 python scripts/check_docs.py <project-root>
 ```
+
+**Plugin validation (Claude Code only):** If running in a Claude Code environment, run `claude plugin validate` (or `/plugin validate` in a session) to verify `plugin.json` schema, skill/agent/command frontmatter, and `hooks/hooks.json` validity. Skip this step on other platforms — the inspector agent covers equivalent structural checks.
+
+**Full audit:** Invoke `bundles-forge:auditing` (preferred — includes qualitative assessment via auditor subagent with 10-category scoring). Fallback: `python scripts/audit_project.py <project-root>` (automated checks only, no qualitative scoring).
 
 If audit status is FAIL, resolve critical issues before releasing. If security findings are critical, block the release.
 
@@ -210,6 +211,9 @@ Help the user choose the right version increment:
 | Breaking changes to skill behavior or structure | Major (X.0.0) | Renamed skills, changed workflow chain |
 | New skills, new platform support, significant improvements | Minor (0.X.0) | Added a skill, added Gemini support |
 | Bug fixes, description improvements, doc updates | Patch (0.0.X) | Fixed description, updated README |
+| Testing a major release before stabilizing | Pre-release (X.Y.Z-beta.N) | `2.0.0-beta.1`, `2.0.0-rc.1` |
+
+Pre-release versions follow semver pre-release syntax. The bump script accepts any valid version string — pre-release versions work the same as stable ones across all manifests.
 
 ```bash
 python scripts/bump_version.py <new-version>
@@ -300,6 +304,20 @@ When setting up version infrastructure for the first time:
 3. Run `python scripts/bump_version.py --check` to verify initial sync
 4. Run `python scripts/bump_version.py --audit` to catch any missed files
 
+## Distribution Strategy
+
+Choose how users will install the plugin based on the target audience:
+
+| Strategy | Best For | How |
+|----------|----------|-----|
+| Marketplace (Claude Code) | Public distribution, widest reach | `claude plugin publish` — users install via `claude plugin install` |
+| Project scope | Team tooling shared via git | Install with `--scope project` — config committed to `.claude/settings.json` |
+| Local scope | Personal project-specific plugins | Install with `--scope local` — gitignored, per-developer |
+| Git-based (Codex, OpenCode, Gemini) | Platforms without marketplaces | Users clone the repo and follow per-platform install docs |
+| Development mode | Iterating before publishing | `claude --plugin-dir .` — loads current directory, no caching |
+
+For marketplace distribution, ensure `.claude-plugin/marketplace.json` exists with plugin metadata. For development iteration, use `--plugin-dir .` to bypass caching — changes take effect immediately without version bumps.
+
 ## Common Mistakes
 
 | Mistake | Fix |
@@ -330,9 +348,8 @@ When setting up version infrastructure for the first time:
 ## Integration
 
 **Calls:**
-- **bundles-forge:auditing** — pre-release quality and security check
-- **bundles-forge:optimizing** — fix quality findings
+- **bundles-forge:auditing** — pre-release quality and security diagnostics
+- **bundles-forge:optimizing** — orchestrate fixes for quality findings
 
 **Pairs with:**
-- **bundles-forge:scaffolding** — initial version infrastructure setup
-- **bundles-forge:porting** — new platform support often triggers a release and needs version sync
+- **bundles-forge:scaffolding** — version infrastructure setup and platform sync

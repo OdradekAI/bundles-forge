@@ -2,11 +2,11 @@
 
 [中文](blueprinting-guide.zh.md)
 
-A user-oriented guide to planning bundle-plugins with Bundles Forge. Covers all four entry scenarios, decision-making guidance, real-world examples, and common pitfalls.
+A user-oriented guide to planning bundle-plugins with Bundles Forge. Covers all three entry scenarios, decision-making guidance, real-world examples, and common pitfalls.
 
 ## Overview
 
-Blueprinting is the first skill in the bundle-plugin lifecycle. It turns a vague idea into a concrete design document through structured interview — before any code or project structure is generated.
+Blueprinting is the **new-project orchestrator**: it runs the design interview and, after you approve the design document, coordinates the full creation pipeline. It turns a vague idea into a concrete design document through structured interview — before any code or project structure is generated.
 
 **Why it matters:** Five minutes of blueprinting saves hours of rework. Skipping this step is the #1 cause of poorly structured bundle-plugins that need complete restructuring later.
 
@@ -16,22 +16,21 @@ Blueprinting is the first skill in the bundle-plugin lifecycle. It turns a vague
 
 ## Choosing a Scenario
 
-Blueprinting has four entry points. Pick the one that matches your situation:
+Blueprinting has three entry points. Pick the one that matches your situation:
 
 | Scenario | Starting Point | When to Use | Output |
 |----------|---------------|-------------|--------|
 | **A: New project** | No existing code | You're starting from scratch with an idea | Full design document |
 | **B: Decomposition** | One large skill | Your SKILL.md has grown too complex | Decomposition plan → design document |
 | **C: Composition** | Multiple existing skills | You want to combine independent skills into a workflow | Composition plan → design document |
-| **D: Integration** | Existing bundle-plugin project | You want to add skills to a project that already works | Lightweight integration plan |
+
+> **Want to add skills to an existing project?** That's optimization, not blueprinting. Use `/bundles-optimize` — see Target 7 (Skill & Workflow Restructuring) in the [optimizing guide](optimizing-guide.md).
 
 ### Decision Flowchart
 
 ```
 Do you have an existing bundle-plugin project?
-  ├─ Yes → Are you adding new skills to it?
-  │         ├─ Yes → Scenario D (Integration)
-  │         └─ No  → You probably need auditing or optimizing, not blueprinting
+  ├─ Yes → You probably need optimizing (add skills, restructure) or auditing, not blueprinting
   └─ No  → Do you have existing skills?
             ├─ Yes → Is it ONE large skill that needs splitting?
             │         ├─ Yes → Scenario B (Decomposition)
@@ -79,7 +78,7 @@ Questions 3b, 4, 5, and 6 are only asked in **intelligent mode** (orchestrated m
 ### Tips for Good Answers
 
 - **Project name:** Use kebab-case (`my-dev-tools`, not `myDevTools`). This name appears everywhere.
-- **Platforms:** Start with what you actually use today. Add others later with `bundles-forge:porting`.
+- **Platforms:** Start with what you actually use today. Add others later with `bundles-forge:scaffolding`.
 - **Skill inventory:** Even a rough list helps. You can always add skills later.
 - **Workflow chain:** Draw it out — "skill-a → skill-b → skill-c". If skills are independent, say so.
 
@@ -145,42 +144,9 @@ Questions 3b, 4, 5, and 6 are only asked in **intelligent mode** (orchestrated m
 
 ---
 
-## Scenario D: Integration (Adding to Existing Project)
-
-**Your bundle-plugin already works, and you want to add new skills to it.** This is lighter than Scenarios A-C — it produces an integration plan, not a full design document.
-
-### What to Expect
-
-1. The skill reads your existing project (skills, workflow graph, bootstrap routing)
-2. It inventories the new skills being added (same analysis as Scenario C)
-3. It checks compatibility against the *existing project* (not a blank slate)
-4. It designs insertion points: where do new skills connect to the workflow?
-5. After you approve, it applies changes and suggests a focused workflow audit
-
-### Integration Plan vs Design Document
-
-| | Design Document (A/B/C) | Integration Plan (D) |
-|---|---|---|
-| **Scope** | Entire project | Only what changes |
-| **Includes** | Name, platforms, all skills, full workflow | New skills, insertion points, updated edges |
-| **Leads to** | `scaffolding` → `authoring` | Direct changes + workflow audit |
-| **Duration** | Full lifecycle | Quick iteration |
-
-### Post-Integration Verification
-
-After integration, always run a focused workflow audit:
-
-```bash
-python scripts/audit_workflow.py --focus-skills new-skill-a,new-skill-b .
-```
-
-This verifies that new skills integrate correctly without breaking existing workflow chains.
-
----
-
 ## The Design Document
 
-All scenarios except D produce a design document with this structure:
+All scenarios produce a design document with this structure:
 
 ```markdown
 ## Bundle-Plugin Design: <project-name>
@@ -217,13 +183,18 @@ All scenarios except D produce a design document with this structure:
 
 ## After Blueprinting
 
-| What Happens Next | Triggered By |
-|-------------------|-------------|
-| `bundles-forge:scaffolding` | Design document approved (automatic chain) |
-| `bundles-forge:authoring` | After scaffolding generates the project structure |
-| `bundles-forge:porting` | If multi-platform targets were selected |
+When the design document is approved, **blueprinting orchestrates** a four-phase pipeline. This is not a single automatic handoff only to scaffolding; the orchestrator drives each stage in order:
 
-The transition to scaffolding is automatic — the agent invokes it with your approved design document.
+| Phase | What runs | Purpose |
+|-------|-----------|---------|
+| **Phase 1** | `bundles-forge:scaffolding` | Generate project structure and platform manifests |
+| **Phase 2** | `bundles-forge:authoring` | Author **SKILL.md** and **agents/*.md** — **invoked by blueprinting** after scaffolding (not by scaffolding) |
+| **Phase 3** | Workflow design | Wire skills together (chains, bootstrap, commands) per the design |
+| **Phase 4** | `bundles-forge:auditing` | Validate quality and security before further iteration |
+
+Later, use `bundles-forge:scaffolding` again if you need to add more platforms.
+
+The agent carries your approved design document through these phases. **Authoring** is called by **blueprinting** as part of this pipeline; scaffolding does not call authoring.
 
 ---
 
@@ -237,3 +208,4 @@ The transition to scaffolding is automatic — the agent invokes it with your ap
 | Design document has wrong platform | Answered platform question too quickly | Edit the design document before approving |
 | Third-party skill fails security audit | Imported skill has risky patterns | Fix the issues or exclude the skill |
 | Not sure which scenario to pick | Multiple apply | Follow the decision flowchart above |
+| Want to add skills to an existing project | Used blueprinting instead of optimizing | Use `/bundles-optimize` — Target 7 handles skill integration |

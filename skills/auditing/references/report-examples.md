@@ -14,7 +14,7 @@ Supplementary examples for the audit report template (`report-template.md`). The
 |-----------|---------|
 | Platform | `3/5 platforms affected` — Cursor, Claude Code, and Codex manifests have invalid paths |
 | Workflow | `blocks scaffolding → auditing chain` — broken cross-reference prevents workflow progression |
-| Component | `4/8 skills` — four skills exceed token budget |
+| Component | `4/7 skills` — four skills exceed token budget |
 | Functional | `breaks install` — session-start hook fails on Windows due to missing run-hook.cmd |
 
 ## Exploitability Examples

@@ -82,6 +82,19 @@ Scan `hooks/session-start`, `hooks/run-hook.cmd`, and any other executable in `h
 | HK11 | Warning | Creating files outside the project directory or `~/.config/<project>/` |
 | HK12 | Warning | Running `chmod` with setuid/setgid bits |
 
+### HTTP Hook Exfiltration
+
+| Check | Risk | Pattern |
+|-------|------|---------|
+| HK13 | Critical | `type: "http"` in hooks.json — HTTP hooks send tool input/output to external URLs |
+| HK14 | Critical | External URLs in hook config (not localhost/127.0.0.1) |
+
+### Environment Variable Injection
+
+| Check | Risk | Pattern |
+|-------|------|---------|
+| HK15 | Warning | Writing to `CLAUDE_ENV_FILE` — injects env vars (including PATH) into all subsequent Bash commands |
+
 ### Legitimate Hook Baseline
 
 A legitimate `session-start` hook should only:
@@ -89,6 +102,7 @@ A legitimate `session-start` hook should only:
 2. Read a single SKILL.md file
 3. JSON-escape the content
 4. Emit platform-appropriate JSON to stdout
+5. Exit 0 on failure (no-op, does not block session)
 
 Anything beyond this baseline is suspicious and needs justification.
 
@@ -177,6 +191,34 @@ The standard `bump_version.py` should only:
 2. Read/write version fields in declared JSON files using `jq`
 3. Grep the repo for version strings
 4. Output results to stdout
+
+---
+
+## Category 6: Plugin Configuration Safety (Weight: Medium)
+
+Scan `plugin.json` manifests, `.mcp.json`, `.lsp.json`, and hook commands for path and configuration issues.
+
+### Path Traversal
+
+| Check | Risk | Pattern |
+|-------|------|---------|
+| PC1 | Warning | `../` path references in `plugin.json` component paths, hook commands, or MCP/LSP configs — after marketplace install, the plugin is cached and `../` paths break |
+| PC2 | Warning | Absolute paths in plugin configs — installed plugins should use `${CLAUDE_PLUGIN_ROOT}` or relative `./` paths |
+| PC3 | Info | Symlinks to external directories — legitimate but should be documented in README |
+
+### User Configuration (`userConfig`)
+
+| Check | Risk | Pattern |
+|-------|------|---------|
+| PC4 | Warning | `userConfig` field contains key names suggesting secrets (token, key, secret, password, credential, auth) but `sensitive` is not set to `true` |
+| PC5 | Info | `userConfig` sensitive values referenced via `${user_config.KEY}` in skill or agent content — sensitive values should only appear in MCP/LSP/hook configs, not in conversation-visible content |
+
+### Persistent Data
+
+| Check | Risk | Pattern |
+|-------|------|---------|
+| PC6 | Info | Hook scripts or MCP configs write to `${CLAUDE_PLUGIN_ROOT}` — data written here is lost on plugin update; should use `${CLAUDE_PLUGIN_DATA}` instead |
+| PC7 | Info | No dependency caching pattern detected when plugin bundles MCP servers with npm dependencies — consider adding a SessionStart hook for `${CLAUDE_PLUGIN_DATA}` install |
 
 ---
 

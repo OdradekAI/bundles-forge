@@ -1,7 +1,7 @@
 ---
 name: auditor
 description: |
-  Use this agent to perform a systematic quality audit and security scan of bundle-plugins against the 10-category checklist. Dispatched by auditing for thorough automated assessment.
+  Use when a bundle-plugin needs systematic quality audit and security scan against the 10-category checklist. Dispatched by auditing for thorough automated assessment.
 model: inherit
 disallowedTools: Edit
 maxTurns: 40
@@ -23,10 +23,10 @@ When auditing a project, you will:
    - **Skill Quality**: Frontmatter, descriptions, token efficiency
    - **Cross-References**: `project:skill-name` resolution, broken links (X1-X3)
    - **Workflow**: Workflow graph topology, integration symmetry, artifact handoff (W1-W12)
-   - **Hooks**: Bootstrap injection, platform detection, JSON escaping
+   - **Hooks**: Bootstrap injection, platform detection, JSON escaping, HTTP hook exfiltration risk, `CLAUDE_ENV_FILE` injection risk
    - **Testing**: Test directory, test prompts, A/B eval results, platform coverage
    - **Documentation**: README, install docs, CHANGELOG
-   - **Security**: 5 attack surfaces — hook scripts, plugin code, agent prompts, skill content (including references/*.md), bundled scripts
+   - **Security**: 7 attack surfaces — hook scripts, HTTP hooks, `CLAUDE_ENV_FILE` injection, plugin code, agent prompts, skill content (including references/*.md), bundled scripts
 
    Category weights are defined in `skills/auditing/references/audit-checklist.md`.
 

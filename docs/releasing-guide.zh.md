@@ -25,11 +25,11 @@
 
 ### 开发必须完成
 
-发布技能是开发生命周期的**最后一步**。调用前请确保：
+**发布（releasing）** 技能在 hub-and-spoke 架构中是**发布流水线编排器**：它编排诊断、修复、版本升级与发布。它不能替代前期的设计与实现。调用前请确保：
 
 - 所有技能内容已编写并审查（`bundles-forge:authoring`）
-- 质量问题已解决（`bundles-forge:auditing` → `bundles-forge:optimizing`）
-- 平台适配器已就位（`bundles-forge:porting`）
+- 质量问题正在得到解决。**发布**编排 **`bundles-forge:auditing`** 做诊断，并引导你使用 **`bundles-forge:optimizing`**（及按需的 authoring）做修复 — **审计不会自动跳转到优化**；由发布流水线（或你）决定该顺序。
+- 平台适配器已就位（`bundles-forge:scaffolding`）
 - 所有更改已提交 — `git status` 显示干净的工作区
 
 ### 选择版本号
@@ -71,12 +71,11 @@ git branch --show-current
 # 版本漂移检测
 python scripts/bump_version.py --check
 
-# 完整质量 + 安全审计
-python scripts/audit_project.py .
-
 # 文档一致性（7 项检查）
 python scripts/check_docs.py .
 ```
+
+**完整审计：** 调用 `bundles-forge:auditing`（首选 — 通过 auditor 子代理提供 10 类定性评估与评分）。回退：`python scripts/audit_project.py .`（仅自动化检查，无定性评分）。
 
 **`check_docs.py` 检查项（D1–D7）：**
 
@@ -100,7 +99,7 @@ python scripts/check_docs.py .
 | **Warning** | 建议修复，用户决定 | 文档漂移、缺失的表格条目 |
 | **Info** | 记录待后续处理 | 未文档化的脚本、轻微不一致 |
 
-如需质量修复，调用 `bundles-forge:optimizing`。
+如需质量修复，在本流水线中调用 `bundles-forge:optimizing`。审计只呈现发现，不会自动交给优化 — 由**发布**（或你）编排该步骤。
 
 ### 步骤 3：文档同步
 

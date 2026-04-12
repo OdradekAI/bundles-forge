@@ -1,6 +1,6 @@
 ---
 name: using-bundles-forge
-description: "Use when starting any conversation involving bundle-plugins — blueprinting, scaffolding, authoring, auditing, optimizing, porting, or releasing. Also use when unsure which bundles-forge skill applies"
+description: "Use when starting any conversation involving bundle-plugins — blueprinting, scaffolding, authoring, auditing, optimizing, or releasing. Also use when unsure which bundles-forge skill applies"
 ---
 
 <SUBAGENT-STOP>
@@ -48,38 +48,42 @@ User message about bundle-plugins
     → no  → Respond directly
 ```
 
-## User Entry Points
+## Orchestrators (high-frequency entry points)
 
-These skills are invoked directly by users. Each has a matching command in `commands/`.
+These skills diagnose, decide, and delegate. They orchestrate other skills to accomplish multi-step goals.
 
-| Skill | When to Use |
-|-------|-------------|
-| `bundles-forge:blueprinting` | Planning new bundle-plugins, splitting or composing skills, combining third-party skills |
-| `bundles-forge:auditing` | Reviewing a project for quality issues, security risks, or before release |
-| `bundles-forge:optimizing` | Engineering optimization, feedback iteration, descriptions, token efficiency |
-| `bundles-forge:releasing` | Version management, release pipeline: audit, version bump, publish |
+| Skill | Role | When to Use |
+|-------|------|-------------|
+| `bundles-forge:blueprinting` | New-project orchestrator | Planning new bundle-plugins, splitting complex skills, or composing skills into bundles. Orchestrates the full creation pipeline: scaffolding → authoring → workflow design → auditing |
+| `bundles-forge:optimizing` | Improvement orchestrator | Engineering optimization, feedback iteration, descriptions, tokens, adding skills, restructuring workflows. Delegates content changes to authoring |
+| `bundles-forge:releasing` | Release pipeline orchestrator | Version management, release pipeline: audit, version bump, publish |
 
-## Workflow Skills (invoked by other skills, not directly)
+## Executors (single-responsibility workers)
 
-These skills are called as part of a workflow chain. Users typically don't invoke them directly — they are triggered by entry-point skills.
+These skills do one thing well. They can be invoked directly by users or dispatched by orchestrators.
 
-| Skill | Called By | Purpose |
-|-------|-----------|---------|
-| `bundles-forge:scaffolding` | blueprinting | Generate project structure after design approval |
-| `bundles-forge:authoring` | scaffolding | Fill in SKILL.md content after scaffold |
-| `bundles-forge:porting` | scaffolding / standalone | Add platform support to existing project |
-| `bundles-forge:using-bundles-forge` | hooks (auto-loaded) | Bootstrap meta-skill — you're reading it now |
+| Skill | Role | When to Use |
+|-------|------|-------------|
+| `bundles-forge:scaffolding` | Structure generator | Generating project structure, adding or removing platform support |
+| `bundles-forge:authoring` | Content writer | Writing or improving SKILL.md content and agent definitions (agents/*.md) |
+| `bundles-forge:auditing` | Diagnostic reporter | Reviewing a project for quality issues, security risks — outputs reports, does not orchestrate fixes |
+
+## Meta-skill
+
+| Skill | Purpose |
+|-------|---------|
+| `bundles-forge:using-bundles-forge` | Bootstrap meta-skill — you're reading it now (auto-loaded by hooks) |
 
 ## Skill Priority
 
-When multiple skills could apply:
+When multiple skills could apply, prefer orchestrators over executors:
 
-1. **Design first** — if creating something new, splitting, or composing skills, start with `bundles-forge:blueprinting`
-2. **Write content after scaffold** — use `bundles-forge:authoring` to fill in SKILL.md files
-3. **Audit before optimize** — understand the full picture before targeted fixes
-4. **Platform adapt after scaffold** — structure must exist before adding platforms
-5. **Optimize includes feedback** — use `bundles-forge:optimizing` for both engineering improvements and user feedback iteration
-6. **Release as the final step** — use `bundles-forge:releasing` to orchestrate audit, version bump, and publish
+1. **New project** → `bundles-forge:blueprinting` (orchestrates scaffolding, authoring, auditing)
+2. **Improve existing project** → `bundles-forge:optimizing` (orchestrates authoring, scaffolding, auditing)
+3. **Release** → `bundles-forge:releasing` (orchestrates auditing, optimizing)
+4. **Standalone content writing** → `bundles-forge:authoring` (when you just need to write/improve a SKILL.md)
+5. **Standalone structure** → `bundles-forge:scaffolding` (when you just need to add/remove a platform)
+6. **Standalone audit** → `bundles-forge:auditing` (when you just need a diagnostic report)
 
 ## Naming Conventions
 
@@ -105,7 +109,7 @@ These thoughts mean STOP — you're skipping a skill you should use:
 |---------|---------|
 | "I know how to scaffold a project" | Skills encode best practices you'll miss. |
 | "Just a quick audit" | The audit checklist has 50+ checks including security. Use the skill. |
-| "I'll just add the manifest" | Platform adaptation involves version sync, hooks, docs. |
+| "I'll just add the manifest" | Platform adaptation involves version sync, hooks, docs. Use scaffolding. |
 | "Version bump is simple" | Drift detection and audit catch what you'd miss. |
 | "This project is too small for all this" | Small projects grow. Set up right from the start. |
 | "This skill is from a trusted source" | Trust but verify. Auditing includes security scanning. |

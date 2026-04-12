@@ -2,11 +2,13 @@
 
 [中文](optimizing-guide.zh.md)
 
-A user-oriented guide to optimizing bundle-plugins and individual skills with Bundles Forge. Covers scope detection, the 6 optimization targets, A/B evaluation, feedback iteration, and the audit-optimize cycle.
+A user-oriented guide to optimizing bundle-plugins and individual skills with Bundles Forge. Covers scope detection, the 8 optimization targets, A/B evaluation, feedback iteration, and the diagnose → delegate → verify pipeline.
 
 ## Overview
 
-Optimizing is the iterative improvement skill. Unlike auditing (which assesses), optimizing takes action — fixing descriptions, reducing tokens, tightening workflow chains, and processing user feedback.
+Optimizing is the **orchestrator** for iterative improvement in the hub-and-spoke model. It **diagnoses** what needs to change, **delegates** substantive content edits to `bundles-forge:authoring`, and **verifies** outcomes by invoking `bundles-forge:auditing` (one-way: auditing reports only; it does not call back into optimizing).
+
+Unlike auditing (which assesses only), optimizing drives improvement from the hub — fixing descriptions, reducing tokens, tightening workflow chains, and processing user feedback — routing SKILL.md and agent content work to authoring where appropriate.
 
 **Core principle:** Optimize for the agent's experience. Every improvement should make skills easier to discover, faster to load, and clearer to follow.
 
@@ -20,25 +22,25 @@ Optimizing auto-detects whether you're working on a full project or a single ski
 
 | Target | Detection | Mode | Targets |
 |--------|----------|------|---------|
-| Project root | Has `skills/` + `package.json` | Project optimization | All 6 targets |
+| Project root | Has `skills/` + `package.json` | Project optimization | All 8 targets |
 | Single skill directory | Has `SKILL.md`, no `skills/` subdirectory | Skill optimization | 4 targets + feedback |
 
 You don't need to specify the mode — the skill detects it from the path you provide.
 
 ### Input Sources
 
-Optimizing can consume reports from prior audits. This is the recommended workflow — audit first, then optimize based on findings:
+Optimizing can consume reports from prior audits. A common pattern is **audit first, then optimize** based on findings — but remember that **`bundles-forge:auditing` is diagnostic only**: it does not invoke optimizing. **You** run optimizing when you want fixes, or another orchestrator (for example **`bundles-forge:releasing`**) sequences auditing and optimizing in its pipeline.
 
 | Input | Source | Use |
 |-------|--------|-----|
-| `audit-report` | `bundles-forge:auditing` (full project) | Per-skill breakdowns for all 6 targets |
+| `audit-report` | `bundles-forge:auditing` (full project) | Per-skill breakdowns for all 8 targets |
 | `skill-report` | `bundles-forge:auditing` (skill mode) | Focused 4-category report for skill optimization |
 | `workflow-report` | `bundles-forge:auditing` (workflow mode) | W1-W12 findings for Target 4 |
 | `user-feedback` | Direct from user | Behavioral feedback for the iteration process |
 
 ---
 
-## The 6 Optimization Targets
+## The 8 Optimization Targets
 
 ### Target 1: Skill Description Triggering
 
@@ -123,7 +125,7 @@ python scripts/audit_workflow.py --focus-skills skill-a,skill-b <root>
 
 ### Target 5: Platform Coverage (project only)
 
-Identify platforms the project doesn't yet support. For adding new platforms, invoke `bundles-forge:porting` — optimizing doesn't generate platform adapters itself.
+Identify platforms the project doesn't yet support. For adding new platforms, invoke `bundles-forge:scaffolding` — optimizing doesn't generate platform adapters itself.
 
 ### Target 6: Security Remediation (project only)
 
@@ -135,6 +137,80 @@ Fix security findings from `bundles-forge:auditing` Category 10. Common fixes:
 | OpenCode plugin has excessive capabilities | Scope to declared needs |
 | Agent prompt lacks scope constraints | Add explicit boundaries |
 | SKILL.md contains encoded/obfuscated content | Strip or replace with plain text |
+
+### Target 7: Skill & Workflow Restructuring (project only)
+
+Structural changes to the project: adding skills, replacing skills, reorganizing workflow chains, or converting skills to subagents. This was previously part of blueprinting (Scenario D) but belongs in optimizing because it operates on existing projects without producing a design document.
+
+#### When to Use
+
+| User Says | Action |
+|-----------|--------|
+| "Add a new skill to my project" | Target 7a — add skill, wire into workflow |
+| "Replace this skill with a better one" | Target 7b — replace and update references |
+| "The workflow chain needs reorganizing" | Target 7c — restructure execution paths |
+| "This skill should be a subagent instead" | Target 7d — convert to read-only agent |
+| "My project needs better X capability" | Feedback process → may lead to Target 7a |
+
+#### Adding Skills (7a)
+
+The most common restructuring operation. The process:
+
+1. Read the existing project — map skills, workflow graph, bootstrap routing
+2. Inventory new skills — source, structure, frontmatter quality
+3. Check compatibility against the existing project (naming, responsibilities, conventions)
+4. For third-party skills — follow the shared integration reference (`references/third-party-integration.md`) covering license, security audit, and integration intent
+5. Design insertion points — where do new skills connect?
+6. Apply — copy, adapt, update Integration sections
+7. Verify — focused workflow audit with `--focus-skills`
+
+#### Replacing Skills (7b)
+
+Same compatibility analysis as adding, plus:
+- Map all references to the old skill
+- Update cross-references, Integration sections, and routing table
+- Verify with workflow audit
+
+#### Reorganizing Workflows (7c)
+
+When the execution chain has inefficiencies:
+- Map the current graph and identify bottlenecks or unnecessary handoffs
+- Propose new chain (present to user)
+- Update Integration sections and routing
+- Verify with Chain A/B Eval
+
+#### Skill-to-Agent Conversion (7d)
+
+Candidates for conversion:
+- Execution produces verbose temporary context (search results, file contents, logs) that subsequent steps don't need
+- Skills that only inspect/validate without modifying files
+- Skills that produce structured reports (self-contained output)
+- Skills that could run in parallel with other work (optional bonus)
+
+Conversion extracts the execution protocol into `agents/<role>.md` with fallback logic for when subagents are unavailable. After conversion, dispatch the `evaluator` agent with test prompts to confirm the new agent correctly executes the former skill's responsibilities, then run `bundles-forge:auditing` to verify dispatch/fallback logic.
+
+### Target 8: Optional Component Management (project only)
+
+Add, adjust, or migrate optional plugin components based on evolving project needs. This target handles the gap between initial scaffolding and the components a project needs as it matures.
+
+#### When to Use
+
+| Signal | Component | Action |
+|--------|-----------|--------|
+| Skills hardcode API keys/endpoints as `${VAR}` env vars | `userConfig` | Migrate to `userConfig` for automatic user prompting |
+| Audit finds MCP servers without `userConfig`-backed auth | `userConfig` | Add `userConfig` fields with `sensitive: true` |
+| Skills reference external SaaS APIs with no integration | `.mcp.json` or `bin/` | Add MCP server or CLI — consult decision tree |
+| Skills involve language-specific code intelligence | `.lsp.json` | Add LSP server config |
+| Users request custom output formats | `output-styles/` | Add output style definitions |
+| Plugin MCP server has npm dependencies | `${CLAUDE_PLUGIN_DATA}` | Add SessionStart dependency install hook |
+| Plugin uses `../` paths or writes to `${CLAUDE_PLUGIN_ROOT}` | Path migration | Fix to use relative `./` paths and `${CLAUDE_PLUGIN_DATA}` |
+
+#### How It Works
+
+1. **Diagnose** — identify signals from audit reports, user feedback, or direct inspection
+2. **Decide** — consult `skills/scaffolding/references/external-integration.md` for the full decision tree (CLI vs MCP, userConfig schema, PLUGIN_DATA patterns, LSP fields, output-styles format)
+3. **Execute** — invoke `bundles-forge:scaffolding` using its "Adding Optional Components" flow
+4. **Verify** — run `bundles-forge:auditing` to confirm structural integrity and security compliance (especially for new MCP servers and userConfig sensitive values)
 
 ---
 
@@ -233,34 +309,32 @@ Receive feedback
   → Apply changes to copy
   → A/B eval (original vs optimized)
   → User decides: adopt or discard
-  → Run auditing for post-change verification
+  → Optimizing invokes auditing for post-change verification
 ```
 
 **Rules:**
 - Never apply feedback without user confirmation
 - For external skills, always fork first (add provenance header)
-- Only one audit cycle after changes (no loops)
+- At most one verification pass after changes; if issues remain, escalate to the user — do not auto-loop. **Optimizing** triggers re-audit when following this skill's protocol; **auditing** does not auto-trigger optimizing.
 
 ---
 
-## The Audit-Optimize Cycle
+## Recommended Pipeline (Diagnose → Delegate → Verify)
 
-Optimizing and auditing form a deliberate cycle:
+Optimizing is a **one-way** verification pattern toward auditing, not a mutual skill cycle. Auditing never invokes optimizing; optimizing **calls** auditing when it needs a verification report after changes.
 
 ```
-auditing finds issues → optimizing fixes them → auditing verifies fixes
-                                                  ↑ stop here (one cycle)
+optimizing diagnoses → delegates content edits to authoring → verifies via auditing
 ```
 
-**Important:** The cycle runs exactly once. If the re-audit still has issues, present them to the user for manual decision — do not loop indefinitely.
+**Important:** If verification still shows issues, present them to the user for a manual decision — do not loop indefinitely. Further passes are a **new** user- or orchestrator-driven run of optimizing (or authoring), not auditing "calling back" into optimizing.
 
 ### Recommended Workflow
 
-1. Run `bundles-forge:auditing` (full, skill, or workflow mode)
-2. Review the report — prioritize critical findings
-3. Run `bundles-forge:optimizing` with the audit report as input
-4. After fixes, auditing runs automatically for verification
-5. Review the verification report — if issues remain, decide manually
+1. Optionally run `bundles-forge:auditing` (full, skill, or workflow mode) to produce a diagnostic report as input.
+2. Review the report — prioritize critical findings.
+3. Run `bundles-forge:optimizing` with the audit report (or your goals). It diagnoses, delegates content work to `bundles-forge:authoring` as needed, applies non-content optimizations per its protocol, and **invokes** `bundles-forge:auditing` for post-change verification (**optimizing** triggers this step — auditing does not auto-start optimizing).
+4. Review the verification report — if issues remain, decide manually whether to run another optimizing or authoring pass.
 
 ---
 
@@ -284,4 +358,6 @@ python scripts/audit_workflow.py --focus-skills a,b <path>  # Focused workflow a
 | 4. Workflow Chain Integrity | Full | Partial (W9/W10 only) |
 | 5. Platform Coverage | Full | Skip |
 | 6. Security Remediation | Full | Partial |
+| 7. Skill & Workflow Restructuring | Full | Skip |
+| 8. Optional Component Management | Full | Skip |
 | Feedback Iteration | Full | Full |

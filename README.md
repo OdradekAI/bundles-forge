@@ -52,7 +52,7 @@ cd your-bundle-plugin-project
 /bundles-audit
 ```
 
-Runs a 10-category quality assessment with security scanning across 5 attack surfaces.
+Runs a 10-category quality assessment with security scanning across 7 attack surfaces.
 
 ## Concepts
 
@@ -69,7 +69,7 @@ Runs a 10-category quality assessment with security scanning across 5 attack sur
 
 ## Skills
 
-The 8 skills cover the full lifecycle of a bundle-plugin project:
+The 7 skills cover the full lifecycle of a bundle-plugin project:
 
 ```mermaid
 flowchart LR
@@ -79,18 +79,16 @@ flowchart LR
     Audit -->|issues| Optimize["optimizing"]
     Optimize --> Audit
     Audit -->|pass| Release["releasing"]
-    Adapt["porting"] -.->|"any phase"| Design
-    Adapt -.->|"any phase"| Release
+    Scaffold -.->|"platform adapt"| Audit
 ```
 
 | Phase | Skill | What It Does |
 |-------|-------|-------------|
 | Design | `blueprinting` | Structured interview to determine project scope, platform targets, and skill decomposition. Produces a design document. |
-| Scaffold | `scaffolding` | Generates the complete project structure from the design — manifests, hooks, scripts, bootstrap skill, and per-platform files. |
+| Scaffold | `scaffolding` | Generates project structure from design, adds or removes platform support — manifests, hooks, scripts, bootstrap skill, and per-platform files. |
 | Write | `authoring` | Guides SKILL.md authoring — frontmatter, "Use when..." descriptions, instructions, and progressive disclosure via `references/`. |
-| Audit | `auditing` | 10-category quality assessment including security scanning across 5 attack surfaces. |
-| Optimize | `optimizing` | Engineering improvements — description triggering accuracy, token efficiency, workflow chains, and feedback iteration. |
-| Adapt | `porting` | Adds or fixes platform support. Generates manifests from templates. |
+| Audit | `auditing` | 10-category quality assessment including security scanning across 7 attack surfaces. |
+| Optimize | `optimizing` | Engineering improvements — description triggering, token efficiency, workflow restructuring, adding skills to fill gaps, and feedback iteration. |
 | Release | `releasing` | Orchestrates the pre-release pipeline: version drift check, audit, documentation consistency, change coherence review, version bump, CHANGELOG update, and publish guidance. |
 
 The bootstrap meta-skill `using-bundles-forge` is injected at session start via hooks — it gives the agent awareness of all available skills and routes tasks automatically.
@@ -101,7 +99,7 @@ The bootstrap meta-skill `using-bundles-forge` is injected at session start via 
 
 | Agent | Role |
 |-------|------|
-| `inspector` | Validates scaffolded project structure |
+| `inspector` | Validates scaffolded project structure and platform adaptation |
 | `auditor` | Executes systematic quality audit with security scanning |
 | `evaluator` | Runs one side of an A/B skill evaluation for optimization |
 
@@ -111,6 +109,7 @@ The bootstrap meta-skill `using-bundles-forge` is injected at session start via 
 |---------|-------|
 | `/bundles-forge` | `using-bundles-forge` |
 | `/bundles-blueprint` | `blueprinting` |
+| `/bundles-scaffold` | `scaffolding` |
 | `/bundles-audit` | `auditing` |
 | `/bundles-optimize` | `optimizing` |
 | `/bundles-release` | `releasing` |
@@ -127,7 +126,7 @@ Four audit scopes for different levels of granularity — the agent auto-detects
 | Full Project | `/bundles-audit` or `audit_project.py` | 10 categories (structure, manifests, version sync, skill quality, cross-refs, workflow, hooks, testing, docs, security) |
 | Single Skill | `/bundles-audit skills/authoring` or `audit_skill.py` | 4 categories (structure, skill quality, cross-refs, security) |
 | Workflow | Explicit request or `audit_workflow.py` | 3 layers: static structure, semantic interface, behavioral verification (W1-W12) |
-| Security Only | `/bundles-scan` or `scan_security.py` | 5 attack surfaces (skill content, hooks, plugins, agents, scripts) |
+| Security Only | `/bundles-scan` or `scan_security.py` | 7 attack surfaces (skill content, hook scripts, HTTP hooks, CLAUDE_ENV_FILE injection, OpenCode plugins, agent prompts, bundled scripts) |
 
 ### Quick Start (Scripts)
 
@@ -160,6 +159,7 @@ Each slash command is a thin pointer to a skill. The real logic lives in the ski
 flowchart LR
     subgraph commands [Slash Commands]
         CMD_BP["/bundles-blueprint"]
+        CMD_SF["/bundles-scaffold"]
         CMD_AU["/bundles-audit"]
         CMD_OP["/bundles-optimize"]
         CMD_RE["/bundles-release"]
@@ -167,6 +167,7 @@ flowchart LR
     end
 
     CMD_BP --> blueprinting
+    CMD_SF --> scaffolding
     CMD_AU --> auditing
     CMD_OP --> optimizing
     CMD_RE --> releasing
@@ -179,9 +180,6 @@ flowchart LR
     optimizing -->|"verify fixes"| auditing
     releasing -->|"pre-release check"| auditing
     releasing -->|"fix quality"| optimizing
-    blueprinting -.->|"platform targets"| porting
-    scaffolding -.->|"add platform"| porting
-    porting -->|"post-adaptation"| auditing
 ```
 
 #### `/bundles-blueprint` — Plan a new bundle-plugin
@@ -195,7 +193,20 @@ User runs /bundles-blueprint
   → scaffolding: generate project structure, manifests, hooks, scripts
     → inspector agent validates scaffold (if subagents available)
   → authoring: guide SKILL.md content for each skill
-  → porting: add platform adapters (if multi-platform)
+```
+
+#### `/bundles-scaffold` — Generate or adapt project structure
+
+**When to use:** Adding platform support to an existing project, removing a platform, or generating a new project directly (without going through blueprinting first).
+
+```
+User runs /bundles-scaffold
+  → scaffolding: detect context (new project vs existing project)
+  → New project: ask mode preference (intelligent/custom), generate structure
+  → Existing project: detect current platforms, add/remove target platform
+    → Generate adapter files from templates
+    → Update .version-bump.json, hooks, README
+    → inspector agent validates changes (if subagents available)
 ```
 
 #### `/bundles-audit` — Quality assessment
@@ -218,18 +229,19 @@ User runs /bundles-audit
 
 #### `/bundles-scan` — Security-focused audit
 
-**When to use:** Same as `/bundles-audit` but emphasizes security scanning. Maps to the same `auditing` skill — the 5-surface security scan (SKILL.md content, hook scripts, plugin code, agent prompts, bundled scripts) runs as Category 9.
+**When to use:** Same as `/bundles-audit` but emphasizes security scanning. Maps to the same `auditing` skill — the 7-surface security scan (SKILL.md content, hook scripts, HTTP hooks, CLAUDE_ENV_FILE injection, OpenCode plugins, agent prompts, bundled scripts) runs as Category 10.
 
 #### `/bundles-optimize` — Engineering improvements
 
-**When to use:** Improving description triggering accuracy, reducing token usage, fixing workflow chain gaps, or iterating on user feedback about a specific skill.
+**When to use:** Improving description triggering accuracy, reducing token usage, fixing workflow chain gaps, adding skills to fill gaps, restructuring workflows, or iterating on user feedback about a specific skill.
 
 ```
 User runs /bundles-optimize
   → optimizing: detect scope (project vs single skill)
-  → Project scope: 6 optimization targets
+  → Project scope: 8 optimization targets
     (descriptions, tokens, progressive disclosure, workflow chain,
-     platform coverage, security remediation)
+     platform coverage, security remediation, skill & workflow restructuring,
+     optional component management)
   → Skill scope: targeted optimization + feedback iteration
   → Description A/B test:
     → 2x evaluator agents in parallel (if subagents available)

@@ -44,9 +44,15 @@ Replace all placeholders before writing to the target project.
 |---------------|-------------|---------|
 | `assets/root/bootstrap-skill.md` | `skills/using-<project-name>/SKILL.md` | Meta-skill: instruction priority, skill routing table |
 
+### Optional Components (if specified in design)
+
+| Template File | Target Path | Purpose |
+|---------------|-------------|---------|
+| `assets/mcp-json.md` | `.mcp.json` | MCP server definitions (choose transport from template variants) |
+
 ### Platform Adapters
 
-Platform-specific manifest templates live in `porting/assets/`. Use those when generating per-platform files (plugin.json, hooks.json, etc.).
+Platform-specific manifest templates live in `assets/platforms/`. Use those when generating per-platform files (plugin.json, hooks.json, etc.). The Claude Code `hooks.json` template includes a top-level `description` (use `<Project Name>` placeholder) and per-handler `timeout: 10`.
 
 ---
 

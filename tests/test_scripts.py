@@ -36,7 +36,7 @@ HAS_BASH = _bash_works()
 
 EXPECTED_SKILLS = {
     "authoring", "auditing", "blueprinting", "optimizing",
-    "releasing", "scaffolding", "using-bundles-forge", "porting",
+    "releasing", "scaffolding", "using-bundles-forge",
 }
 
 
@@ -69,7 +69,7 @@ class TestLintSkills(unittest.TestCase):
         data = json.loads(result.stdout)
         skill_names = {s["skill"] for s in data["skills"]}
         expected = {"blueprinting", "scaffolding", "authoring", "auditing",
-                    "optimizing", "releasing", "porting",
+                    "optimizing", "releasing",
                     "using-bundles-forge"}
         self.assertTrue(expected.issubset(skill_names),
                         f"Missing skills: {expected - skill_names}")
@@ -339,6 +339,7 @@ class TestBootstrapInjection(unittest.TestCase):
     @unittest.skipUnless(HAS_BASH, "bash not available")
     def test_claude_output_is_valid_json(self):
         result = self._run_hook(CLAUDE_PLUGIN_ROOT=str(REPO_ROOT))
+        self.assertEqual(result.returncode, 0, f"Hook exited {result.returncode}")
         try:
             json.loads(result.stdout)
         except json.JSONDecodeError:
@@ -347,10 +348,22 @@ class TestBootstrapInjection(unittest.TestCase):
     @unittest.skipUnless(HAS_BASH, "bash not available")
     def test_cursor_output_is_valid_json(self):
         result = self._run_hook(CURSOR_PLUGIN_ROOT=str(REPO_ROOT))
+        self.assertEqual(result.returncode, 0, f"Hook exited {result.returncode}")
         try:
             json.loads(result.stdout)
         except json.JSONDecodeError:
             self.fail("Cursor hook output is not valid JSON")
+
+    @unittest.skipUnless(HAS_BASH, "bash not available")
+    def test_fallback_output_is_plain_text(self):
+        """When neither platform env var is set, output is plain text."""
+        result = self._run_hook()
+        self.assertEqual(result.returncode, 0, f"Hook exited {result.returncode}")
+        self.assertIn("EXTREMELY_IMPORTANT", result.stdout)
+        self.assertNotIn("hookSpecificOutput", result.stdout,
+                         "Fallback should not use Claude Code JSON")
+        self.assertNotIn("additional_context", result.stdout,
+                         "Fallback should not use Cursor JSON")
 
     @unittest.skipUnless(HAS_BASH, "bash not available")
     def test_claude_output_contains_bootstrap_content(self):

@@ -41,7 +41,7 @@ graph TB
     Subagent -->|"scoped mcpServers"| MCPServer
     Subagent -->|"scoped hooks"| Hook
     Hook -->|"reacts to lifecycle of"| Subagent
-    Skill -->|"chains to via prose"| Skill
+    Skill -->|"dispatches via prose"| Skill
 ```
 
 ---
@@ -64,7 +64,7 @@ allowed-tools: Read, Grep, Glob, Shell
 ---
 ```
 
-> **In bundles-forge:** 8 skills form a lifecycle workflow — each skill's instructions tell the agent which skill to invoke next using the `bundles-forge:<name>` convention. See [How They Work Together](#how-they-work-together-in-bundles-forge).
+> **In bundles-forge:** 7 skills are organized in a hub-and-spoke model — 3 orchestrators (`blueprinting`, `optimizing`, `releasing`) dispatch 3 executors (`scaffolding`, `authoring`, `auditing`) plus 1 bootstrap meta-skill. Orchestrators use the `bundles-forge:<name>` convention to dispatch executors via prose. See [How They Work Together](#how-they-work-together-in-bundles-forge).
 
 ### Plugin
 
@@ -100,16 +100,22 @@ Subagents have a custom system prompt, tool restrictions, and model selection. T
 
 **[Official docs](https://code.claude.com/docs/en/hooks)** — A shell command, HTTP endpoint, or LLM prompt that executes automatically at specific lifecycle events.
 
-Events include `SessionStart`, `PreToolUse`, `PostToolUse`, `Stop`, `SubagentStart`, etc. Hooks can block operations, inject context, or trigger side effects. Defined in `hooks/hooks.json` or settings.
+Events include `SessionStart`, `PreToolUse`, `PostToolUse`, `Stop`, `SubagentStart`, `FileChanged`, `CwdChanged`, and 20+ others. Four handler types are available: `command` (shell), `http` (POST to URL), `prompt` (LLM evaluation), and `agent` (agentic verifier with tools). Hooks can block operations, inject context, or trigger side effects. Defined in `hooks/hooks.json`, settings files, or skill/agent frontmatter.
 
 **Example file:** `hooks/hooks.json`
 
 ```json
 {
+  "description": "Bootstrap: injects skill routing context on session start",
   "hooks": {
     "SessionStart": [{
-      "type": "command",
-      "command": "./hooks/session-start"
+      "matcher": "startup|clear|compact",
+      "hooks": [{
+        "type": "command",
+        "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.cmd\" session-start",
+        "timeout": 10,
+        "async": false
+      }]
     }]
   }
 }
@@ -123,7 +129,9 @@ Events include `SessionStart`, `PreToolUse`, `PostToolUse`, `Stop`, `SubagentSta
 
 MCP servers provide tools, resources, and prompts. They are configured via `.mcp.json` and can be bundled inside plugins to start automatically. Common use cases include databases, APIs, and issue trackers.
 
-> **In bundles-forge:** The toolkit doesn't ship its own MCP server, but the `auditing` skill checks target projects for MCP configuration security issues across 5 attack surfaces.
+Not every external integration needs MCP — stateless, single-shot tools are better served by CLI executables in `bin/`. The `scaffolding` skill's `references/external-integration.md` provides a decision tree for choosing between CLI and MCP, covering both Claude Code and Cursor platforms.
+
+> **In bundles-forge:** The toolkit doesn't ship its own MCP server, but the `auditing` skill checks target projects for MCP configuration security issues across 7 attack surfaces (skill content, hook scripts, HTTP hooks, CLAUDE_ENV_FILE injection, OpenCode plugins, agent prompts, and bundled scripts).
 
 ---
 
@@ -135,7 +143,7 @@ MCP servers provide tools, resources, and prompts. They are configured via `.mcp
 
 Commands have been merged into the skill system — a file at `.claude/commands/deploy.md` and a skill at `.claude/skills/deploy/SKILL.md` create the same `/deploy` command. Plugin `commands/` directories are still supported.
 
-> **In bundles-forge:** 6 `/bundles-*` commands serve as thin entry points that redirect to the corresponding skill.
+> **In bundles-forge:** 7 `/bundles-*` commands serve as thin entry points that redirect to the corresponding skill.
 
 ### Marketplace
 
@@ -176,7 +184,7 @@ Concepts in the plugin ecosystem can be confusing at first. This section clarifi
 | **Discovery** | Agent matches user intent against `description` field | User types `/command-name` explicitly |
 | **Can exist alone?** | Yes — skills work without a command | No — commands must point to a skill |
 
-**Why both exist:** Skills are the real workers; commands are just convenience shortcuts for users who prefer explicit invocation. Not every skill needs a command — some are only invoked by other skills via chaining.
+**Why both exist:** Skills are the real workers; commands are just convenience shortcuts for users who prefer explicit invocation. Not every skill needs a command — executor skills may be dispatched by orchestrator skills rather than invoked directly by users.
 
 ### Skill (inline) vs Skill (context:fork)
 
@@ -187,7 +195,7 @@ Concepts in the plugin ecosystem can be confusing at first. This section clarifi
 | **Can edit files?** | Depends on `allowed-tools` | Depends on subagent config |
 | **Use when** | The skill needs conversation context or user interaction | The task is self-contained and benefits from isolation |
 
-**In bundles-forge:** All 8 skills run inline (they need to interact with the user and chain to other skills). The 3 agents run in forked contexts (they perform isolated validation and return reports).
+**In bundles-forge:** All 7 skills run inline (they need to interact with the user and dispatch or be dispatched by other skills). The 3 agents run in forked contexts (they perform isolated diagnostic tasks and return reports).
 
 ### Hook vs Subagent
 
@@ -206,9 +214,9 @@ Concepts in the plugin ecosystem can be confusing at first. This section clarifi
 | | Plugin | Bundle-Plugin |
 |---|---|---|
 | **Skills** | 1 or more, possibly independent | 3+ skills that form a workflow |
-| **Chaining** | Skills don't reference each other | Skills explicitly chain via `project:skill-name` |
-| **Lifecycle** | No defined order | Clear sequence (e.g., design → scaffold → audit) |
-| **Example** | A single code-review skill | bundles-forge (8 skills in a lifecycle pipeline) |
+| **Integration** | Skills don't reference each other | Skills explicitly dispatch via `project:skill-name` |
+| **Lifecycle** | No defined order | Hub-and-spoke: orchestrators dispatch executors (e.g., blueprinting dispatches scaffolding, authoring, auditing) |
+| **Example** | A single code-review skill | bundles-forge (7 skills in a hub-and-spoke model) |
 
 **The distinction matters because** bundle-plugins need engineering infrastructure that single-skill plugins don't: cross-reference validation, workflow integrity checks, version synchronization across manifests, and coordinated quality gates. That's what bundles-forge provides.
 
@@ -218,14 +226,14 @@ Concepts in the plugin ecosystem can be confusing at first. This section clarifi
 
 These explain *why* bundles-forge is built the way it is — not just *what* it does.
 
-### Why do skills chain through prose, not code APIs?
+### Why do skills dispatch through prose, not code APIs?
 
 Skills are Markdown files loaded into an AI agent's context. They don't have a runtime, an event bus, or function imports. The only communication channel between skills is the agent itself — one skill tells the agent "now invoke `bundles-forge:scaffolding`" in plain text, and the agent's platform-level skill-loading tool handles the rest.
 
-This is not a limitation — it's the fundamental architecture of the plugin ecosystem. Skills are **instructions for an AI**, not code modules for a compiler. Prose chaining means:
+This is not a limitation — it's the fundamental architecture of the plugin ecosystem. Skills are **instructions for an AI**, not code modules for a compiler. Prose dispatch means:
 
 - **Zero coupling** — skills don't import each other or share state
-- **Platform portable** — the same chain works across Claude Code, Cursor, Codex, etc., each using its own skill-loading mechanism
+- **Platform portable** — the same dispatch works across Claude Code, Cursor, Codex, etc., each using its own skill-loading mechanism
 - **Human readable** — anyone can read a SKILL.md and understand the full workflow without tracing code
 
 ### Why are subagents read-only?
@@ -236,7 +244,7 @@ The three bundles-forge subagents (`inspector`, `auditor`, `evaluator`) all have
 - **Trust boundary** — audit reports should be objective. If the auditor could modify files, its findings could be questioned ("did it just pass because it silently fixed the issue?").
 - **Predictability** — users invoke `/bundles-audit` expecting a report, not surprise file changes.
 
-The skill that dispatches the agent is responsible for acting on the report — offering to fix issues, re-running the audit, or chaining to `optimizing`.
+The skill or user that dispatches the agent is responsible for acting on the report — offering to fix issues, re-running the audit, or invoking the appropriate orchestrator.
 
 ### Why do users interact through skills, not agents?
 
@@ -246,13 +254,13 @@ Subagents can't spawn other subagents. If users invoked agents directly:
 - There would be no pre-processing (scope detection, target path resolution)
 - There would be no post-processing (report merging, re-audit offers, workflow routing)
 
-Skills are **orchestrators**. They handle the full interaction lifecycle: detect what the user wants → dispatch the right agent → collect results → present findings → offer next steps. Agents are **executors** — they do one focused job and return.
+Skills handle the interaction lifecycle: detect what the user wants → dispatch the right agent → collect results → present findings → offer next steps. Within skills, **orchestrators** (`blueprinting`, `optimizing`, `releasing`) manage multi-step pipelines, while **executors** (`scaffolding`, `authoring`, `auditing`) perform focused tasks. Subagents are **diagnostic tools** — they do one read-only job and return a report.
 
 ### Why does session-start inject the full skill inventory?
 
 The `session-start` hook reads `using-bundles-forge/SKILL.md` and injects it into the agent's context at the start of every session. An alternative would be lazy loading — only load skills when needed. But:
 
-- **Routing accuracy** — the agent needs to know *all* available skills to match user intent correctly. If it only knew about `auditing`, it couldn't suggest `optimizing` when audit findings need iteration.
+- **Routing accuracy** — the agent needs to know *all* available skills to match user intent correctly. Without the full inventory, it couldn't route to the appropriate orchestrator or executor.
 - **Cost is low** — the bootstrap skill is compact (~2KB of context). The per-skill SKILL.md files are only loaded when actually invoked.
 - **Fail-safe** — if the hook fails, the agent still works (users can invoke skills manually). If lazy loading failed, the agent would be blind to all skills.
 
@@ -266,8 +274,8 @@ flowchart LR
 
     subgraph BF ["bundles-forge Plugin"]
         HK["session-start Hook"]
-        CMD["6 /bundles-* Commands"]
-        SK["8 Skills"]
+        CMD["7 /bundles-* Commands"]
+        SK["7 Skills: 3 Orchestrators + 3 Executors + 1 Meta"]
         AG["3 Subagents"]
     end
 
@@ -275,13 +283,13 @@ flowchart LR
     CMD -->|"invokes via bundles-forge:name"| SK
     SK -->|"dispatches read-only tasks"| AG
     AG -->|"writes reports to .bundles-forge/"| SK
-    SK -->|"chains via prose instructions"| SK
+    SK -->|"orchestrators dispatch executors via prose"| SK
 ```
 
 1. **Marketplace** distributes the plugin — users install with `claude plugin install bundles-forge`
 2. **Hook** fires at session start — injects the skill inventory so the agent knows what's available
 3. **Commands** provide explicit entry points — `/bundles-audit` routes to the `auditing` skill
-4. **Skills** do the work — they interact with the user, dispatch agents, and chain to the next skill
+4. **Skills** do the work — orchestrators manage pipelines and dispatch executors; executors perform focused tasks
 5. **Subagents** handle isolated tasks — auditing, inspection, A/B evaluation — and write reports to `.bundles-forge/`
 
 ---
@@ -305,6 +313,7 @@ flowchart LR
 | Guide | Purpose |
 |-------|---------|
 | [Blueprinting Guide](blueprinting-guide.md) | Scenario selection, interview walkthrough, design decisions |
+| [Scaffolding Guide](scaffolding-guide.md) | Project generation, platform adaptation, inspector validation |
 | [Auditing Guide](auditing-guide.md) | Audit scopes, checklists, report templates, CI integration |
-| [Optimizing Guide](optimizing-guide.md) | 6 optimization targets, A/B evaluation, feedback iteration |
+| [Optimizing Guide](optimizing-guide.md) | 8 optimization targets, A/B evaluation, feedback iteration |
 | [Releasing Guide](releasing-guide.md) | Release pipeline, version management, publishing |

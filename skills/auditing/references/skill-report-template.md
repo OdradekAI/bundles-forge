@@ -206,5 +206,5 @@ Single skill audit covers 4 categories: Structure, Skill Quality, Cross-Referenc
 - Testing — test suites are project-level
 - Documentation — README/CHANGELOG are project-level
 
-For improvement, invoke `bundles-forge:optimizing`.
+Findings are diagnostic. The calling context decides follow-up actions.
 ```

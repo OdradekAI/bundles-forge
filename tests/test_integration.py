@@ -32,7 +32,6 @@ EXPECTED_SKILLS = [
     "releasing",
     "scaffolding",
     "using-bundles-forge",
-    "porting",
 ]
 
 
@@ -91,11 +90,26 @@ class TestBootstrapInjection(unittest.TestCase):
         "bash not available"
     )
     def test_claude_code_output_is_valid_json(self):
-        stdout, _, rc = _run_hook()
+        stdout, _, rc = _run_hook({"CLAUDE_PLUGIN_ROOT": str(REPO_ROOT)})
         self.assertEqual(rc, 0, f"Hook exited {rc}")
         data = json.loads(stdout)
         self.assertIn("hookSpecificOutput", data,
                        "Claude Code mode should produce hookSpecificOutput")
+
+    @unittest.skipUnless(
+        subprocess.run(["bash", "--version"], capture_output=True).returncode == 0,
+        "bash not available"
+    )
+    def test_fallback_output_is_plain_text(self):
+        """When neither platform env var is set, output is plain text (not JSON)."""
+        stdout, _, rc = _run_hook()
+        self.assertEqual(rc, 0, f"Hook exited {rc}")
+        self.assertIn("EXTREMELY_IMPORTANT", stdout,
+                       "Fallback mode should still output bootstrap content")
+        self.assertNotIn("hookSpecificOutput", stdout,
+                         "Fallback mode should not use Claude Code JSON format")
+        self.assertNotIn("additional_context", stdout,
+                         "Fallback mode should not use Cursor JSON format")
 
     @unittest.skipUnless(
         subprocess.run(["bash", "--version"], capture_output=True).returncode == 0,
@@ -113,7 +127,7 @@ class TestBootstrapInjection(unittest.TestCase):
         "bash not available"
     )
     def test_output_contains_bootstrap_markers(self):
-        stdout, _, _ = _run_hook()
+        stdout, _, _ = _run_hook({"CLAUDE_PLUGIN_ROOT": str(REPO_ROOT)})
         self.assertIn("EXTREMELY_IMPORTANT", stdout)
         self.assertIn("bundles-forge", stdout)
 
@@ -122,11 +136,67 @@ class TestBootstrapInjection(unittest.TestCase):
         self.assertIn("CURSOR_PLUGIN_ROOT", content,
                        "Hook should check CURSOR_PLUGIN_ROOT for platform detection")
 
-    def test_claude_code_is_default_branch(self):
-        """Claude Code output is the else branch — no explicit env var needed."""
+    def test_claude_code_uses_explicit_detection(self):
+        """Claude Code output uses CLAUDE_PLUGIN_ROOT for explicit platform detection."""
         content = HOOK_PATH.read_text(encoding="utf-8")
+        self.assertIn("CLAUDE_PLUGIN_ROOT", content,
+                       "Hook should check CLAUDE_PLUGIN_ROOT for Claude Code detection")
         self.assertIn("hookSpecificOutput", content,
-                       "Hook should emit hookSpecificOutput in default (Claude) branch")
+                       "Hook should emit hookSpecificOutput for Claude Code")
+
+
+class TestHooksJsonSchema(unittest.TestCase):
+    """Validate hooks.json and hooks-cursor.json structure."""
+
+    HOOKS_DIR = REPO_ROOT / "hooks"
+
+    def test_hooks_json_is_valid(self):
+        path = self.HOOKS_DIR / "hooks.json"
+        self.assertTrue(path.exists(), "hooks/hooks.json missing")
+        data = json.loads(path.read_text(encoding="utf-8"))
+        self.assertIn("hooks", data, "hooks.json missing top-level 'hooks' key")
+
+    def test_hooks_json_has_description(self):
+        path = self.HOOKS_DIR / "hooks.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        self.assertIn("description", data,
+                       "hooks.json should have a top-level 'description' field")
+
+    def test_hooks_json_events_are_pascal_case(self):
+        path = self.HOOKS_DIR / "hooks.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        import re
+        for event_name in data.get("hooks", {}):
+            self.assertTrue(
+                re.match(r'^[A-Z][a-zA-Z]+$', event_name),
+                f"Event '{event_name}' should be PascalCase in hooks.json")
+
+    def test_hooks_json_handlers_have_required_fields(self):
+        path = self.HOOKS_DIR / "hooks.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        for event_name, groups in data.get("hooks", {}).items():
+            for group in groups:
+                for handler in group.get("hooks", []):
+                    self.assertIn("type", handler,
+                                  f"Handler in {event_name} missing 'type' field")
+                    self.assertIn("timeout", handler,
+                                  f"Handler in {event_name} missing 'timeout' field")
+
+    def test_hooks_cursor_json_is_valid(self):
+        path = self.HOOKS_DIR / "hooks-cursor.json"
+        self.assertTrue(path.exists(), "hooks/hooks-cursor.json missing")
+        data = json.loads(path.read_text(encoding="utf-8"))
+        self.assertIn("version", data, "hooks-cursor.json missing 'version' key")
+        self.assertIn("hooks", data, "hooks-cursor.json missing 'hooks' key")
+
+    def test_hooks_cursor_json_events_are_camel_case(self):
+        path = self.HOOKS_DIR / "hooks-cursor.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        import re
+        for event_name in data.get("hooks", {}):
+            self.assertTrue(
+                re.match(r'^[a-z][a-zA-Z]+$', event_name),
+                f"Event '{event_name}' should be camelCase in hooks-cursor.json")
 
 
 class TestVersionSync(unittest.TestCase):

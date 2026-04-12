@@ -89,5 +89,22 @@ else
 fi
 
 echo ""
+echo "[7] Hook fallback mode (no platform env vars)"
+unset CURSOR_PLUGIN_ROOT 2>/dev/null || true
+unset CLAUDE_PLUGIN_ROOT 2>/dev/null || true
+fallback_output=$(bash "$HOOK" 2>/dev/null) || true
+if echo "$fallback_output" | grep -q "EXTREMELY_IMPORTANT"; then
+  pass "Fallback output contains bootstrap content"
+else
+  fail "Fallback output missing bootstrap content"
+fi
+
+if echo "$fallback_output" | grep -q "hookSpecificOutput"; then
+  fail "Fallback output should not use Claude Code JSON format"
+else
+  pass "Fallback output does not use Claude Code JSON format"
+fi
+
+echo ""
 echo "=== Results: $PASS passed, $FAIL failed ==="
 exit $FAIL

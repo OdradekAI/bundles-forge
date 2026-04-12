@@ -1,5 +1,36 @@
 # Changelog
 
+## [1.6.0] - 2026-04-12
+
+### Removed
+
+- **`skills/porting/` skill deleted** — platform adaptation (add/remove/migrate platforms) merged into `scaffolding`. All assets moved from `skills/porting/assets/` to `skills/scaffolding/assets/platforms/`. References in `platform-adapters.md` relocated to `skills/scaffolding/references/`. Skill count reduced from 8 to 7.
+- **`tests/prompts/porting.yml`** — test prompts for the removed skill.
+
+### Added
+
+- **`skills/authoring/SKILL.md` major rewrite** — expanded from a short writing guide into a 4-path execution model (new skill, integrate external, complete stub, improve existing) with entry detection, post-action validation via `lint_skills.py`, agent definition authoring, and three reference files (`skill-writing-guide.md`, `agent-authoring-guide.md`, `quality-checklist.md`).
+- **`/bundles-scaffold` command** (`commands/bundles-scaffold.md`) — user-facing entry point for scaffolding, enabling direct project generation and platform adaptation without blueprinting.
+- **`scripts/scan_security.py`** — 7-surface security scanner covering SKILL.md content, hook scripts, hook configs (HTTP hooks), OpenCode plugins, agent prompts, bundled scripts, and MCP configs.
+- **`scripts/audit_project.py`** — full project audit orchestrator combining `lint_skills`, `scan_security`, and `audit_workflow` with structure, manifest, version sync, hooks, testing, and documentation checks.
+- **`docs/scaffolding-guide.md`** and **`docs/scaffolding-guide.zh.md`** — user-oriented guide for the scaffolding skill.
+- **`skills/auditing/references/security-checklist.md`** — detailed security pattern list for all 7 attack surfaces.
+- **Target 8: Optional Component Management** in `skills/optimizing/SKILL.md` — adding/adjusting userConfig, MCP servers, LSP servers, output styles, and PLUGIN_DATA patterns for maturing projects.
+- **`tests/prompts/authoring.yml`** — trigger/non-trigger test prompts for the authoring skill.
+- **`tests/test-bootstrap-injection.sh`** — validates session-start hook output.
+
+### Changed
+
+- **Hub-and-spoke architecture model** — skills reorganized into orchestrators (`blueprinting`, `optimizing`, `releasing`), executors (`scaffolding`, `authoring`, `auditing`), and meta-skill (`using-bundles-forge`). Pipeline stages documented consistently across all files.
+- **`skills/scaffolding/SKILL.md`** — expanded to include platform adaptation (previously in `porting`): add/remove platforms, manifest updates, hook migration, inspector validation. Now user-invocable via `/bundles-scaffold`.
+- **`skills/using-bundles-forge/SKILL.md`** — routing table updated from 8 to 7 skills; replaced flat table with orchestrator/executor/meta sections.
+- **Security scanning unified to 7 attack surfaces** across README, auditing-guide, concepts-guide, CLAUDE.md, and `scan_security.py` docstring.
+- **Optimization targets unified to 8** across `optimizing/SKILL.md`, optimizing-guide, concepts-guide, and README.
+- **`/bundles-*` command count updated to 7** in concepts-guide and Mermaid diagrams.
+- **`agents/inspector.md`** — expanded to cover platform adaptation validation in addition to scaffolded structure.
+- **All documentation updated** — 7-skill model, no references to `porting` in active documentation. Historical references in `examples/` and `CHANGELOG.md` preserved.
+- **Version bumped to 1.6.0** across all synced manifests (`package.json`, `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `.cursor-plugin/plugin.json`, `gemini-extension.json`).
+
 ## [1.5.6] - 2026-04-11
 
 ### Added

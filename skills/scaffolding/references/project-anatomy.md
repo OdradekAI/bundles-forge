@@ -204,14 +204,15 @@ The plugin uses OpenCode's hook API: `config` for path registration, `experiment
 
 ### `session-start`
 
-Bash script that injects the bootstrap skill content as session context. Platform-aware: detects `CURSOR_PLUGIN_ROOT` and `CLAUDE_PLUGIN_ROOT` environment variables to emit the correct JSON shape.
+Bash script that injects the bootstrap skill content as session context. Platform-aware: checks `CURSOR_PLUGIN_ROOT` first, then `CLAUDE_PLUGIN_ROOT`, with a plain-text fallback for unknown platforms.
 
-| Platform | JSON Field |
-|----------|-----------|
-| Cursor | `additional_context` (snake_case) |
-| Claude Code | `hookSpecificOutput.additionalContext` (nested) |
+| Platform | Env Variable | JSON Output |
+|----------|-------------|-------------|
+| Cursor | `CURSOR_PLUGIN_ROOT` | `{"additional_context": "..."}` |
+| Claude Code | `CLAUDE_PLUGIN_ROOT` | `{"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": "..."}}` |
+| Unknown | Neither set | Plain text on stdout |
 
-The script reads the bootstrap SKILL.md, JSON-escapes it, and wraps it in `<EXTREMELY_IMPORTANT>` tags. Uses `printf` instead of heredoc to avoid bash 5.3+ heredoc hang issues.
+The script reads the bootstrap SKILL.md, JSON-escapes it, and wraps it in `<EXTREMELY_IMPORTANT>` tags. Uses `printf` instead of heredoc to avoid bash 5.3+ heredoc hang issues. On read failure, emits a warning to stderr and exits 0 (no-op) rather than blocking the session.
 
 ### `run-hook.cmd`
 
@@ -219,17 +220,20 @@ Windows polyglot — a file that is valid both as a Windows `.cmd` batch script 
 
 ### `hooks.json`
 
-Claude Code hook descriptor:
+Claude Code hook descriptor. The top-level `description` is shown in the `/hooks` menu; `timeout` prevents slow hooks from blocking session start.
 
 ```json
 {
+  "description": "Bootstrap: injects skill routing context on session start",
   "hooks": {
     "SessionStart": [
       {
+        "matcher": "startup|clear|compact",
         "hooks": [
           {
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.cmd\" session-start",
+            "timeout": 10,
             "async": false
           }
         ]

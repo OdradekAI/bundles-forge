@@ -8,9 +8,9 @@ allowed-tools: Bash(python scripts/*)
 
 ## Overview
 
-Systematically evaluate a bundle-plugin project or a single skill across applicable quality categories — including security scanning — score each, and produce an actionable report.
+Systematically evaluate a bundle-plugin project or a single skill across applicable quality categories — including security scanning — score each, and produce a diagnostic report. This skill is a pure diagnostic tool: it identifies and reports issues but does not orchestrate fixes.
 
-**Core principle:** Measure before you fix. A scored audit prevents both under-reaction and over-engineering.
+**Core principle:** Measure and report. A scored audit gives orchestrating skills (blueprinting, optimizing, releasing) the information they need to decide what to fix.
 
 **This skill includes security scanning.** Category 10 performs a security scan of skill content, hook scripts, plugin code, agent prompts, and bundled scripts. No need to invoke a separate security skill.
 
@@ -64,9 +64,7 @@ Scan project root
   → Run 10-category checks (including security scan)
   → Score each category
   → Compile report
-  → Present findings
-  → Critical/Warning? → Apply fixes → Suggest optimization
-  → Info only?        → Suggest optimization
+  → Present findings (grouped by severity)
 ```
 
 ### Script Shortcuts
@@ -117,7 +115,7 @@ The auditor executes all 10 categories (Structure, Platform Manifests, Version S
 
 ### Security Scan (Category 10)
 
-Scans 5 attack surfaces. See `references/security-checklist.md` for the full pattern list.
+Scans 7 attack surfaces. See `references/security-checklist.md` for the full pattern list.
 
 | Target | Risk Level |
 |--------|-----------|
@@ -137,14 +135,15 @@ If subagents are available, dispatch the `evaluator` agent (`agents/evaluator.md
 
 **When to skip:** Quick post-change checks, when evaluator dispatch is unavailable, or when static and semantic layers show no issues. Note the skip in the report — the Workflow score excludes skipped layers from its weighted average.
 
-### Step 6: Fix or Optimize
+### Step 6: Report Findings
 
-- **Critical issues:** Offer to fix immediately
-- **Warnings:** Offer to fix or suggest `bundles-forge:optimizing`
-- **Workflow findings (W1-W12):** Route to `bundles-forge:optimizing` Target 4 (Workflow Chain Integrity)
-- **Info:** Note for future consideration
+Present all findings grouped by severity:
 
-**Termination rule:** After fixing critical/warning issues, run one re-audit to verify. Do not loop more than once — if the re-audit still has issues, present them to the user for manual decision.
+- **Critical** — skill/project will not work correctly, or contains active security threats
+- **Warning** — works but has quality issues or suspicious patterns needing review
+- **Info** — improvement opportunities
+
+The audit report is the final output. The calling context (orchestrating skill or user) decides what to fix and how.
 
 ---
 
@@ -197,7 +196,7 @@ When the user explicitly requests a workflow audit, or when the Full audit's Cro
 ### When to Trigger
 
 - User explicitly requests "audit the workflow" or "check workflow integration"
-- After adding third-party skills to an existing project (via `bundles-forge:blueprinting` Scenario D)
+- After adding skills to an existing project
 - After modifying Integration sections, Inputs/Outputs, or adding new skills to a chain
 - When the Full audit's Workflow category shows warnings — suggest: "Workflow issues detected. Run a focused workflow audit with `--focus-skills` for detailed diagnostics."
 
@@ -218,17 +217,11 @@ After the auditor returns the workflow report, dispatch `evaluator` agent (`agen
 
 **If subagent dispatch is unavailable:** Ask the user — "Subagents are not available. I can run the workflow checks inline. Proceed?" If confirmed, read `agents/auditor.md` (Workflow Audit Mode section) and follow its execution instructions inline, then handle W11-W12 from `references/workflow-checklist.md`.
 
-### Fix or Optimize
+### Report Findings
 
-Route workflow findings to `bundles-forge:optimizing` Target 4 (Workflow Chain Integrity). The optimizing skill consumes the `workflow-report` and applies targeted fixes to Integration sections, Inputs/Outputs, and artifact IDs.
+Present workflow findings grouped by severity. The `workflow-report` is consumed by the calling context for targeted fixes.
 
 ---
-
-## Severity Levels
-
-- **Critical** — skill/project will not work correctly, or contains active security threats
-- **Warning** — works but has quality issues or suspicious patterns needing review
-- **Info** — improvement opportunities
 
 ## Common Mistakes
 
@@ -248,22 +241,14 @@ Route workflow findings to `bundles-forge:optimizing` Target 4 (Workflow Chain I
 
 ## Outputs
 
-- `audit-report` — scored report with findings across 10 categories (full project), written to `.bundles-forge/` by the auditor agent. Contains per-skill breakdowns. Consumed by `bundles-forge:optimizing` for targeted fixes
-- `skill-report` (skill mode) — 4-category scored report (Structure, Quality, Cross-Refs, Security) for a single skill, written to `.bundles-forge/`. Consumed by `bundles-forge:optimizing` (Skill Optimization)
-- `workflow-report` (workflow mode) — workflow-specific report with W1-W12 findings across static/semantic/behavioral layers, with focus/context partitioning. Consumed by `bundles-forge:optimizing` Target 4
+- `audit-report` — scored report with findings across 10 categories (full project), written to `.bundles-forge/` by the auditor agent. Contains per-skill breakdowns
+- `skill-report` (skill mode) — 4-category scored report (Structure, Quality, Cross-Refs, Security) for a single skill, written to `.bundles-forge/`
+- `workflow-report` (workflow mode) — workflow-specific report with W1-W12 findings across static/semantic/behavioral layers, with focus/context partitioning
 
 ## Integration
 
-<!-- cycle:auditing,optimizing -->
-
 **Called by:**
-- **bundles-forge:scaffolding** — post-scaffold verification
+- **bundles-forge:blueprinting** — Phase 4: initial quality check on new projects
 - **bundles-forge:optimizing** — post-change verification after applying optimizations
 - **bundles-forge:releasing** — pre-release quality and security check
-- **bundles-forge:porting** — verify after platform adaptation
-
-**Calls:**
-- **bundles-forge:optimizing** — when findings need targeted fixes or user feedback iteration
-
-**Pairs with:**
-- **bundles-forge:releasing** — version drift checks, pre-release verification
+- User directly — standalone audit of any project or skill

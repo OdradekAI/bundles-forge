@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Bundles Forge is a bundle-plugin engineering toolkit supporting 5 platforms: Claude Code, Cursor, Codex, OpenCode, and Gemini CLI. It contains 8 skills covering the full lifecycle of bundle-plugin development (design, scaffold, author, audit, optimize, port, release). The project itself is a bundle-plugin — it uses its own patterns to build and validate itself.
+Bundles Forge is a bundle-plugin engineering toolkit supporting 5 platforms: Claude Code, Cursor, Codex, OpenCode, and Gemini CLI. It contains 7 skills covering the full lifecycle of bundle-plugin development (design, scaffold, author, audit, optimize, release). The project itself is a bundle-plugin — it uses its own patterns to build and validate itself.
 
 ## Commands
 
@@ -24,7 +24,7 @@ python -m pytest tests/test_scripts.py -v -k test_lint_runs_without_error  # sin
 
 ```bash
 python scripts/lint_skills.py [project-root]       # skill frontmatter/quality lint
-python scripts/scan_security.py [project-root]     # 5-surface security scan
+python scripts/scan_security.py [project-root]     # 7-surface security scan
 python scripts/audit_project.py [project-root]     # combined audit (calls lint + scan + workflow)
 python scripts/audit_skill.py [skill-dir]          # single skill audit (4 categories)
 python scripts/audit_workflow.py [project-root]    # workflow integration audit (W1-W12)
@@ -45,29 +45,43 @@ python scripts/bump_version.py <new-version>       # bump all files declared in 
 
 ### Directory Layout
 
-- `skills/` — 8 skill directories, each containing `SKILL.md` and optional `references/` subdirectory
+- `skills/` — 7 skill directories, each containing `SKILL.md` and optional `references/` subdirectory
 - `agents/` — 3 subagent definitions (inspector, auditor, evaluator) as `.md` files
 - `commands/` — slash command stubs (`bundles-*.md`) that redirect to skills via `bundles-forge:<skill-name>`
 - `hooks/` — session bootstrap: `session-start` reads `using-bundles-forge/SKILL.md` and injects it as platform-appropriate JSON context. `run-hook.cmd` is a polyglot wrapper (Windows cmd + bash)
 - `docs/` — guides (concepts, blueprinting, auditing, optimizing, releasing) with `*.zh.md` Chinese translations; checked by D7
 - `scripts/` — Python tooling sharing `_cli.py` for common argparse/exit-code patterns
 
-### Skill Lifecycle Flow
+### Skill Architecture: Hub-and-Spoke Model
 
-`blueprinting` → `scaffolding` → `authoring` → `auditing` ↔ `optimizing` → `releasing`. `porting` can be invoked at any phase for platform adaptation.
+Skills are organized into two layers:
+
+**Orchestration layer** (hub) — diagnose, decide, delegate:
+- `blueprinting` — new-project pipeline: interview → scaffolding → authoring → workflow design → auditing
+- `optimizing` — existing-project improvement: diagnose → delegate to authoring/scaffolding → verify via auditing
+- `releasing` — release pipeline: auditing → optimizing (if needed) → version bump → publish
+
+**Execution layer** (spoke) — single-responsibility workers:
+- `scaffolding` — generate project structure, platform adaptation, inspector self-check
+- `authoring` — write/improve SKILL.md and agents/*.md content
+- `auditing` — pure diagnostics: check, score, report (does not orchestrate fixes)
+
+Pipeline stages: `blueprinting` → `optimizing` → `releasing`. Each orchestrator dispatches executors as needed. Users can also invoke any executor directly for standalone tasks.
 
 ### Session Bootstrap
 
-The `hooks/session-start` script runs on SessionStart, reads the `using-bundles-forge` meta-skill, and emits JSON context. It detects the platform via `CURSOR_PLUGIN_ROOT` vs `CLAUDE_PLUGIN_ROOT` env vars and formats output accordingly (`additional_context` for Cursor, `hookSpecificOutput` for Claude Code).
+The `hooks/session-start` script runs on SessionStart (matcher: `startup|clear|compact`, excluding `resume` since resumed sessions retain context). It reads the `using-bundles-forge` meta-skill and emits JSON context. Platform detection is three-way: `CURSOR_PLUGIN_ROOT` → Cursor format (`additional_context`), `CLAUDE_PLUGIN_ROOT` → Claude Code format (`hookSpecificOutput`), neither → plain text fallback. On read failure, the script warns to stderr and exits 0 (no-op).
+
+The `hooks/hooks.json` includes a top-level `description` (shown in Claude Code's `/hooks` menu) and per-handler `timeout: 10` to prevent slow hooks from blocking session start.
 
 ### Agent Dispatch
 
-Skills dispatch read-only subagents (disallowed from editing files) that write reports to `.bundles-forge/`:
-- `inspector` — validates scaffolded structure (dispatched by `scaffolding`)
+Skills dispatch read-only subagents (disallowed from editing files) as diagnostic tools. Subagents write reports to `.bundles-forge/`:
+- `inspector` — validates scaffolded structure and platform adaptation (dispatched by `scaffolding`)
 - `auditor` — runs 10-category audit (dispatched by `auditing`)
-- `evaluator` — A/B skill evaluation (dispatched in pairs by `optimizing`)
+- `evaluator` — A/B skill evaluation and chain verification (dispatched by `optimizing` and `auditing`)
 
-**Design pattern:** Each agent file in `agents/` is a self-contained executor — it holds the complete execution protocol (what to check, how to score, how to report). Skills are orchestrators that handle scope detection, dispatch, result composition, and fallback. When subagents are unavailable, skills fall back to reading the agent file inline. This ensures a single source of truth with zero duplication between skills and agents.
+**Design pattern:** Each agent file in `agents/` is a self-contained executor — it holds the complete execution protocol (what to check, how to score, how to report). Skills handle scope detection, dispatch, result composition, and fallback. When subagents are unavailable, skills fall back to reading the agent file inline. This ensures a single source of truth with zero duplication between skills and agents.
 
 ### Platform Manifests
 
