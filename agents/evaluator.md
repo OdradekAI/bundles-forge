@@ -1,7 +1,7 @@
 ---
 name: evaluator
 description: |
-  Use when running one side of an A/B skill evaluation or chain verification. Dispatched by optimizing (A/B eval) and auditing (W11-W12 chain eval) — load a skill version, execute test prompts, and document results for comparison.
+  Use when running one side of an A/B skill evaluation or chain verification. Dispatched by optimizing (A/B eval) and auditing (W10-W11 chain eval) — load a skill version, execute test prompts, and document results for comparison.
 model: inherit
 disallowedTools: Edit
 maxTurns: 30

@@ -25,6 +25,7 @@ if str(_SCRIPT_DIR) not in sys.path:
 
 import audit_workflow
 import bump_version
+import check_docs
 import scan_security
 import lint_skills
 
@@ -49,20 +50,19 @@ CATEGORY_WEIGHTS = {
 def compute_baseline_score(findings):
     """Deterministic baseline: 10 minus penalties for critical/warning findings.
 
-    Suspicious findings (confidence="suspicious") are excluded from scoring —
-    they require model review and don't affect the deterministic baseline.
+    Both deterministic and suspicious findings affect scoring. Suspicious
+    findings include a confidence field in JSON for CI to make fine-grained
+    decisions.
 
     Warnings from the same check-ID are capped at -3 penalty per ID to prevent
     a single conceptual gap (e.g. missing prompt files for N skills) from
     producing N × -1 multiplicative punishment.
     """
     from collections import Counter
-    scored = [f for f in findings
-              if f.get("confidence", "deterministic") != "suspicious"]
-    critical = sum(1 for f in scored
+    critical = sum(1 for f in findings
                    if f.get("severity", f.get("risk", "info")) == "critical")
     warning_checks = Counter(
-        f.get("check", "?") for f in scored
+        f.get("check", "?") for f in findings
         if f.get("severity", f.get("risk", "info")) == "warning"
     )
     warning_penalty = sum(min(count, 3) for count in warning_checks.values())
@@ -102,9 +102,6 @@ def check_structure(root):
 
     if not (root / ".gitignore").exists():
         findings.append(dict(check="S3", severity="warning", message="Missing .gitignore"))
-
-    if not (root / "package.json").exists():
-        findings.append(dict(check="S4", severity="info", message="Missing package.json"))
 
     if not (root / "README.md").exists():
         findings.append(dict(check="S5", severity="warning", message="Missing README.md"))
@@ -254,24 +251,9 @@ def check_hooks(root):
 
 
 def check_documentation(root):
-    """README, CHANGELOG, install docs."""
-    findings = []
-
-    readme = root / "README.md"
-    if readme.exists():
-        content = readme.read_text(encoding="utf-8", errors="replace")
-        if "## Install" not in content and "## Installation" not in content:
-            findings.append(dict(check="D1", severity="info",
-                                 message="README.md missing Installation section"))
-        if "## Skills" not in content and "## Available Skills" not in content:
-            findings.append(dict(check="D2", severity="info",
-                                 message="README.md missing Skills listing"))
-
-    changelog = root / "CHANGELOG.md"
-    if not changelog.exists():
-        findings.append(dict(check="D3", severity="info", message="Missing CHANGELOG.md"))
-
-    return findings
+    """Documentation consistency via check_docs.py (D1-D7)."""
+    result = check_docs.run_check(root)
+    return result.get("findings", [])
 
 
 def check_testing(root):
@@ -430,7 +412,7 @@ def _classify_check(check_code):
         return "Skill Quality"
     if check_code.startswith("X"):
         return "Cross-References"
-    if check_code.startswith("SEC") or check_code.startswith("SC"):
+    if check_code.startswith(("SEC", "SC", "HK", "AG", "BS", "MC", "OC", "PC")):
         return "Security"
     return "Skill Quality"
 

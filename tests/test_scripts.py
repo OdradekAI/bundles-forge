@@ -127,20 +127,19 @@ class TestScanSecurity(unittest.TestCase):
             self.assertIn(f.get("confidence"), ("deterministic", "suspicious"),
                           f"Finding {f.get('check_id')} missing valid confidence")
 
-    def test_suspicious_findings_excluded_from_exit_code(self):
-        """Suspicious findings should not cause non-zero exit code."""
+    def test_suspicious_findings_affect_exit_code(self):
+        """Suspicious findings should affect exit code (at least exit 1)."""
         result = subprocess.run(
             [sys.executable, str(SCRIPTS_DIR / "scan_security.py"), "--json", str(REPO_ROOT)],
             capture_output=True, text=True
         )
         data = json.loads(result.stdout)
         s = data["summary"]
-        has_only_suspicious = (s["critical"] == 0 and s["warning"] == 0
-                               and (s.get("suspicious_critical", 0) > 0
-                                    or s.get("suspicious_warning", 0) > 0))
-        if has_only_suspicious:
-            self.assertEqual(result.returncode, 0,
-                             "Suspicious-only findings should not cause non-zero exit")
+        has_suspicious = (s.get("suspicious_critical", 0) > 0
+                          or s.get("suspicious_warning", 0) > 0)
+        if has_suspicious:
+            self.assertGreater(result.returncode, 0,
+                               "Suspicious findings should cause non-zero exit")
 
     def test_summary_has_suspicious_counts(self):
         result = subprocess.run(

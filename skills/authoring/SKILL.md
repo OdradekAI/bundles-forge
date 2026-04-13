@@ -107,7 +107,7 @@ After completing any path, validate the authored content:
 2. **Review findings:**
    - **Critical** (Q1-Q3: missing frontmatter/name/description) — fix immediately before delivering
    - **Warning** (Q4-Q9, Q14, X1-X3: naming conventions, description rules, token budget, tool paths, broken references) — fix if straightforward, otherwise report to the user/caller
-   - **Info** (Q10-Q13, Q15-Q17, S9: missing sections, heavy inline content, directory name mismatch) — report as improvement suggestions
+   - **Info** (Q10-Q13, Q15, S9: missing sections, heavy inline content, directory name mismatch) — report as improvement suggestions
 3. **Report results** — tell the user/calling skill what was validated and any remaining warnings
 
 Read `references/quality-checklist.md` for the full check-by-check reference when investigating specific findings.
@@ -156,4 +156,4 @@ For detailed writing conventions and rules, read the relevant reference on deman
 
 - **`references/skill-writing-guide.md`** — frontmatter field reference (all 11 fields + Claude Code features like `$ARGUMENTS`, dynamic context injection, skill lifecycle), description writing rules, instruction style, token efficiency, progressive disclosure, skill types, and supporting resource guidance
 - **`references/agent-authoring-guide.md`** — agent definition structure, frontmatter fields, body conventions, agent vs skill differences, fallback patterns
-- **`references/quality-checklist.md`** — Q1-Q17 and X1-X3 lint checks as a self-review checklist during authoring
+- **`references/quality-checklist.md`** — Q1-Q15 and X1-X3 lint checks as a self-review checklist during authoring

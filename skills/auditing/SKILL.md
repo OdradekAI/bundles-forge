@@ -46,7 +46,7 @@ After normalization, determine the audit scope from the resolved local path:
 | Target | How to Detect | Mode |
 |--------|--------------|------|
 | Project root | Has `skills/` directory | **Full audit** — all 10 categories |
-| Project root + workflow request | User explicitly requests workflow audit, or specifies `--focus-skills` | **Workflow audit** — 3-layer workflow checks (W1-W12) |
+| Project root + workflow request | User explicitly requests workflow audit, or specifies `--focus-skills` | **Workflow audit** — 3-layer workflow checks (W1-W11) |
 | Single skill directory | Contains `SKILL.md` but no `skills/` subdirectory | **Skill audit** — 4 applicable categories |
 | Single SKILL.md file | Path ends in `SKILL.md` | **Skill audit** — 4 applicable categories |
 
@@ -81,7 +81,7 @@ python scripts/scan_security.py <project-root>         # security-only scan
 python scripts/scan_security.py --json <project-root>  # security JSON output
 ```
 
-`audit_project.py` orchestrates `scan_security.py` (security), `lint_skills.py` (skill quality), and `audit_workflow.py` (workflow integration), then adds structure, manifest, version-sync, hook, and documentation checks.
+`audit_project.py` orchestrates `scan_security.py` (security), `lint_skills.py` (skill quality), `audit_workflow.py` (workflow integration), and `check_docs.py` (documentation consistency D1-D7), then adds structure, manifest, version-sync, hook, and testing checks.
 
 Dispatch the `auditor` agent (`agents/auditor.md`) for automated assessment if subagents are available. The auditor runs read-only, executes all 10-category checks, scores them, compiles the report, and saves it to `.bundles-forge/`. The auditor is the single source of truth for execution details (scoring formula, report format, qualitative assessment criteria).
 
@@ -131,11 +131,11 @@ Scans 7 attack surfaces. See `references/security-checklist.md` for the full pat
 
 ### Step 5b: Behavioral Verification (Optional)
 
-If subagents are available, dispatch the `evaluator` agent (`agents/evaluator.md`) with label "chain" to run behavioral verification (W11-W12) on workflow chains. This validates that skill handoffs work end-to-end, not just structurally. Append evaluator results to the Workflow category in the audit report.
+If subagents are available, dispatch the `evaluator` agent (`agents/evaluator.md`) with label "chain" to run behavioral verification (W10-W11) on workflow chains. This validates that skill handoffs work end-to-end, not just structurally. Append evaluator results to the Workflow category in the audit report.
 
-**When to run:** Pre-release audits, or when the Workflow category (W1-W10) has warnings that suggest structural issues may affect runtime behavior.
+**When to run:** Pre-release audits, or when the Workflow category (W1-W9) has warnings that suggest structural issues may affect runtime behavior.
 
-**When to skip:** Quick post-change checks, when evaluator dispatch is unavailable, or when static and semantic layers show no issues. Note the skip in the report — the Workflow score excludes skipped layers from its weighted average.
+**When to skip:** Quick post-change checks, when evaluator dispatch is unavailable, or when static and semantic layers show no issues. Score skipped behavioral layer as **N/A** (excluded from weighted average).
 
 ### Step 6: Report Findings
 
@@ -158,9 +158,9 @@ When the target is a single skill directory or SKILL.md file, run only the 4 cat
 | Category | Checks Run | What It Catches |
 |----------|-----------|----------------|
 | Structure | S2, S3, S9 | Skill has own directory, contains SKILL.md, directory name matches frontmatter `name` |
-| Skill Quality | Q1–Q15 (all) | Frontmatter validity, description conventions, token budget, allowed-tools deps, section structure, conditional block reachability |
+| Skill Quality | Q1–Q15 | Frontmatter validity, description conventions, token budget, allowed-tools deps, section structure, conditional block reachability |
 | Cross-References | X1, X2, X3 | Outgoing `project:skill-name` refs resolve, relative paths exist, referenced subdirectories exist |
-| Security | SEC1, SEC5, SEC8, SEC9, SEC10 | Sensitive file access, safety overrides, encoding tricks, scope constraints, error handling |
+| Security | SC1, SC9, SC13, AG1, AG6 | Sensitive file access, safety overrides, encoding tricks, scope constraints (IDs from `security-checklist.md`) |
 
 **Skipped categories:** Platform Manifests, Version Sync, Hooks, Testing, Documentation — these require project-level context.
 
@@ -193,7 +193,7 @@ When auditing a skill from an external source (marketplace, git, shared file):
 
 ## Workflow Audit
 
-When the user explicitly requests a workflow audit, or when the Full audit's Cross-References category (X1-X3) or Workflow category (W1-W12) has warnings, run a dedicated workflow audit. This evaluates how skills connect, hand off artifacts, and compose into coherent chains.
+When the user explicitly requests a workflow audit, or when the Full audit's Cross-References category (X1-X3) or Workflow category (W1-W11) has warnings, run a dedicated workflow audit. This evaluates how skills connect, hand off artifacts, and compose into coherent chains.
 
 ### When to Trigger
 
@@ -210,14 +210,14 @@ python scripts/audit_workflow.py --focus-skills skill-a,skill-b <root>   # focus
 python scripts/audit_workflow.py --json <project-root>                   # machine-readable
 ```
 
-Dispatch the `auditor` agent (`agents/auditor.md`) in Workflow Audit Mode for automated assessment if subagents are available. The auditor handles W1-W10 (Static Structure + Semantic Interface) across three layers defined in `references/workflow-checklist.md`. Full workflow audit protocol, focus mode, and report format are in `agents/auditor.md` (Workflow Audit Mode section).
+Dispatch the `auditor` agent (`agents/auditor.md`) in Workflow Audit Mode for automated assessment if subagents are available. The auditor handles W1-W9 (Static Structure + Semantic Interface) across three layers defined in `references/workflow-checklist.md`. Full workflow audit protocol, focus mode, and report format are in `agents/auditor.md` (Workflow Audit Mode section).
 
-**Phase 2 — Behavioral Verification (W11-W12):**
-After the auditor returns the workflow report, dispatch `evaluator` agent (`agents/evaluator.md`) with label "chain" for each workflow chain involving focus skills. Use the chain list and focus skills from the auditor's report. Skip if subagent dispatch is unavailable — note the skip in the final report. Append evaluator results to the workflow audit report.
+**Phase 2 — Behavioral Verification (W10-W11):**
+After the auditor returns the workflow report, dispatch `evaluator` agent (`agents/evaluator.md`) with label "chain" for each workflow chain involving focus skills. Use the chain list and focus skills from the auditor's report. Skip if subagent dispatch is unavailable — score the behavioral layer as **N/A** (excluded from weighted average) and note the skip in the final report. Append evaluator results to the workflow audit report.
 
 **Why two phases:** Subagents cannot dispatch other subagents, so the evaluator must be dispatched from this skill (main conversation), not from within the auditor.
 
-**If subagent dispatch is unavailable:** Ask the user — "Subagents are not available. I can run the workflow checks inline. Proceed?" If confirmed, read `agents/auditor.md` (Workflow Audit Mode section) and follow its execution instructions inline, then handle W11-W12 from `references/workflow-checklist.md`.
+**If subagent dispatch is unavailable:** Ask the user — "Subagents are not available. I can run the workflow checks inline. Proceed?" If confirmed, read `agents/auditor.md` (Workflow Audit Mode section) and follow its execution instructions inline, then handle W10-W11 from `references/workflow-checklist.md`.
 
 ### Report Findings
 
@@ -245,7 +245,7 @@ Present workflow findings grouped by severity. The `workflow-report` is consumed
 
 - `audit-report` — scored report with findings across 10 categories (full project), written to `.bundles-forge/` by the auditor agent. Contains per-skill breakdowns
 - `skill-report` (skill mode) — 4-category scored report (Structure, Quality, Cross-Refs, Security) for a single skill, written to `.bundles-forge/`
-- `workflow-report` (workflow mode) — workflow-specific report with W1-W12 findings across static/semantic/behavioral layers, with focus/context partitioning
+- `workflow-report` (workflow mode) — workflow-specific report with W1-W11 findings across static/semantic/behavioral layers, with focus/context partitioning
 
 ## Integration
 

@@ -208,7 +208,7 @@
 |--------|--------|------|
 | **Critical** | Q1-Q3：缺少 frontmatter、name、description | 立即修复 |
 | **Warning** | Q4-Q9、Q14、X1-X3：命名规范、描述规则、token 预算、工具路径、断裂引用 | 可简单修复则修复 |
-| **Info** | Q10-Q13、Q15-Q17、S9：缺少章节、重内联内容、目录名不匹配 | 报告为建议 |
+| **Info** | Q10-Q13、Q15、S9：缺少章节、重内联内容、目录名不匹配 | 报告为建议 |
 
 完整的逐项检查参考见 `skills/authoring/references/quality-checklist.md`。
 

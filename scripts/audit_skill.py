@@ -39,11 +39,9 @@ CATEGORY_WEIGHTS = {
 
 
 def compute_baseline_score(findings):
-    scored = [f for f in findings
-              if f.get("confidence", "deterministic") != "suspicious"]
-    critical = sum(1 for f in scored
+    critical = sum(1 for f in findings
                    if f.get("severity", f.get("risk", "info")) == "critical")
-    warning = sum(1 for f in scored
+    warning = sum(1 for f in findings
                   if f.get("severity", f.get("risk", "info")) == "warning")
     return max(0, 10 - (critical * 3 + warning * 1))
 
@@ -114,7 +112,7 @@ def _classify_finding(finding):
         return "skill_quality"
     if check.startswith("X"):
         return "cross_references"
-    if check.startswith("SEC") or check.startswith("SC"):
+    if check.startswith(("SEC", "SC", "HK", "AG", "BS", "MC", "OC", "PC")):
         return "security"
     return "skill_quality"
 

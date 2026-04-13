@@ -197,11 +197,11 @@ def check_static(lint_results, focus_skills=None):
 
 
 # ---------------------------------------------------------------------------
-# Layer 2: Semantic Interface (W6-W10)
+# Layer 2: Semantic Interface (W6-W9)
 # ---------------------------------------------------------------------------
 
 def check_semantic(project_root, lint_results, focus_skills=None):
-    """Run W6-W10 semantic checks on skill Integration/Inputs/Outputs."""
+    """Run W6-W9 semantic checks on skill Integration/Inputs/Outputs."""
     findings = []
     skills_dir = project_root / "skills"
     valid_prefixes = _detect_project_prefixes(project_root)
@@ -249,7 +249,7 @@ def check_semantic(project_root, lint_results, focus_skills=None):
                     message=f"Skill '{sname}' has workflow dependencies but "
                             "no ## Integration section"))
 
-    # W9: Inputs/Outputs semantic quality
+    # W8: Inputs/Outputs semantic quality
     for sname, content in skill_contents.items():
         if sname.startswith("using-"):
             continue
@@ -258,20 +258,20 @@ def check_semantic(project_root, lint_results, focus_skills=None):
             if f"## {section_name}" in content and \
                     _section_is_empty_or_placeholder(section_lines):
                 findings.append(dict(
-                    check="W9", severity="warning", layer="semantic",
+                    check="W8", severity="warning", layer="semantic",
                     skills_involved=[sname],
                     focus=_involves_focus(
                         {"skills_involved": [sname]}, focus_skills),
                     message=f"Skill '{sname}': ## {section_name} section "
                             "is empty or contains only placeholder text"))
 
-    # W10: Integration symmetry — Calls/Called by declarations match
+    # W9: Integration symmetry — Calls/Called by declarations match
     for src, targets in calls_map.items():
         for tgt in targets:
             dcb = declared_called_by.get(tgt, set())
             if src not in dcb:
                 findings.append(dict(
-                    check="W10", severity="warning", layer="semantic",
+                    check="W9", severity="warning", layer="semantic",
                     skills_involved=[src, tgt],
                     focus=_involves_focus(
                         {"skills_involved": [src, tgt]}, focus_skills),
@@ -285,7 +285,7 @@ def check_semantic(project_root, lint_results, focus_skills=None):
                 actual_calls = calls_map.get(caller, set())
                 if tgt not in actual_calls:
                     findings.append(dict(
-                        check="W10", severity="warning", layer="semantic",
+                        check="W9", severity="warning", layer="semantic",
                         skills_involved=[caller, tgt],
                         focus=_involves_focus(
                             {"skills_involved": [caller, tgt]}, focus_skills),
@@ -444,7 +444,7 @@ def format_markdown(results, project_name):
         w = LAYER_WEIGHTS.get(layer_name, 1)
         skipped = data.get("skipped", False)
         s = data.get("baseline_score")
-        score_str = "—/10 (skipped)" if skipped else f"{s}/10"
+        score_str = "N/A (excluded from average)" if skipped else f"{s}/10"
         label = f"{layer_name} (skipped)" if skipped else layer_name
         out.append(f"| {label} | {w} | {score_str} "
                    f"| {c.get('critical', 0)} | {c.get('warning', 0)} "

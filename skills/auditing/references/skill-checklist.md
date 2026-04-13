@@ -2,7 +2,7 @@
 
 Structured criteria for evaluating a single skill. Subset of the full project checklist (`audit-checklist.md`) — 4 categories applicable at skill scope. Use this when running a skill audit on a standalone skill directory or SKILL.md file.
 
-For full project audits (10 categories), see `audit-checklist.md`. For workflow integration checks (W1-W12), see `workflow-checklist.md`.
+For full project audits (10 categories), see `audit-checklist.md`. For workflow integration checks, see `workflow-checklist.md`.
 
 ## Scoring
 
@@ -34,11 +34,12 @@ The auditor agent (or inline auditor) may adjust the baseline by **±2 points** 
 
 ## Category 1: Structure (Weight: High)
 
-| Check | Severity | Criteria |
-|-------|----------|----------|
-| S2 | Critical | Skill has its own directory under `skills/` |
-| S3 | Critical | Skill directory contains a `SKILL.md` |
-| S9 | Info | Skill directory name matches `name` field in SKILL.md frontmatter |
+<!-- BEGIN:skill/structure -->
+| Check | Severity | Criteria | Automation |
+|-------|----------|----------|------------|
+| S2 | Warning | At least one platform manifest directory present | `audit_project.py` |
+| S9 | Info | Skill directory names match `name` field in SKILL.md frontmatter | `lint_skills.py` |
+<!-- END:skill/structure -->
 
 ---
 
@@ -46,25 +47,25 @@ The auditor agent (or inline auditor) may adjust the baseline by **±2 points** 
 
 Run all quality checks on the target SKILL.md.
 
-| Check | Severity | Criteria |
-|-------|----------|----------|
-| Q1 | Critical | YAML frontmatter present (between `---` delimiters) |
-| Q2 | Critical | `name` field exists in frontmatter |
-| Q3 | Critical | `description` field exists in frontmatter |
-| Q4 | Warning | `name` uses only letters, numbers, hyphens |
-| Q5 | Warning | `description` starts with "Use when..." |
-| Q6 | Warning | `description` describes triggering conditions, not workflow summary |
-| Q7 | Warning | `description` is under 250 characters |
-| Q8 | Warning | Frontmatter total under 1024 characters |
-| Q9 | Warning | SKILL.md body under 500 lines |
-| Q10 | Info | Skill has Overview section |
-| Q11 | Info | Skill has Common Mistakes section |
-| Q12 | Info | Heavy reference content (100+ lines) extracted to supporting files |
-| Q13 | Warning/Info | Token budget: bootstrap skill body ≤ 200 lines (warning); regular skill reports estimated token count when high (info) |
-| Q14 | Warning | `allowed-tools` frontmatter references scripts/paths that actually exist |
-| Q15 | Info | Conditional blocks (`If ... unavailable` etc.) over 30 lines should be in `references/` |
-| Q16 | Info | Non-bootstrap skills have an `## Inputs` section |
-| Q17 | Info | Non-bootstrap skills have an `## Outputs` section |
+<!-- BEGIN:skill/quality -->
+| Check | Severity | Criteria | Automation |
+|-------|----------|----------|------------|
+| Q1 | Critical | YAML frontmatter present (between `---` delimiters) | `lint_skills.py` |
+| Q2 | Critical | `name` field exists in frontmatter | `lint_skills.py` |
+| Q3 | Critical | `description` field exists in frontmatter | `lint_skills.py` |
+| Q4 | Warning | `name` uses only letters, numbers, hyphens | `lint_skills.py` |
+| Q5 | Warning | `description` starts with "Use when..." | `lint_skills.py` |
+| Q6 | Warning | `description` describes triggering conditions, not workflow summary | `lint_skills.py` |
+| Q7 | Warning | `description` is under 250 characters (truncated in skill listing beyond this) | `lint_skills.py` |
+| Q8 | Warning | Frontmatter total under 1024 characters | `lint_skills.py` |
+| Q9 | Warning | SKILL.md body under 500 lines | `lint_skills.py` |
+| Q10 | Info | Skill has Overview section | `lint_skills.py` |
+| Q11 | Info | Skill has Common Mistakes section | `lint_skills.py` |
+| Q12 | Info | Heavy reference content (100+ lines) extracted to supporting files | `lint_skills.py` |
+| Q13 | Warning/Info | Token budget: bootstrap skill body ≤ 200 lines (warning); regular skill reports estimated token count when high (info) | `lint_skills.py` |
+| Q14 | Warning | `allowed-tools` frontmatter references scripts/paths that actually exist | `lint_skills.py` |
+| Q15 | Info | Conditional blocks (`If ... unavailable` etc.) over 30 lines should be in `references/` | `lint_skills.py` |
+<!-- END:skill/quality -->
 
 **Description anti-patterns (Q6):**
 - Contains step-by-step workflow → agents shortcut to description
@@ -77,11 +78,13 @@ Run all quality checks on the target SKILL.md.
 
 Static link resolution within the skill content.
 
-| Check | Severity | Criteria |
-|-------|----------|----------|
-| X1 | Warning | All `<project>:<skill-name>` references resolve to existing skills |
-| X2 | Warning | No broken relative-path references to supporting files |
-| X3 | Warning | Text references to subdirectories (`references/`, `templates/`, etc.) match actual skill directory contents |
+<!-- BEGIN:skill/cross_references -->
+| Check | Severity | Criteria | Automation |
+|-------|----------|----------|------------|
+| X1 | Warning | All `<project>:<skill-name>` references resolve to existing skills | `lint_skills.py` |
+| X2 | Warning | No broken relative-path references to supporting files | `lint_skills.py` |
+| X3 | Warning | Text references to subdirectories (`references/`, `templates/`, etc.) match actual skill directory contents | `lint_skills.py` |
+<!-- END:skill/cross_references -->
 
 **How to check:**
 1. Extract all `<project>:<name>` patterns from the SKILL.md
@@ -94,15 +97,17 @@ Static link resolution within the skill content.
 
 ## Category 4: Security (Weight: High)
 
-Security checks scoped to the skill's content and references.
+Security checks scoped to the skill's content and references. Uses IDs from `security-checklist.md`.
 
-| Check | Severity | Criteria |
-|-------|----------|----------|
-| SEC1 | Critical | No SKILL.md instructs agents to read sensitive files (`.env`, `.ssh/`, credentials) |
-| SEC5 | Critical | No agent prompt contains safety override instructions ("ignore safety", "bypass") |
-| SEC8 | Warning | No SKILL.md uses encoding tricks (unicode homoglyphs, zero-width chars) |
-| SEC9 | Info | Agent prompts include explicit scope constraints |
-| SEC10 | Info | Scripts use error handling (`set -euo pipefail` or equivalent) |
+<!-- BEGIN:skill/security -->
+| Check | Risk | Criteria | Automation |
+|-------|------|----------|------------|
+| SC1 | Critical | Instructions to read `.env`, `.ssh/`, `credentials`, `secrets`, `tokens`, `api_key` files | `scan_security.py` (suspicious) |
+| SC9 | Critical | Phrases like "ignore previous instructions", "override safety", "disable verification" | `scan_security.py` |
+| SC13 | Critical | Unicode homoglyphs, zero-width characters, right-to-left override characters | `scan_security.py` |
+| AG1 | Critical | Instructions to "ignore", "override", or "bypass" safety guidelines or user instructions | `scan_security.py` (suspicious) |
+| AG6 | Info | Missing scope constraints (agent prompt doesn't limit what files/actions are in scope) | `agent-only` |
+<!-- END:skill/security -->
 
 **Quick check:** Grep for high-risk patterns in the skill directory:
 ```

@@ -172,7 +172,7 @@ python: "<version>"
 
 **Summary:** <one-sentence category assessment>
 
-**Checks run:** SEC1 (sensitive file access), SEC5 (safety overrides), SEC8 (encoding tricks), SEC9 (scope constraints), SEC10 (error handling)
+**Checks run:** SC1 (sensitive file access), SC9 (safety overrides), SC13 (encoding tricks), AG1 (agent safety overrides), AG6 (scope constraints)
 
 <!-- findings or "No findings. All checks pass." -->
 

@@ -70,7 +70,7 @@
 |------|------|------|
 | `audit-report` | `bundles-forge:auditing`（完整项目） | 所有 8 个目标的逐技能分解 |
 | `skill-report` | `bundles-forge:auditing`（技能模式） | 技能优化的聚焦 4 类报告 |
-| `workflow-report` | `bundles-forge:auditing`（工作流模式） | 目标 4 的 W1-W10 发现 |
+| `workflow-report` | `bundles-forge:auditing`（工作流模式） | 目标 4 的 W1-W9 发现 |
 | `user-feedback` | 直接来自用户 | 迭代过程的行为反馈 |
 
 ---
@@ -124,7 +124,7 @@ optimizing 诊断 → 将内容编辑委派给 authoring → 通过 auditing 验
 python scripts/lint_skills.py <project-root>
 ```
 
-描述相关检查为 **Q3-Q7**：缺失描述（Q3）、"Use when..." 前缀（Q5）、工作流摘要反模式（Q6）、长度 >250 字符（Q7）。完整 lint 套件覆盖 Q1-Q17 和 X1-X3 — 详见快速参考。
+描述相关检查为 **Q3-Q7**：缺失描述（Q3）、"Use when..." 前缀（Q5）、工作流摘要反模式（Q6）、长度 >250 字符（Q7）。完整 lint 套件覆盖 Q1-Q15 和 X1-X3 — 详见快速参考。
 
 对于*行为*质量（正确的提示是否触发正确的技能），使用 A/B 评估。
 
@@ -165,8 +165,8 @@ python scripts/lint_skills.py <project-root>
 
 消费工作流审计发现以识别和修复工作流问题。工作流审计分两层：
 
-- **脚本自动化（W1-W10）：** 静态图分析和语义检查 — 通过 `python scripts/audit_workflow.py` 运行
-- **仅 Evaluator（W11-W12）：** 链式评估和行为验证 — 需要 `evaluator` agent 派遣
+- **脚本自动化（W1-W9）：** 静态图分析和语义检查 — 通过 `python scripts/audit_workflow.py` 运行
+- **仅 Evaluator（W10-W11）：** 链式评估和行为验证 — 需要 `evaluator` agent 派遣
 
 如果没有工作流报告：
 
@@ -439,14 +439,14 @@ Agent 会将剩余问题呈现给你做手动决定 — 不会自动循环。你
 ### 脚本
 
 ```bash
-python scripts/lint_skills.py <path>                        # 质量 lint（Q1-Q17、X1-X3）
+python scripts/lint_skills.py <path>                        # 质量 lint（Q1-Q15、X1-X3）
 python scripts/audit_skill.py <skill-dir>                   # 单技能审计（4 类）
-python scripts/audit_workflow.py <path>                      # 工作流审计（W1-W10，脚本自动化）
+python scripts/audit_workflow.py <path>                      # 工作流审计（W1-W9，脚本自动化）
 python scripts/audit_workflow.py --focus-skills a,b <path>   # 聚焦式工作流审计
 python scripts/scan_security.py <path>                       # 安全扫描（7 个攻击面）
 ```
 
-W11-W12（链式评估和行为验证）需要 `evaluator` agent 派遣，脚本不会生成。
+W10-W11（链式评估和行为验证）需要 `evaluator` agent 派遣，脚本不会生成。
 
 ### 各目标按范围的适用性
 

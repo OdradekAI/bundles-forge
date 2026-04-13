@@ -70,7 +70,7 @@ Optimizing can consume reports from prior audits. A common pattern is **audit fi
 |-------|--------|-----|
 | `audit-report` | `bundles-forge:auditing` (full project) | Per-skill breakdowns for all 8 targets |
 | `skill-report` | `bundles-forge:auditing` (skill mode) | Focused 4-category report for skill optimization |
-| `workflow-report` | `bundles-forge:auditing` (workflow mode) | W1-W10 findings for Target 4 |
+| `workflow-report` | `bundles-forge:auditing` (workflow mode) | W1-W9 findings for Target 4 |
 | `user-feedback` | Direct from user | Behavioral feedback for the iteration process |
 
 ---
@@ -124,7 +124,7 @@ Run the linter to catch mechanical issues:
 python scripts/lint_skills.py <project-root>
 ```
 
-Description-specific checks are **Q3-Q7**: missing description (Q3), "Use when..." prefix (Q5), workflow summary anti-pattern (Q6), and length >250 characters (Q7). The full lint suite covers Q1-Q17 and X1-X3 — see Quick Reference for the complete list.
+Description-specific checks are **Q3-Q7**: missing description (Q3), "Use when..." prefix (Q5), workflow summary anti-pattern (Q6), and length >250 characters (Q7). The full lint suite covers Q1-Q15 and X1-X3 — see Quick Reference for the complete list.
 
 For *behavioral* quality (does the right prompt trigger the right skill?), use A/B eval.
 
@@ -165,8 +165,8 @@ The three-level loading system ensures minimal context usage:
 
 Consumes workflow audit findings to identify and fix workflow issues. The workflow audit has two layers:
 
-- **Script-automated (W1-W10):** Static graph analysis and semantic checks — run via `python scripts/audit_workflow.py`
-- **Evaluator-only (W11-W12):** Chain evaluation and behavioral verification — requires `evaluator` agent dispatch
+- **Script-automated (W1-W9):** Static graph analysis and semantic checks — run via `python scripts/audit_workflow.py`
+- **Evaluator-only (W10-W11):** Chain evaluation and behavioral verification — requires `evaluator` agent dispatch
 
 If no workflow report is available:
 
@@ -439,14 +439,14 @@ Yes. Pass a GitHub URL directly — the skill performs a shallow clone automatic
 ### Scripts
 
 ```bash
-python scripts/lint_skills.py <path>                        # Quality lint (Q1-Q17, X1-X3)
+python scripts/lint_skills.py <path>                        # Quality lint (Q1-Q15, X1-X3)
 python scripts/audit_skill.py <skill-dir>                   # Single skill audit (4 categories)
-python scripts/audit_workflow.py <path>                      # Workflow audit (W1-W10, script-automated)
+python scripts/audit_workflow.py <path>                      # Workflow audit (W1-W9, script-automated)
 python scripts/audit_workflow.py --focus-skills a,b <path>   # Focused workflow audit
 python scripts/scan_security.py <path>                       # Security scan (7 surfaces)
 ```
 
-W11-W12 (chain evaluation and behavioral verification) require `evaluator` agent dispatch and are not produced by the script.
+W10-W11 (chain evaluation and behavioral verification) require `evaluator` agent dispatch and are not produced by the script.
 
 ### Target Applicability by Scope
 

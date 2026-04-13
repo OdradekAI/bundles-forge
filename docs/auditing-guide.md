@@ -12,7 +12,7 @@ Bundles Forge provides four audit scopes, each targeting a different level of gr
 |-------|------------|-----------|--------|
 | **Full Project** | Pre-release, major changes, initial review | 10 categories, 60+ checks | `audit_project.py` |
 | **Single Skill** | Reviewing one skill, third-party skill evaluation | 4 categories (Structure, Quality, Cross-Refs, Security) | `audit_skill.py` |
-| **Workflow** | After adding/removing skills, chain integration check | 3 layers (Static, Semantic, Behavioral), W1-W12 | `audit_workflow.py` |
+| **Workflow** | After adding/removing skills, chain integration check | 3 layers (Static, Semantic, Behavioral), W1-W11 | `audit_workflow.py` |
 | **Security-Only** | Quick safety scan, pre-install check | 7 attack surfaces | `scan_security.py` |
 
 All scopes share the same scoring formula, severity levels, and report conventions. The agent auto-detects scope from the target path — or you can invoke scripts directly.
@@ -89,11 +89,12 @@ python scripts/audit_project.py --json <project-root>  # JSON output
 ```
 
 `audit_project.py` orchestrates three sub-scripts:
-- `lint_skills.py` — skill quality linting (Q1-Q17, S9, X1-X3, G1-G5)
+- `lint_skills.py` — skill quality linting (Q1-Q15, S9, X1-X3, C1, G1-G5)
 - `scan_security.py` — security pattern scanning (7 attack surfaces)
-- `audit_workflow.py` — workflow integration analysis (W1-W12)
+- `audit_workflow.py` — workflow integration analysis (W1-W9)
+- `check_docs.py` — documentation consistency (D1-D7)
 
-Then adds its own checks for structure, manifests, version sync, hooks, testing, and documentation.
+Then adds its own checks for structure, manifests, version sync, hooks, and testing.
 
 ### 10 Categories
 
@@ -102,13 +103,13 @@ Then adds its own checks for structure, manifests, version sync, hooks, testing,
 | 1 | Structure | High (3) | `skills/` exists, directory layout, bootstrap skill |
 | 2 | Platform Manifests | Medium (2) | Manifest JSON valid, paths resolve |
 | 3 | Version Sync | High (3) | `.version-bump.json` completeness, no drift |
-| 4 | Skill Quality | Medium (2) | Frontmatter, descriptions, token budget (Q1-Q17) |
+| 4 | Skill Quality | Medium (2) | Frontmatter, descriptions, token budget (Q1-Q15) |
 | 5 | Cross-References | Medium (2) | `project:skill` resolution, relative paths (X1-X3) |
-| 6 | Workflow | High (3) | Graph topology, integration symmetry, artifacts (W1-W12) |
-| 7 | Hooks | Medium (2) | Bootstrap injection, platform detection |
+| 6 | Workflow | High (3) | Graph topology, integration symmetry, artifacts (W1-W11) |
+| 7 | Hooks | Medium (2) | Bootstrap injection, platform detection (functional correctness only) |
 | 8 | Testing | Medium (2) | Test directory, prompts, A/B eval results |
-| 9 | Documentation | Low (1) | README, install docs, CHANGELOG |
-| 10 | Security | High (3) | 7 attack surfaces — skill content, hook scripts, hook configs (HTTP hooks), OpenCode plugins, agent prompts, bundled scripts, MCP configs |
+| 9 | Documentation | Low (1) | Documentation consistency via `check_docs.py` (D1-D7) |
+| 10 | Security | High (3) | 6 attack surfaces — SC/HK/OC/AG/BS/PC IDs from `security-checklist.md` |
 
 Total weight = 23. Overall score = `sum(score_i × weight_i) / 23`.
 
@@ -119,7 +120,7 @@ Full project audits use `skills/auditing/references/report-template.md` — six-
 ### Checklists
 
 - **Project checklist:** `skills/auditing/references/audit-checklist.md` (Categories 1-5, 7-10)
-- **Workflow checklist:** `skills/auditing/references/workflow-checklist.md` (Category 6: W1-W12)
+- **Workflow checklist:** `skills/auditing/references/workflow-checklist.md` (Category 6: W1-W11)
 - **Security checklist:** `skills/auditing/references/security-checklist.md` (Category 10 detail)
 
 ---
@@ -160,9 +161,9 @@ python scripts/scan_security.py <skill-directory>   # security scan
 | # | Category | Weight | Key Checks |
 |---|----------|--------|------------|
 | 1 | Structure | High (3) | S2, S3, S9 — own directory, SKILL.md exists, name matches |
-| 2 | Skill Quality | Medium (2) | Q1-Q17 — frontmatter, descriptions, tokens, sections |
+| 2 | Skill Quality | Medium (2) | Q1-Q15 — frontmatter, descriptions, tokens, sections |
 | 3 | Cross-References | Medium (2) | X1-X3 — `project:skill` resolution, relative paths |
-| 4 | Security | High (3) | SEC1, SEC5, SEC8-SEC10 — sensitive files, overrides, encoding |
+| 4 | Security | High (3) | SC1, SC9, SC13, AG1, AG6 — sensitive files, overrides, encoding |
 
 Total weight = 10. Categories not applicable at skill scope: Platform Manifests, Version Sync, Hooks, Testing, Documentation.
 
@@ -208,15 +209,15 @@ python scripts/audit_workflow.py --focus-skills skill-a,skill-b <root>   # focus
 python scripts/audit_workflow.py --json <project-root>                   # JSON output
 ```
 
-### 3 Layers (W1-W12)
+### 3 Layers (W1-W11)
 
 | Layer | Weight | Checks | Automation |
 |-------|--------|--------|------------|
 | Static Structure | High (3) | W1-W5: cycles, reachability, Inputs/Outputs presence, artifact ID matching | `lint_skills.py` graph analysis |
-| Semantic Interface | Medium (2) | W6-W10: Integration completeness, artifact clarity, Calls/Called by symmetry | `audit_workflow.py` + agent review |
-| Behavioral Verification | Low (1) | W11-W12: chain A/B eval, trigger/exit in context | `evaluator` agent dispatch |
+| Semantic Interface | Medium (2) | W6-W9: Integration completeness, artifact clarity, Calls/Called by symmetry | `audit_workflow.py` + agent review |
+| Behavioral Verification | Low (1) | W10-W11: chain A/B eval, trigger/exit in context | `evaluator` agent dispatch |
 
-Total weight = 6. Behavioral layer is scored 10 (perfect) when skipped; the report notes the skip.
+Total weight = 6. Behavioral layer is scored **N/A** (excluded from weighted average) when skipped; the report notes the skip.
 
 ### Focus Mode (Incremental Auditing)
 
@@ -296,7 +297,7 @@ Auditing is a **pure diagnostic** scope: it records findings, scores, and go/no-
 |--------------|---------------|----------------------------|
 | Full project (`audit-report`) | Critical/Warning | Findings by category with severity; use the report as the source of truth for what failed checks showed. |
 | Single skill (`skill-report`) | Critical/Warning | Skill-scope findings and verdict vocabularies (self-check / third-party); no prescribed remediation path from auditing. |
-| Workflow (`workflow-report`) | W1-W12 findings | Layered workflow findings only; interpretation and next steps sit with the caller. |
+| Workflow (`workflow-report`) | W1-W11 findings | Layered workflow findings only; interpretation and next steps sit with the caller. |
 | Any scope | Info | Improvement opportunities noted in the report. |
 | Any scope | All clear | Pass state in the report; any follow-up (e.g. release prep) is chosen outside auditing. |
 
@@ -309,11 +310,11 @@ Auditing is a **pure diagnostic** scope: it records findings, scores, and go/no-
 ### Script Composition
 
 ```bash
-# Full pipeline: lint → security → docs → full audit
+# Full pipeline: lint → security → docs → full audit (audit_project orchestrates all)
 python scripts/lint_skills.py --json . > lint.json
 python scripts/scan_security.py --json . > security.json
 python scripts/check_docs.py --json . > docs.json
-python scripts/audit_project.py --json . > audit.json
+python scripts/audit_project.py --json . > audit.json   # orchestrates lint + security + docs + workflow
 
 # Single skill in CI
 python scripts/audit_skill.py --json skills/my-skill > skill-audit.json

@@ -208,7 +208,7 @@ After authoring, the skill always runs `python scripts/lint_skills.py` to valida
 |----------|--------|--------|
 | **Critical** | Q1-Q3: missing frontmatter, name, description | Fix immediately |
 | **Warning** | Q4-Q9, Q14, X1-X3: naming conventions, description rules, token budget, tool paths, broken references | Fix if straightforward |
-| **Info** | Q10-Q13, Q15-Q17, S9: missing sections, heavy inline content, directory name mismatch | Report as suggestions |
+| **Info** | Q10-Q13, Q15, S9: missing sections, heavy inline content, directory name mismatch | Report as suggestions |
 
 For the full check-by-check reference, see `skills/authoring/references/quality-checklist.md`.
 

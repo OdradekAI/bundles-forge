@@ -13,7 +13,7 @@ Workflow audits use the `WFL-NNN` prefix:
 
 | Prefix | Category |
 |--------|----------|
-| `WFL-NNN` | Workflow (covers W1-W12 checks) |
+| `WFL-NNN` | Workflow (covers W1-W11 checks) |
 
 Numbering is sequential, starting at 001.
 
@@ -41,7 +41,7 @@ Numbering is sequential, starting at 001.
 | Condition | Recommendation |
 |-----------|---------------|
 | Any W1-W5 finding at critical severity | `NO-GO` |
-| Any W9-W12 finding at warning severity | `CONDITIONAL GO` |
+| Any W9-W11 finding at warning severity | `CONDITIONAL GO` |
 | All checks pass | `GO` |
 
 **Qualitative adjustment** — the auditor may override the baseline recommendation but must record the rationale.
@@ -132,7 +132,7 @@ python: "<version>"
 
 **Summary:** <one-sentence layer assessment>
 
-**Checks run:** W6 (integration docs), W7 (cycle rationale), W8 (terminal marking), W9 (artifact clarity), W10 (integration symmetry)
+**Checks run:** W6 (integration docs), W7 (cycle rationale), W8 (artifact clarity), W9 (integration symmetry)
 
 <!-- findings or "No findings. All checks pass." -->
 
@@ -142,7 +142,7 @@ python: "<version>"
 
 **Summary:** <one-sentence layer assessment, or "Skipped — evaluator agents unavailable">
 
-**Checks run:** W11 (chain eval), W12 (trigger/exit in context)
+**Checks run:** W10 (chain eval), W11 (trigger/exit in context)
 
 <!-- IF skipped -->
 Behavioral verification was not performed. Reason: <evaluator agents unavailable / quick check mode / static+semantic layers clean>.
@@ -186,9 +186,9 @@ This does not affect the Go/No-Go recommendation for static and semantic layers.
 
 | Tool | Purpose |
 |------|---------|
-| `audit_workflow.py` | Workflow audit orchestration, semantic checks (W6, W9, W10) |
+| `audit_workflow.py` | Workflow audit orchestration, semantic checks (W6, W8, W9) |
 | `lint_skills.py` | Graph analysis (G1-G5 → W1-W5) |
-| `evaluator` agent | Chain A/B eval (W11-W12), if available |
+| `evaluator` agent | Chain A/B eval (W10-W11), if available |
 
 Findings are diagnostic. The calling context decides follow-up actions.
 ```

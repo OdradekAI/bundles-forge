@@ -27,8 +27,10 @@ python scripts/lint_skills.py [project-root]       # skill frontmatter/quality l
 python scripts/scan_security.py [project-root]     # 7-surface security scan
 python scripts/audit_project.py [project-root]     # combined audit (calls lint + scan + workflow)
 python scripts/audit_skill.py [skill-dir]          # single skill audit (4 categories)
-python scripts/audit_workflow.py [project-root]    # workflow integration audit (W1-W12)
+python scripts/audit_workflow.py [project-root]    # workflow integration audit (W1-W11)
 python scripts/check_docs.py [project-root]        # documentation consistency (7 checks: D1-D7)
+python scripts/generate_checklists.py [project-root]        # regenerate checklist tables from audit-checks.json registry
+python scripts/generate_checklists.py --check [project-root] # detect checklist drift (exit 1 if stale)
 ```
 
 All scripts accept `--json` for machine-readable output. Exit codes: 0 = pass, 1 = warnings, 2 = critical.
@@ -104,6 +106,7 @@ Version is synchronized across these files (declared in `.version-bump.json`):
 - **Cross-references:** use `bundles-forge:<skill-name>` format
 - **Version bumps:** never edit version numbers manually — use `bump_version.py`
 - **Pre-commit:** run `python scripts/bump_version.py --check` to detect version drift
+- **Pre-commit:** run `python scripts/generate_checklists.py --check` to detect checklist drift
 - **Pre-release:** run `bundles-forge:auditing` for full quality + security check
 - **Pre-release:** run `python scripts/check_docs.py` to verify documentation consistency
 

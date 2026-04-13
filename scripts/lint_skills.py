@@ -187,14 +187,6 @@ def lint_skill(skill_dir, project_root, project_name, project_abbreviation=None)
     if not is_bootstrap and "## Common Mistakes" not in content and "common mistakes" not in content.lower():
         findings.append(dict(check="Q11", severity="info", message="Missing Common Mistakes section"))
 
-    # Q16: Inputs section (skip for bootstrap skills)
-    if not is_bootstrap and "## Inputs" not in content:
-        findings.append(dict(check="Q16", severity="info", message="Missing Inputs section"))
-
-    # Q17: Outputs section (skip for bootstrap skills)
-    if not is_bootstrap and "## Outputs" not in content:
-        findings.append(dict(check="Q17", severity="info", message="Missing Outputs section"))
-
     # X1: Cross-reference resolution (supports both full name and abbreviation)
     skills_root = project_root / "skills"
     valid_prefixes = {project_name}
@@ -344,15 +336,15 @@ def run_lint(project_root):
         results["skills"].append(skill_result)
 
     # -----------------------------------------------------------------------
-    # Cross-skill consistency checks (C1-C3) — project-level only
+    # Cross-skill consistency check (C1) — project-level only
     # -----------------------------------------------------------------------
     if len(results["skills"]) >= 2:
         consistency = []
+        sub_issues = []
 
-        # Gather per-skill traits (skip bootstrap skills for structural checks)
         has_overview = []
         has_subagent_fallback = []
-        desc_verb_forms = []  # "gerund" or "bare" after "Use when"
+        desc_verb_forms = []
         for sr in results["skills"]:
             sname = sr["skill"]
             sdir = skills_dir / sname
@@ -381,34 +373,30 @@ def run_lint(project_root):
                     else:
                         desc_verb_forms.append("bare")
 
-        # C1: Overview section consistency
         if has_overview and not all(has_overview) and any(has_overview):
             with_count = sum(has_overview)
             without_count = len(has_overview) - with_count
-            consistency.append(dict(
-                check="C1", severity="info",
-                message=f"Inconsistent Overview sections: {with_count} skills "
-                        f"have it, {without_count} do not"))
+            sub_issues.append(
+                f"Overview sections: {with_count} skills have it, "
+                f"{without_count} do not")
 
-        # C2: Subagent fallback consistency
-        users = [sr["skill"] for sr, has in
-                 zip(results["skills"], has_subagent_fallback)
-                 if has] if has_subagent_fallback else []
         if has_subagent_fallback and any(has_subagent_fallback) \
                 and not all(has_subagent_fallback):
-            consistency.append(dict(
-                check="C2", severity="info",
-                message="Inconsistent subagent fallback patterns: "
-                        "some skills handle 'subagent unavailable', others don't"))
+            sub_issues.append(
+                "subagent fallback: some skills handle "
+                "'subagent unavailable', others don't")
 
-        # C3: Description verb form consistency
         if desc_verb_forms and len(set(desc_verb_forms)) > 1:
             gerund_n = desc_verb_forms.count("gerund")
             bare_n = desc_verb_forms.count("bare")
+            sub_issues.append(
+                f"verb forms after 'Use when': "
+                f"{gerund_n} gerund (-ing) vs {bare_n} bare infinitive")
+
+        if sub_issues:
             consistency.append(dict(
-                check="C3", severity="info",
-                message=f"Mixed verb forms after 'Use when': "
-                        f"{gerund_n} gerund (-ing) vs {bare_n} bare infinitive"))
+                check="C1", severity="info",
+                message="Cross-skill inconsistencies: " + "; ".join(sub_issues)))
 
         results["consistency"] = consistency
         for f in consistency:

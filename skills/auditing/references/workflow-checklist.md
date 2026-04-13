@@ -22,7 +22,7 @@ where `capped_warning_penalty = sum(min(count_per_check_id, 3))` — warnings fr
 | Semantic Interface | 2 | Integration declarations, artifact clarity |
 | Behavioral Verification | 1 | End-to-end chain execution quality |
 
-Total weight = 6. The behavioral layer has low weight because it requires evaluator agents and may not always be run.
+Total weight = 6. The behavioral layer has low weight because it requires evaluator agents and may not always be run. When skipped, it is scored as **N/A** and excluded from the weighted average (denominator reduces to 5).
 
 ---
 
@@ -30,13 +30,15 @@ Total weight = 6. The behavioral layer has low weight because it requires evalua
 
 Automated checks — produced by `lint_skills.py` graph analysis (G1-G5) and consumed by `audit_workflow.py` as W1-W5.
 
+<!-- BEGIN:workflow/static -->
 | Check | Severity | Criteria | Automation |
 |-------|----------|----------|------------|
 | W1 | Warning/Info | No undeclared circular dependencies in the workflow graph. Cycles declared via `<!-- cycle:a,b -->` in `## Integration` are demoted to Info | `lint_skills.py` G1 |
 | W2 | Info | All skills are reachable from entry points (skills referenced by `using-*` bootstrap). Skills declaring "Called by: user directly" in `## Integration` are exempt | `lint_skills.py` G2 |
-| W3 | Info | Terminal skills (no outgoing cross-references) have an `## Outputs` section documenting final deliverables | `lint_skills.py` G3 |
+| W3 | Info | Terminal skills (no outgoing cross-references) have an `## Outputs` section documenting final deliverables and are clearly identifiable as workflow endpoints | `lint_skills.py` G3 |
 | W4 | Info | Skills referenced by other skills have an `## Inputs` section declaring expected artifacts | `lint_skills.py` G4 |
 | W5 | Info | For each edge A→B, at least one artifact ID in A's `## Outputs` matches an ID in B's `## Inputs` | `lint_skills.py` G5 |
+<!-- END:workflow/static -->
 
 **How to run:**
 ```bash
@@ -50,26 +52,29 @@ Inspect the `graph` key in the JSON output for G1-G5 findings, which map directl
 
 Agent or manual checks — verify that Integration sections are complete, artifact descriptions are meaningful, and cross-reference conventions are consistent.
 
+<!-- BEGIN:workflow/semantic -->
 | Check | Severity | Criteria | Automation |
 |-------|----------|----------|------------|
 | W6 | Info | Skills with workflow dependencies document them in an `## Integration` section with `**Calls:**` and/or `**Called by:**` blocks | `audit_workflow.py` (partial) |
-| W7 | Info | Workflow chain has no semantically unreasonable circular dependencies — declared cycles (`<!-- cycle:a,b -->`) have a clear rationale (e.g. feedback loop between audit and optimize) | Manual/agent review |
-| W8 | Info | Terminal skills (end of workflow chain) are clearly identifiable — either they have no `**Calls:**` block or they explicitly declare themselves as terminal | Manual/agent review |
-| W9 | Warning | `## Inputs` and `## Outputs` sections contain meaningful semantic descriptions — not empty, not placeholder text (e.g. "TBD", "TODO"), each artifact has a name and one-line purpose | `audit_workflow.py` |
-| W10 | Warning | For newly added skills: Integration section uses the correct project cross-reference prefix, `**Calls:**` / `**Called by:**` declarations are symmetric with the skills they reference (if A calls B, B should list A in Called by) | `audit_workflow.py` |
+| W7 | Info | Workflow chain has no semantically unreasonable circular dependencies — declared cycles (`<!-- cycle:a,b -->`) have a clear rationale (e.g. feedback loop between audit and optimize) | `agent-only` |
+| W8 | Warning | `## Inputs` and `## Outputs` sections contain meaningful semantic descriptions — not empty, not placeholder text (e.g. "TBD", "TODO"), each artifact has a name and one-line purpose | `audit_workflow.py` (W9→W8) |
+| W9 | Warning | For newly added skills: Integration section uses the correct project cross-reference prefix, `**Calls:**` / `**Called by:**` declarations are symmetric with the skills they reference (if A calls B, B should list A in Called by) | `audit_workflow.py` (W10→W9) |
+<!-- END:workflow/semantic -->
 
-**Symmetry check (W10):** For each edge A→B declared in A's `**Calls:**`, verify that B's `**Called by:**` lists A. Asymmetric declarations indicate incomplete integration.
+**Symmetry check (W9):** For each edge A→B declared in A's `**Calls:**`, verify that B's `**Called by:**` lists A. Asymmetric declarations indicate incomplete integration.
 
 ---
 
 ## Layer 3: Behavioral Verification (Weight: Low)
 
-Requires evaluator agent dispatch — validates that workflow chains actually execute correctly end-to-end. Skip this layer when evaluator agents are unavailable or when the audit is a quick check.
+Requires evaluator agent dispatch — validates that workflow chains actually execute correctly end-to-end. Skip this layer when evaluator agents are unavailable or when the audit is a quick check. **When skipped, score as N/A** (excluded from weighted average) rather than a default 10.
 
+<!-- BEGIN:workflow/behavioral -->
 | Check | Severity | Criteria | Automation |
 |-------|----------|----------|------------|
-| W11 | Warning | Chain A/B Eval: for each workflow chain involving focus skills, an end-to-end scenario produces no broken handoffs (evaluator reports all transitions as "smooth" or "acceptable") | `evaluator` agent with label "chain" |
-| W12 | Info | Newly added skills can be triggered and exit correctly within their workflow chain context — the skill activates on expected input and produces output consumable by the next skill in the chain | `evaluator` agent (single-skill-in-chain) |
+| W10 | Warning | Chain A/B Eval: for each workflow chain involving focus skills, an end-to-end scenario produces no broken handoffs (evaluator reports all transitions as "smooth" or "acceptable") | `evaluator` agent with label "chain" |
+| W11 | Info | Newly added skills can be triggered and exit correctly within their workflow chain context — the skill activates on expected input and produces output consumable by the next skill in the chain | `evaluator` agent (single-skill-in-chain) |
+<!-- END:workflow/behavioral -->
 
 **When to run behavioral checks:**
 - Pre-release (recommended)
@@ -90,7 +95,7 @@ When `--focus-skills skill-a,skill-b` is specified, the workflow audit runs all 
 
 | Group | Contents |
 |-------|---------|
-| **Focus Area** | Findings directly involving the specified skills — W1 cycles containing them, W2 reachability of them, W5 edges from/to them, W6-W10 checks on their Integration/Inputs/Outputs, W11-W12 chain evals involving them |
+| **Focus Area** | Findings directly involving the specified skills — W1 cycles containing them, W2 reachability of them, W5 edges from/to them, W6-W9 checks on their Integration/Inputs/Outputs, W10-W11 chain evals involving them |
 | **Context** | All other findings from the full graph analysis — included for completeness but clearly separated in the report |
 
 Focus mode does not reduce the analysis scope — it reduces the report noise.

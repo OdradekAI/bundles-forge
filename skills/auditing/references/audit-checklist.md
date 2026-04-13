@@ -1,6 +1,6 @@
 # Audit Checklist
 
-Structured criteria for evaluating a bundle-plugin. Each category has specific checks with severity levels. Use this when running an audit — work through each category, note findings, and compile the report.
+Structured criteria for evaluating a bundle-plugin. Each category has specific checks with severity levels and automation status. Use this when running an audit — work through each category, note findings, and compile the report.
 
 ## Scoring
 
@@ -35,22 +35,21 @@ The auditor agent (or inline auditor) may adjust the baseline by **±2 points** 
 
 ## Category 1: Structure (Weight: High)
 
-| Check | Severity | Criteria |
-|-------|----------|----------|
-| S1 | Critical | `skills/` directory exists with at least one skill |
-| S2 | Critical | Each skill has its own directory under `skills/` |
-| S3 | Critical | Every skill directory contains a `SKILL.md` |
-| S4 | Warning | `package.json` exists at project root |
-| S5 | Warning | `README.md` exists and is not empty |
-| S6 | Warning | `.gitignore` exists and covers essentials (node_modules, .worktrees, OS files) |
-| S7 | Info | `CHANGELOG.md` exists |
-| S8 | Info | `LICENSE` exists |
-| S9 | Info | Skill directory names match `name` field in SKILL.md frontmatter |
-| S10 | Info | Agent files in `agents/` are self-contained — body includes complete execution protocol, not just a pointer to an external file |
-| S11 | Warning | Skills that dispatch agents do not duplicate the agent's execution details (scoring formulas, report format, process steps). Agent file is the single source of truth |
-| S12 | Info | Skill inline fallback blocks (handling "subagent unavailable") reference the corresponding agent file (`agents/*.md`) rather than re-implementing the execution logic |
-| S13 | Info | Each skill-agent pair has clear responsibility separation — skill handles orchestration (scope detection, dispatch, result composition), agent handles execution (checks, scoring, reporting) |
-| S14 | Warning | Writable agents (those without `disallowedTools: Edit` or `disallowedTools: Write`) have `isolation: "worktree"` set to prevent main working tree conflicts |
+<!-- BEGIN:structure -->
+| Check | Severity | Criteria | Automation |
+|-------|----------|----------|------------|
+| S1 | Critical | `skills/`, `hooks/`, `scripts/` directories exist | `audit_project.py` |
+| S2 | Warning | At least one platform manifest directory present | `audit_project.py` |
+| S3 | Warning | `.gitignore` exists | `audit_project.py` |
+| S5 | Warning | `README.md` exists | `audit_project.py` |
+| S6 | Info | `LICENSE` exists | `audit_project.py` |
+| S7 | Warning | Bootstrap skill (`using-*`) exists with `SKILL.md` | `audit_project.py` |
+| S8 | Warning | Skill-agent responsibility boundary: skills handle orchestration (scope detection, dispatch, result composition), agents handle execution (checks, scoring, reporting). No duplication of execution details — agent file is the single source of truth | `agent-only` |
+| S9 | Info | Skill directory names match `name` field in SKILL.md frontmatter | `lint_skills.py` |
+| S10 | Info | Agent files in `agents/` are self-contained — body includes complete execution protocol (≥5 non-empty body lines), not just a pointer | `lint_skills.py` |
+| S11 | Warning | Writable agents (those without `disallowedTools: Edit` or `disallowedTools: Write`) have `isolation: "worktree"` set to prevent main working tree conflicts | `agent-only` |
+| S12 | Info | Skill inline fallback blocks (handling "subagent unavailable") reference the corresponding agent file (`agents/*.md`) rather than re-implementing the execution logic | `lint_skills.py` |
+<!-- END:structure -->
 
 ---
 
@@ -58,15 +57,18 @@ The auditor agent (or inline auditor) may adjust the baseline by **±2 points** 
 
 Run these checks only for platforms the project claims to support.
 
-| Check | Severity | Criteria |
-|-------|----------|----------|
-| P1 | Critical | Each target platform has its manifest file present |
-| P2 | Critical | Manifest JSON is valid (parseable, no syntax errors) |
-| P3 | Critical | Cursor manifest paths (`skills`, `hooks`) resolve to existing directories/files |
-| P4 | Warning | Manifest metadata (name, version, description) is filled in |
-| P5 | Warning | Author and repository fields are populated |
-| P6 | Info | Manifest keywords are relevant |
-| P7 | Info | `claude plugin validate` (or `/plugin validate`) passes without errors — quick schema check for `plugin.json`, frontmatter, and `hooks.json` (Claude Code environments only) |
+<!-- BEGIN:platform_manifests -->
+| Check | Severity | Criteria | Automation |
+|-------|----------|----------|------------|
+| P1 | Critical | Each target platform has its manifest file present | `agent-only` |
+| P2 | Critical | Manifest JSON is valid (parseable, no syntax errors) | `audit_project.py` (M1) |
+| P3 | Critical | Cursor manifest paths (`skills`, `hooks`) resolve to existing directories/files | `audit_project.py` (M2) |
+| P4 | Warning | Manifest metadata (name, version, description) is filled in | `agent-only` |
+| P5 | Warning | Author and repository fields are populated | `agent-only` |
+| P7 | Info | `claude plugin validate` (or `/plugin validate`) passes without errors — quick schema check for `plugin.json`, frontmatter, and `hooks.json` (Claude Code environments only) | `agent-only` |
+<!-- END:platform_manifests -->
+
+**Script ID mapping:** `audit_project.py` emits M1 (JSON parse), M2 (path resolve), M3 (OpenCode exports). These map to P2, P3, and OpenCode-specific validation respectively.
 
 **Platform manifest locations:**
 - Claude Code: `.claude-plugin/plugin.json`
@@ -79,15 +81,17 @@ Run these checks only for platforms the project claims to support.
 
 ## Category 3: Version Sync (Weight: High)
 
-| Check | Severity | Criteria |
-|-------|----------|----------|
-| V1 | Critical | `.version-bump.json` exists |
-| V2 | Critical | All files listed in `.version-bump.json` actually exist |
-| V3 | Critical | All listed files have the same version string (no drift) |
-| V4 | Warning | Every platform manifest is listed in `.version-bump.json` |
-| V5 | Warning | `scripts/bump_version.py` exists |
-| V6 | Info | `python scripts/bump_version.py --check` exits 0 |
-| V7 | Info | `python scripts/bump_version.py --audit` finds no undeclared version strings |
+<!-- BEGIN:version_sync -->
+| Check | Severity | Criteria | Automation |
+|-------|----------|----------|------------|
+| V1 | Critical | `.version-bump.json` exists and is valid | `audit_project.py` |
+| V2 | Warning | All files listed in `.version-bump.json` actually exist | `audit_project.py` |
+| V3 | Critical | All listed files have the same version string (no drift) | `audit_project.py` |
+| V4 | Info | `scripts/bump_version.py` exists | `audit_project.py` |
+| V5 | Warning | Every platform manifest is listed in `.version-bump.json` | `agent-only` |
+| V6 | Info | `python scripts/bump_version.py --check` exits 0 | `agent-only` |
+| V7 | Info | `python scripts/bump_version.py --audit` finds no undeclared version strings | `agent-only` |
+<!-- END:version_sync -->
 
 **Quick drift check:**
 ```bash
@@ -100,42 +104,46 @@ python scripts/bump_version.py --check
 
 Run for every SKILL.md in the project.
 
-| Check | Severity | Criteria |
-|-------|----------|----------|
-| Q1 | Critical | YAML frontmatter present (between `---` delimiters) |
-| Q2 | Critical | `name` field exists in frontmatter |
-| Q3 | Critical | `description` field exists in frontmatter |
-| Q4 | Warning | `name` uses only letters, numbers, hyphens |
-| Q5 | Warning | `description` starts with "Use when..." |
-| Q6 | Warning | `description` describes triggering conditions, not workflow summary |
-| Q7 | Warning | `description` is under 250 characters (truncated in skill listing beyond this) |
-| Q8 | Warning | Frontmatter total under 1024 characters |
-| Q9 | Warning | SKILL.md body under 500 lines |
-| Q10 | Info | Skill has Overview section |
-| Q11 | Info | Skill has Common Mistakes section |
-| Q12 | Info | Heavy reference content (100+ lines) extracted to supporting files |
-| Q13 | Warning/Info | Token budget: bootstrap skill body ≤ 200 lines (warning); regular skill reports estimated token count when high (info) |
-| Q14 | Warning | `allowed-tools` frontmatter references scripts/paths that actually exist |
-| Q15 | Info | Conditional blocks (`If ... unavailable` etc.) over 30 lines should be in `references/` |
-| Q16 | Info | Non-bootstrap skills have an `## Inputs` section |
-| Q17 | Info | Non-bootstrap skills have an `## Outputs` section |
+<!-- BEGIN:skill_quality -->
+| Check | Severity | Criteria | Automation |
+|-------|----------|----------|------------|
+| Q1 | Critical | YAML frontmatter present (between `---` delimiters) | `lint_skills.py` |
+| Q2 | Critical | `name` field exists in frontmatter | `lint_skills.py` |
+| Q3 | Critical | `description` field exists in frontmatter | `lint_skills.py` |
+| Q4 | Warning | `name` uses only letters, numbers, hyphens | `lint_skills.py` |
+| Q5 | Warning | `description` starts with "Use when..." | `lint_skills.py` |
+| Q6 | Warning | `description` describes triggering conditions, not workflow summary | `lint_skills.py` |
+| Q7 | Warning | `description` is under 250 characters (truncated in skill listing beyond this) | `lint_skills.py` |
+| Q8 | Warning | Frontmatter total under 1024 characters | `lint_skills.py` |
+| Q9 | Warning | SKILL.md body under 500 lines | `lint_skills.py` |
+| Q10 | Info | Skill has Overview section | `lint_skills.py` |
+| Q11 | Info | Skill has Common Mistakes section | `lint_skills.py` |
+| Q12 | Info | Heavy reference content (100+ lines) extracted to supporting files | `lint_skills.py` |
+| Q13 | Warning/Info | Token budget: bootstrap skill body ≤ 200 lines (warning); regular skill reports estimated token count when high (info) | `lint_skills.py` |
+| Q14 | Warning | `allowed-tools` frontmatter references scripts/paths that actually exist | `lint_skills.py` |
+| Q15 | Info | Conditional blocks (`If ... unavailable` etc.) over 30 lines should be in `references/` | `lint_skills.py` |
+<!-- END:skill_quality -->
 
 **Description anti-patterns (Q6):**
 - Contains step-by-step workflow → agents shortcut to description
 - Uses phrases like "first... then... finally..."
 - Describes what the skill does instead of when to use it
 
+**Cross-skill consistency (C1):** When ≥2 skills exist, `lint_skills.py` checks structural consistency across skills — mixed Overview presence, inconsistent subagent fallback patterns, and mixed verb forms after "Use when". Reported as a single C1 finding with sub-items.
+
 ---
 
 ## Category 5: Cross-References (Weight: Medium)
 
-Static link resolution — verifies that references within skill content point to existing targets. For workflow graph analysis (cycles, reachability, artifact handoff), see `references/workflow-checklist.md` (W1-W12).
+Static link resolution — verifies that references within skill content point to existing targets. For workflow graph analysis (cycles, reachability, artifact handoff), see `references/workflow-checklist.md`.
 
-| Check | Severity | Criteria |
-|-------|----------|----------|
-| X1 | Warning | All `<project>:<skill-name>` references resolve to existing skills |
-| X2 | Warning | No broken relative-path references to supporting files |
-| X3 | Warning | Text references to subdirectories (`references/`, `templates/`, etc.) match actual skill directory contents |
+<!-- BEGIN:cross_references -->
+| Check | Severity | Criteria | Automation |
+|-------|----------|----------|------------|
+| X1 | Warning | All `<project>:<skill-name>` references resolve to existing skills | `lint_skills.py` |
+| X2 | Warning | No broken relative-path references to supporting files | `lint_skills.py` |
+| X3 | Warning | Text references to subdirectories (`references/`, `templates/`, etc.) match actual skill directory contents | `lint_skills.py` |
+<!-- END:cross_references -->
 
 **How to check:**
 1. Extract all `<project>:<name>` patterns from all SKILL.md files
@@ -144,34 +152,34 @@ Static link resolution — verifies that references within skill content point t
 4. Scan for prose references to subdirectories and verify they exist
 5. Run `python scripts/lint_skills.py --json` — X1-X3 findings are in per-skill results
 
-**Workflow graph checks (W1-W12)** have been moved to a dedicated category. See `references/workflow-checklist.md` and run `python scripts/audit_workflow.py` for workflow-specific analysis.
+**Workflow graph checks** have been moved to a dedicated category. See `references/workflow-checklist.md` and run `python scripts/audit_workflow.py` for workflow-specific analysis.
 
 ---
 
 ## Category 6: Workflow (Weight: High)
 
-See `references/workflow-checklist.md` for the full W1-W12 checklist covering three layers: Static Structure (W1-W5), Semantic Interface (W6-W10), and Behavioral Verification (W11-W12).
+See `references/workflow-checklist.md` for the full checklist covering three layers: Static Structure (W1-W5), Semantic Interface (W6-W9), and Behavioral Verification (W10-W11).
 
 ---
 
 ## Category 7: Hooks (Weight: Medium)
 
-Run only if the project uses session bootstrap hooks.
+Functional correctness checks for session bootstrap hooks. Security-related hook checks (HTTP hooks, env injection, network calls) are in Category 10 via `references/security-checklist.md` (HK13-HK15).
 
-| Check | Severity | Criteria |
-|-------|----------|----------|
-| H1 | Critical | `hooks/session-start` exists and is executable (`chmod +x`) |
-| H2 | Critical | `hooks/hooks.json` is valid JSON (if Claude Code targeted) |
-| H3 | Critical | `hooks/hooks-cursor.json` is valid JSON (if Cursor targeted) |
-| H4 | Critical | `session-start` reads the correct bootstrap SKILL.md path |
-| H5 | Warning | `hooks/run-hook.cmd` exists (Windows support) |
-| H6 | Warning | `session-start` handles all target platforms (three-way: CURSOR_PLUGIN_ROOT, CLAUDE_PLUGIN_ROOT, fallback) |
-| H7 | Warning | JSON escaping is correct (backslashes, quotes, newlines, tabs) |
-| H8 | Info | Uses `printf` instead of heredoc (bash 5.3+ compatibility) |
-| H9 | Warning | `hooks.json` includes top-level `description` field and per-handler `timeout` |
-| H10 | Warning | No `type: "http"` hooks sending data to external URLs (data exfiltration risk) |
-| H11 | Warning | No hook scripts write to `CLAUDE_ENV_FILE` without explicit justification (env injection risk) |
-| H12 | Info | `session-start` exits 0 on read failure (no-op, does not block session) |
+<!-- BEGIN:hooks -->
+| Check | Severity | Criteria | Automation |
+|-------|----------|----------|------------|
+| H1 | Warning | `hooks/` directory exists | `audit_project.py` |
+| H2 | Warning | `hooks/session-start` exists | `audit_project.py` |
+| H3 | Warning | `session-start` references SKILL.md | `audit_project.py` |
+| H4 | Info | `session-start` has shebang line | `audit_project.py` |
+| H5 | Info | `hooks/run-hook.cmd` exists (Windows support) | `audit_project.py` |
+| H6 | Warning | `session-start` handles all target platforms (three-way: CURSOR_PLUGIN_ROOT, CLAUDE_PLUGIN_ROOT, fallback) | `agent-only` |
+| H7 | Warning | JSON escaping is correct (backslashes, quotes, newlines, tabs) | `agent-only` |
+| H8 | Info | Uses `printf` instead of heredoc (bash 5.3+ compatibility) | `agent-only` |
+| H9 | Info | `hooks.json` includes top-level `description` field and per-handler `timeout` | `audit_project.py` |
+| H12 | Info | `session-start` exits 0 on read failure (no-op, does not block session) | `agent-only` |
+<!-- END:hooks -->
 
 **Quick hook test:**
 ```bash
@@ -182,48 +190,53 @@ CLAUDE_PLUGIN_ROOT="$(pwd)" bash hooks/session-start | python3 -m json.tool
 
 ## Category 8: Testing (Weight: Medium)
 
-| Check | Severity | Criteria |
-|-------|----------|----------|
-| T1 | Warning | `tests/` directory exists |
-| T2 | Info | At least one test per target platform |
-| T3 | Info | Tests verify skill discovery (skills appear in available list) |
-| T4 | Info | Tests verify bootstrap injection (session-start content loads) |
-| T5 | Warning | Each skill has a test prompts file (`tests/prompts/<skill-name>.yml` or `skills/<name>/tests/prompts.yml`) |
-| T6 | Info | Test prompts include both should-trigger and should-not-trigger samples |
-| T7 | Info | Test prompts cover all major branch paths of the skill |
-| T8 | Warning | Most recent A/B eval result exists in `.bundles-forge/` |
-| T9 | Info | Most recent chain eval result exists in `.bundles-forge/` |
+<!-- BEGIN:testing -->
+| Check | Severity | Criteria | Automation |
+|-------|----------|----------|------------|
+| T1 | Warning | `tests/` directory exists | `audit_project.py` |
+| T2 | Info | At least one test per target platform | `agent-only` |
+| T3 | Info | Tests verify skill discovery (skills appear in available list) | `agent-only` |
+| T4 | Info | Tests verify bootstrap injection (session-start content loads) | `agent-only` |
+| T5 | Warning | Each skill has a test prompts file (`tests/prompts/<skill-name>.yml` or `skills/<name>/tests/prompts.yml`) | `audit_project.py` |
+| T6 | Info | Test prompts include both should-trigger and should-not-trigger samples | `agent-only` |
+| T7 | Info | Test prompts cover all major branch paths of the skill | `agent-only` |
+| T8 | Info | Most recent A/B eval result exists in `.bundles-forge/` | `audit_project.py` |
+| T9 | Info | Most recent chain eval result exists in `.bundles-forge/` | `audit_project.py` |
+<!-- END:testing -->
 
 ---
 
 ## Category 9: Documentation (Weight: Low)
 
-| Check | Severity | Criteria |
-|-------|----------|----------|
-| D1 | Warning | README contains install instructions for each target platform |
-| D2 | Warning | README lists all skills with descriptions |
-| D3 | Info | Each non-marketplace platform has a dedicated install doc |
-| D4 | Info | CLAUDE.md exists with contributor guidelines |
-| D5 | Info | AGENTS.md exists and points to CLAUDE.md |
+Documentation consistency checks — verifies that project docs stay in sync with actual project state.
+
+<!-- BEGIN:documentation -->
+| Check | Severity | Criteria | Automation |
+|-------|----------|----------|------------|
+| D1 | Warning | Skill names in AGENTS.md / CLAUDE.md / README match skills/ directory | `check_docs.py` |
+| D2 | Critical | Cross-references (`project:skill`) in all .md files resolve to existing skills | `check_docs.py` |
+| D3 | Warning | CLAUDE.md Platform Manifests table matches `.version-bump.json` | `check_docs.py` |
+| D4 | Critical | Scripts referenced in CLAUDE.md exist in scripts/ | `check_docs.py` |
+| D5 | Warning | Agent names in CLAUDE.md match agents/ directory | `check_docs.py` |
+| D6 | Warning | README.md and README.zh.md hard data (skills, agents, commands, links) in sync | `check_docs.py` |
+| D7 | Warning | docs/*.md and docs/*.zh.md pairs have consistent hard data (tables, commands, links) | `check_docs.py` |
+<!-- END:documentation -->
 
 ---
 
 ## Category 10: Security (Weight: High)
 
-Run security checks on all executable code, agent instructions, and hook scripts. See `references/security-checklist.md` for the full pattern list (Categories 1-6, including plugin configuration safety: path traversal, userConfig, persistent data).
+Run security checks on all executable code, agent instructions, and hook scripts. See `references/security-checklist.md` for the full pattern list organized by 7 attack surfaces:
 
-| Check | Severity | Criteria |
-|-------|----------|----------|
-| SEC1 | Critical | No SKILL.md instructs agents to read sensitive files (`.env`, `.ssh/`, credentials) |
-| SEC2 | Critical | No hook script makes external network calls (`curl`, `wget`, `nc`) |
-| SEC3 | Critical | No hook script reads or transmits API keys or secrets |
-| SEC4 | Critical | No OpenCode plugin uses `eval()`, `child_process`, or undeclared network access |
-| SEC5 | Critical | No agent prompt contains safety override instructions ("ignore safety", "bypass") |
-| SEC6 | Warning | Hook scripts follow the legitimate baseline (read SKILL.md, JSON-escape, emit JSON) |
-| SEC7 | Warning | OpenCode plugins follow the legitimate baseline (register skills, inject bootstrap) |
-| SEC8 | Warning | No SKILL.md uses encoding tricks (unicode homoglyphs, zero-width chars) |
-| SEC9 | Info | Agent prompts include explicit scope constraints |
-| SEC10 | Info | Scripts use error handling (`set -euo pipefail` or equivalent) |
+1. **SKILL.md Content** (SC1-SC14) — sensitive files, destructive commands, safety overrides, encoding tricks
+2. **Hook Scripts** (HK1-HK15) — network calls, env vars, system modification, HTTP hooks, env injection
+3. **OpenCode Plugins** (OC1-OC13) — code execution, network access, sensitive data, message manipulation
+4. **Agent Prompts** (AG1-AG7) — safety overrides, credentials, network, scope expansion
+5. **Bundled Scripts** (BS1-BS6) — network, system modification, sensitive data
+6. **MCP Configuration** (MC1-MC5) — hardcoded credentials, command execution, plain HTTP
+7. **Plugin Configuration** (PC1-PC7) — path traversal, userConfig, persistent data
+
+Each surface has a legitimate baseline documenting expected behavior.
 
 **Quick check:** Grep for high-risk patterns across all executable files:
 ```
@@ -238,6 +251,6 @@ After running all checks, compile findings using the appropriate report template
 
 - **Full project audit:** `references/report-template.md` — six-layer structure for 10-category audits
 - **Single skill audit:** `references/skill-report-template.md` — three-layer structure for 4-category audits (see `references/skill-checklist.md` for the 4-category checklist)
-- **Workflow audit:** `references/workflow-report-template.md` — three-layer structure for W1-W12 workflow checks
+- **Workflow audit:** `references/workflow-report-template.md` — three-layer structure for workflow checks
 
 All templates include Go/No-Go decision logic, quantified impact scales, and confidence levels.

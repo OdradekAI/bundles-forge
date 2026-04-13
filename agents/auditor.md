@@ -13,7 +13,7 @@ When auditing a project, you will:
 
 1. **Read the checklists**:
    - `skills/auditing/references/audit-checklist.md` for quality criteria
-   - `skills/auditing/references/workflow-checklist.md` for workflow criteria (W1-W12)
+   - `skills/auditing/references/workflow-checklist.md` for workflow criteria (W1-W11)
    - `skills/auditing/references/security-checklist.md` for security criteria
 
 2. **Execute all 10 categories**:
@@ -22,11 +22,11 @@ When auditing a project, you will:
    - **Version Sync**: `.version-bump.json` completeness, drift detection
    - **Skill Quality**: Frontmatter, descriptions, token efficiency
    - **Cross-References**: `project:skill-name` resolution, broken links (X1-X3)
-   - **Workflow**: Workflow graph topology, integration symmetry, artifact handoff (W1-W12)
-   - **Hooks**: Bootstrap injection, platform detection, JSON escaping, HTTP hook exfiltration risk, `CLAUDE_ENV_FILE` injection risk
+   - **Workflow**: Workflow graph topology, integration symmetry, artifact handoff (W1-W11)
+   - **Hooks**: Bootstrap injection, platform detection, JSON escaping (functional correctness only — security checks like HTTP hooks, `CLAUDE_ENV_FILE` injection are in Security)
    - **Testing**: Test directory, test prompts, A/B eval results, platform coverage
-   - **Documentation**: README, install docs, CHANGELOG
-   - **Security**: 7 attack surfaces — hook scripts, HTTP hooks, `CLAUDE_ENV_FILE` injection, plugin code, agent prompts, skill content (including references/*.md), bundled scripts
+   - **Documentation**: Documentation consistency via `check_docs.py` (D1-D7) — skill list sync, cross-ref validity, manifest sync, script accuracy, agent sync, README/guide language sync
+   - **Security**: 6 attack surfaces using IDs from `security-checklist.md` — SC (skill content), HK (hooks), OC (OpenCode), AG (agents), BS (scripts), PC (plugin config)
 
    Category weights are defined in `skills/auditing/references/audit-checklist.md`.
 
@@ -78,17 +78,16 @@ Save to `.bundles-forge/<skill-name>-v<version>-skill-audit.YYYY-MM-DD[.<lang>].
 
 ### Workflow Audit Mode
 
-When explicitly requested for a workflow audit (or when `--focus-skills` is specified), run a dedicated workflow assessment using `skills/auditing/references/workflow-checklist.md` (W1-W12).
+When explicitly requested for a workflow audit (or when `--focus-skills` is specified), run a dedicated workflow assessment using `skills/auditing/references/workflow-checklist.md` (W1-W11).
 
 **Three-layer process:**
 
 1. **Static Structure (W1-W5):** Run `python scripts/audit_workflow.py` (or `--focus-skills` variant). The script calls `lint_skills.py` for graph analysis (G1-G5 mapped to W1-W5) and produces automated findings.
 
-2. **Semantic Interface (W6-W10):** The script automates W6, W9, W10. For W7 (cycle rationale) and W8 (terminal marking), review manually:
+2. **Semantic Interface (W6-W9):** The script automates W6, W8, W9. For W7 (cycle rationale), review manually:
    - W7: For each declared cycle (`<!-- cycle:a,b -->`), verify the rationale makes sense (e.g. audit↔optimizing feedback loop is legitimate)
-   - W8: Terminal skills should be obvious from context — skills with no outgoing edges that produce user-visible deliverables
 
-3. **Behavioral Verification (W11-W12):** Note in the report that W11-W12 require evaluator agent dispatch and are handled by the parent `auditing` skill after this audit completes. Include the chain list and focus skills so the parent skill can dispatch the evaluator with the right context.
+3. **Behavioral Verification (W10-W11):** Note in the report that W10-W11 require evaluator agent dispatch and are handled by the parent `auditing` skill after this audit completes. When skipped, score this layer as **N/A** (excluded from weighted average) rather than a default 10. Include the chain list and focus skills so the parent skill can dispatch the evaluator with the right context.
 
 **Focus mode:** When `--focus-skills` is specified, partition all findings into **Focus Area** (directly involving specified skills) and **Context** (remaining graph findings).
 

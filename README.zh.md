@@ -119,7 +119,7 @@ flowchart LR
 |-------|------|
 | `inspector` | 验证脚手架生成的项目结构和平台适配 |
 | `auditor` | 执行系统化质量审计与安全扫描 |
-| `evaluator` | 运行 A/B skill 评估用于优化对比，以及工作流链验证用于审计（W11-W12） |
+| `evaluator` | 运行 A/B skill 评估用于优化对比，以及工作流链验证用于审计（W10-W11） |
 
 ### 命令
 
@@ -145,7 +145,7 @@ flowchart LR
 |------|------------|---------|
 | 完整项目 | `/bundles-audit` 或 `audit_project.py` | 10 大类（结构、清单、版本同步、技能质量、交叉引用、工作流、钩子、测试、文档、安全） |
 | 单个技能 | `/bundles-audit skills/authoring` 或 `audit_skill.py` | 4 类（结构、技能质量、交叉引用、安全） |
-| 工作流 | 显式请求 或 `audit_workflow.py` | 3 层：静态结构、语义接口、行为验证（W1-W12） |
+| 工作流 | 显式请求 或 `audit_workflow.py` | 3 层：静态结构、语义接口、行为验证（W1-W11） |
 | 仅安全扫描 | `/bundles-scan` 或 `scan_security.py` | 7 大攻击面（技能内容、Hook 脚本、HTTP hooks、OpenCode 插件、Agent 提示词、打包脚本、MCP 配置） |
 
 ### 快速开始（脚本）

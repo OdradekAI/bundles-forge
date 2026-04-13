@@ -10,14 +10,16 @@ resources, install backdoors, or override safety controls.
 Each rule has a confidence level:
   - deterministic: unambiguous in executable code; affects score and exit code.
   - suspicious: context-sensitive (e.g. docs referencing .env); shown in
-    report as "needs review" but does NOT affect score or exit code.
+    report as "needs review", affects exit code (at least exit 1).
+    JSON output includes a "confidence" field for CI to make fine-grained
+    decisions on whether to block on suspicious findings.
 
 Usage:
     python scripts/scan_security.py [project-root]
     python scripts/scan_security.py --json [project-root]
 
 Exit codes: 0 = clean, 1 = warnings only, 2 = critical findings
-           (only deterministic findings affect exit codes)
+           (both deterministic and suspicious findings affect exit codes)
 """
 
 import json
@@ -30,7 +32,7 @@ from pathlib import Path
 #
 # confidence: "deterministic" = unambiguous in executable code, counts toward
 #             score and exit code.  "suspicious" = context-sensitive, needs
-#             model review; shown in report but does NOT affect score/exit.
+#             model review; counts toward score/exit (at least warning level).
 # Rules with pattern=None use custom logic in scan_file().
 # ---------------------------------------------------------------------------
 
@@ -65,6 +67,8 @@ SKILL_CONTENT_RULES = _compile([
      "Instructions to skip safety checks", _DET),
     ("SC11", "warning", r"highest\s+priority|override\s+(all|user)|supersede",
      "Claims priority over user instructions", _SUS),
+    ("SC12", "warning", r"<EXTREMELY.?IMPORTANT>|EXTREMELY.?IMPORTANT",
+     "Emphasis tags (EXTREMELY_IMPORTANT) outside bootstrap skill", _SUS),
     ("SC15", "info", None, "Excessively long line (>500 chars)", _SUS),
 ])
 
@@ -129,6 +133,10 @@ MCP_RULES = [
      "MCP server URL uses plain HTTP instead of HTTPS", _DET),
     ("MC5", "info", re.compile(r'"command"\s*:\s*"/(?!dev/null)', re.IGNORECASE),
      "Absolute path in command field (may not be portable)", _DET),
+    ("PC1", "warning", re.compile(r'\.\./'),
+     "Path traversal (../) in config — breaks after marketplace install", _DET),
+    ("PC2", "warning", re.compile(r'["\'][A-Z]:\\|["\']/(?:usr|home|etc|opt|var)/'),
+     "Absolute path in plugin config — use relative paths or ${CLAUDE_PLUGIN_ROOT}", _DET),
 ]
 
 AGENT_RULES = _compile([
@@ -359,6 +367,8 @@ def scan_file(path, rel_path, file_type):
                     continue
                 if check_id == "SC11" and _USER_PRIORITY_CONTEXT_RE.search(line):
                     continue
+                if check_id == "SC12" and "using-" in str(rel_path):
+                    continue
                 findings.append(dict(
                     check_id=check_id, risk=risk, line=line_num,
                     description=desc, confidence=confidence))
@@ -431,11 +441,11 @@ def run_scan(project_root):
         }
         for finding in findings:
             is_suspicious = finding.get("confidence") == "suspicious"
-            if is_suspicious and finding["risk"] in ("critical", "warning"):
-                results["summary"][f"suspicious_{finding['risk']}"] += 1
-            else:
-                file_result["counts"][finding["risk"]] += 1
-                results["summary"][finding["risk"]] += 1
+            risk = finding["risk"]
+            file_result["counts"][risk] += 1
+            results["summary"][risk] += 1
+            if is_suspicious and risk in ("critical", "warning"):
+                results["summary"][f"suspicious_{risk}"] += 1
         results["files"].append(file_result)
 
     return results

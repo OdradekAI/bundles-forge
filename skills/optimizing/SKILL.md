@@ -375,7 +375,7 @@ After applying changes to the copy, verify with a parallel comparison:
 
 - `audit-report` (optional) — findings from `bundles-forge:auditing` (full project mode). Contains per-skill breakdowns — when optimizing a single skill from a full audit, extract the relevant skill's findings from the Per-Skill Breakdown section
 - `skill-report` (optional) — findings from `bundles-forge:auditing` (skill mode). More precise input for Skill Optimization — 4-category scored report targeting a single skill
-- `workflow-report` (optional) — workflow-specific findings (W1-W12) from `bundles-forge:auditing` (workflow mode), consumed by Target 4
+- `workflow-report` (optional) — workflow-specific findings (W1-W11) from `bundles-forge:auditing` (workflow mode), consumed by Target 4
 - `user-feedback` (optional) — behavioral feedback about skill quality, triggering issues, or wrong output
 
 ## Outputs

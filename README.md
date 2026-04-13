@@ -119,7 +119,7 @@ Each skill has a companion guide in [`docs/`](docs/) with detailed usage, exampl
 |-------|------|
 | `inspector` | Validates scaffolded project structure and platform adaptation |
 | `auditor` | Executes systematic quality audit with security scanning |
-| `evaluator` | Runs A/B skill evaluation for optimization and workflow chain verification for auditing (W11-W12) |
+| `evaluator` | Runs A/B skill evaluation for optimization and workflow chain verification for auditing (W10-W11) |
 
 ### Commands
 
@@ -145,7 +145,7 @@ Four audit scopes for different levels of granularity — the agent auto-detects
 |-------|-----------------|----------------|
 | Full Project | `/bundles-audit` or `audit_project.py` | 10 categories (structure, manifests, version sync, skill quality, cross-refs, workflow, hooks, testing, docs, security) |
 | Single Skill | `/bundles-audit skills/authoring` or `audit_skill.py` | 4 categories (structure, skill quality, cross-refs, security) |
-| Workflow | Explicit request or `audit_workflow.py` | 3 layers: static structure, semantic interface, behavioral verification (W1-W12) |
+| Workflow | Explicit request or `audit_workflow.py` | 3 layers: static structure, semantic interface, behavioral verification (W1-W11) |
 | Security Only | `/bundles-scan` or `scan_security.py` | 7 attack surfaces (skill content, hook scripts, HTTP hooks, OpenCode plugins, agent prompts, bundled scripts, MCP configs) |
 
 ### Quick Start (Scripts)

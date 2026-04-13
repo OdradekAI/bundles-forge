@@ -26,8 +26,6 @@ Definitive quality specification for SKILL.md files. `scripts/lint_skills.py` au
 | Q13 | Info | Token budget check — bootstrap < 200 lines, regular ~4000 tokens | Estimate tokens: prose ~1.3 tokens/word, code ~1 token/3.5 chars, tables ~1 token/3 chars |
 | Q14 | Warning | `allowed-tools` paths must exist in project | Verify that referenced scripts (`scripts/*.py`) actually exist |
 | Q15 | Info | Large conditional blocks (30+ lines) should be in `references/` | Check "If...unavailable" guarded sections for excessive length |
-| Q16 | Info | Should have `## Inputs` section | Search for the heading (skipped for bootstrap `using-*` skills) |
-| Q17 | Info | Should have `## Outputs` section | Search for the heading (skipped for bootstrap `using-*` skills) |
 
 ## Cross-Reference Checks
 
@@ -55,4 +53,4 @@ python scripts/lint_skills.py --json <project-root>      # machine-readable
 
 - **Critical** findings (Q1-Q3) mean the skill won't be discovered by agents — fix immediately
 - **Warning** findings (Q4-Q9, Q14, X1-X3) mean the skill works but has quality issues — fix before delivery
-- **Info** findings (Q10-Q13, Q15-Q17, S9) are improvement opportunities — address if time permits, report otherwise
+- **Info** findings (Q10-Q13, Q15, S9) are improvement opportunities — address if time permits, report otherwise
