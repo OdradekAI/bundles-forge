@@ -8,6 +8,8 @@ Comprehensive guide to releasing bundle-plugins with Bundles Forge. Covers the f
 
 The release pipeline is designed as a quality gate — not a formality. It ensures that every release is internally consistent, well-documented, and free of known defects. Users should complete all agent, skill, and workflow (plugin) development before starting the release process.
 
+> **Canonical source:** The full execution protocol (prerequisites, pre-flight checks, version bump, publish steps) lives in `skills/releasing/SKILL.md`. This guide helps you understand *the release pipeline* and *what to expect at each phase* — the skill itself handles execution.
+
 | Phase | Steps | Tools | Blocking? |
 |-------|-------|-------|-----------|
 | Prerequisites | Clean git status, branch check, tag check | `git status`, `git tag -l` | Yes (dirty tree blocks) |
@@ -74,7 +76,7 @@ Run all automated checks before proceeding:
 # Version drift detection
 python scripts/bump_version.py --check
 
-# Documentation consistency (7 checks)
+# Documentation consistency (9 checks)
 python scripts/check_docs.py .
 ```
 
@@ -82,7 +84,7 @@ python scripts/check_docs.py .
 
 **Full audit:** Invoke `bundles-forge:auditing` (preferred — includes qualitative assessment via auditor subagent with 10-category scoring). Fallback: `python scripts/audit_project.py .` (automated checks only, no qualitative scoring).
 
-**`check_docs.py` checks (D1–D7):**
+**`check_docs.py` checks (D1–D9):**
 
 | Check | What It Verifies |
 |-------|-----------------|
@@ -93,6 +95,8 @@ python scripts/check_docs.py .
 | D5 — Agent list sync | Agents in CLAUDE.md match `agents/` directory |
 | D6 — README data sync | Hard data (skill names, commands, links) consistent between README.md and README.zh.md |
 | D7 — Guide language sync | Hard data (tables, code blocks, links) consistent between `docs/*.md` and `docs/*.zh.md` |
+| D8 — Canonical source declaration | Each `docs/*.md` guide has a `> **Canonical source:**` declaration pointing to an existing skill or agent file |
+| D9 — Numeric cross-validation | Key numbers in `docs/*.md` guides match their canonical source (e.g., attack surface count, category count) |
 
 ### Step 2: Address Findings
 

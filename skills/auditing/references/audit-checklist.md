@@ -45,10 +45,10 @@ The auditor agent (or inline auditor) may adjust the baseline by **±2 points** 
 | S6 | Info | `LICENSE` exists | `audit_project.py` |
 | S7 | Warning | Bootstrap skill (`using-*`) exists with `SKILL.md` | `audit_project.py` |
 | S8 | Warning | Skill-agent responsibility boundary: skills handle orchestration (scope detection, dispatch, result composition), agents handle execution (checks, scoring, reporting). No duplication of execution details — agent file is the single source of truth | `agent-only` |
-| S9 | Info | Skill directory names match `name` field in SKILL.md frontmatter | `lint_skills.py` |
-| S10 | Info | Agent files in `agents/` are self-contained — body includes complete execution protocol (≥5 non-empty body lines), not just a pointer | `lint_skills.py` |
+| S9 | Info | Skill directory names match `name` field in SKILL.md frontmatter | `audit_skill.py` |
+| S10 | Info | Agent files in `agents/` are self-contained — body includes complete execution protocol (≥5 non-empty body lines), not just a pointer | `audit_skill.py` |
 | S11 | Warning | Writable agents (those without `disallowedTools: Edit` or `disallowedTools: Write`) have `isolation: "worktree"` set to prevent main working tree conflicts | `agent-only` |
-| S12 | Info | Skill inline fallback blocks (handling "subagent unavailable") reference the corresponding agent file (`agents/*.md`) rather than re-implementing the execution logic | `lint_skills.py` |
+| S12 | Info | Skill inline fallback blocks (handling "subagent unavailable") reference the corresponding agent file (`agents/*.md`) rather than re-implementing the execution logic | `audit_skill.py` |
 <!-- END:structure -->
 
 ---
@@ -107,21 +107,21 @@ Run for every SKILL.md in the project.
 <!-- BEGIN:skill_quality -->
 | Check | Severity | Criteria | Automation |
 |-------|----------|----------|------------|
-| Q1 | Critical | YAML frontmatter present (between `---` delimiters) | `lint_skills.py` |
-| Q2 | Critical | `name` field exists in frontmatter | `lint_skills.py` |
-| Q3 | Critical | `description` field exists in frontmatter | `lint_skills.py` |
-| Q4 | Warning | `name` uses only letters, numbers, hyphens | `lint_skills.py` |
-| Q5 | Warning | `description` starts with "Use when..." | `lint_skills.py` |
-| Q6 | Warning | `description` describes triggering conditions, not workflow summary | `lint_skills.py` |
-| Q7 | Warning | `description` is under 250 characters (truncated in skill listing beyond this) | `lint_skills.py` |
-| Q8 | Warning | Frontmatter total under 1024 characters | `lint_skills.py` |
-| Q9 | Warning | SKILL.md body under 500 lines | `lint_skills.py` |
-| Q10 | Info | Skill has Overview section | `lint_skills.py` |
-| Q11 | Info | Skill has Common Mistakes section | `lint_skills.py` |
-| Q12 | Info | Heavy reference content (100+ lines) extracted to supporting files | `lint_skills.py` |
-| Q13 | Warning/Info | Token budget: bootstrap skill body ≤ 200 lines (warning); regular skill reports estimated token count when high (info) | `lint_skills.py` |
-| Q14 | Warning | `allowed-tools` frontmatter references scripts/paths that actually exist | `lint_skills.py` |
-| Q15 | Info | Conditional blocks (`If ... unavailable` etc.) over 30 lines should be in `references/` | `lint_skills.py` |
+| Q1 | Critical | YAML frontmatter present (between `---` delimiters) | `audit_skill.py` |
+| Q2 | Critical | `name` field exists in frontmatter | `audit_skill.py` |
+| Q3 | Critical | `description` field exists in frontmatter | `audit_skill.py` |
+| Q4 | Warning | `name` uses only letters, numbers, hyphens | `audit_skill.py` |
+| Q5 | Warning | `description` starts with "Use when..." | `audit_skill.py` |
+| Q6 | Warning | `description` describes triggering conditions, not workflow summary | `audit_skill.py` |
+| Q7 | Warning | `description` is under 250 characters (truncated in skill listing beyond this) | `audit_skill.py` |
+| Q8 | Warning | Frontmatter total under 1024 characters | `audit_skill.py` |
+| Q9 | Warning | SKILL.md body under 500 lines | `audit_skill.py` |
+| Q10 | Info | Skill has Overview section | `audit_skill.py` |
+| Q11 | Info | Skill has Common Mistakes section | `audit_skill.py` |
+| Q12 | Info | Heavy reference content (100+ lines) extracted to supporting files | `audit_skill.py` |
+| Q13 | Warning/Info | Token budget: bootstrap skill body ≤ 200 lines (warning); regular skill reports estimated token count when high (info) | `audit_skill.py` |
+| Q14 | Warning | `allowed-tools` frontmatter references scripts/paths that actually exist | `audit_skill.py` |
+| Q15 | Info | Conditional blocks (`If ... unavailable` etc.) over 30 lines should be in `references/` | `audit_skill.py` |
 <!-- END:skill_quality -->
 
 **Description anti-patterns (Q6):**
@@ -129,7 +129,7 @@ Run for every SKILL.md in the project.
 - Uses phrases like "first... then... finally..."
 - Describes what the skill does instead of when to use it
 
-**Cross-skill consistency (C1):** When ≥2 skills exist, `lint_skills.py` checks structural consistency across skills — mixed Overview presence, inconsistent subagent fallback patterns, and mixed verb forms after "Use when". Reported as a single C1 finding with sub-items.
+**Cross-skill consistency (C1):** When ≥2 skills exist, `audit_skill.py` checks structural consistency across skills — mixed Overview presence, inconsistent subagent fallback patterns, and mixed verb forms after "Use when". Reported as a single C1 finding with sub-items.
 
 ---
 
@@ -140,9 +140,9 @@ Static link resolution — verifies that references within skill content point t
 <!-- BEGIN:cross_references -->
 | Check | Severity | Criteria | Automation |
 |-------|----------|----------|------------|
-| X1 | Warning | All `<project>:<skill-name>` references resolve to existing skills | `lint_skills.py` |
-| X2 | Warning | No broken relative-path references to supporting files | `lint_skills.py` |
-| X3 | Warning | Text references to subdirectories (`references/`, `templates/`, etc.) match actual skill directory contents | `lint_skills.py` |
+| X1 | Warning | All `<project>:<skill-name>` references resolve to existing skills | `audit_skill.py` |
+| X2 | Warning | No broken relative-path references to supporting files | `audit_skill.py` |
+| X3 | Warning | Text references to subdirectories (`references/`, `templates/`, etc.) match actual skill directory contents | `audit_skill.py` |
 <!-- END:cross_references -->
 
 **How to check:**
@@ -150,7 +150,7 @@ Static link resolution — verifies that references within skill content point t
 2. Verify each `<name>` matches a directory under `skills/`
 3. Extract all relative file references and verify they exist
 4. Scan for prose references to subdirectories and verify they exist
-5. Run `python scripts/lint_skills.py --json` — X1-X3 findings are in per-skill results
+5. Run `python scripts/audit_skill.py --json` — X1-X3 findings are in per-skill results
 
 **Workflow graph checks** have been moved to a dedicated category. See `references/workflow-checklist.md` and run `python scripts/audit_workflow.py` for workflow-specific analysis.
 
@@ -220,6 +220,8 @@ Documentation consistency checks — verifies that project docs stay in sync wit
 | D5 | Warning | Agent names in CLAUDE.md match agents/ directory | `check_docs.py` |
 | D6 | Warning | README.md and README.zh.md hard data (skills, agents, commands, links) in sync | `check_docs.py` |
 | D7 | Warning | docs/*.md and docs/*.zh.md pairs have consistent hard data (tables, commands, links) | `check_docs.py` |
+| D8 | Warning | Each docs/*.md guide has a `> **Canonical source:**` declaration pointing to an existing skill or agent file | `check_docs.py` |
+| D9 | Warning | Key numbers in docs/*.md guides match their canonical source (e.g., attack surface count, category count, target count) | `check_docs.py` |
 <!-- END:documentation -->
 
 ---

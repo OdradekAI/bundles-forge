@@ -22,7 +22,7 @@ Use CLI when the tool interaction is **stateless and single-shot**: run a comman
 
 | Good fit | Examples |
 |----------|---------|
-| Linting / validation | `python scripts/lint_skills.py` |
+| Linting / validation | `python scripts/audit_skill.py` |
 | Version management | `python scripts/bump_version.py` |
 | Data transformation | `jq`, `yq`, format converters |
 | File generation | Template rendering, code generation |

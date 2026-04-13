@@ -121,7 +121,7 @@ optimizing 诊断 → 将内容编辑委派给 authoring → 通过 auditing 验
 运行 linter 捕获机械性问题：
 
 ```bash
-python scripts/lint_skills.py <project-root>
+python scripts/audit_skill.py <project-root>
 ```
 
 描述相关检查为 **Q3-Q7**：缺失描述（Q3）、"Use when..." 前缀（Q5）、工作流摘要反模式（Q6）、长度 >250 字符（Q7）。完整 lint 套件覆盖 Q1-Q15 和 X1-X3 — 详见快速参考。
@@ -143,7 +143,7 @@ python scripts/lint_skills.py <project-root>
 |------|------|
 | 交叉引用代替重复 | `See bundles-forge:authoring` 代替复制规则 |
 | 一个优秀示例胜过三个平庸示例 | 删除教授相同概念的冗余示例 |
-| 将标志文档指向 --help | 引用 `python scripts/lint_skills.py --help` 代替列出所有标志 |
+| 将标志文档指向 --help | 引用 `python scripts/audit_skill.py --help` 代替列出所有标志 |
 | 消除项目内冗余 | 不要重复其他技能 `references/` 中已有的内容 |
 
 ### 目标 3：渐进式加载
@@ -439,7 +439,7 @@ Agent 会将剩余问题呈现给你做手动决定 — 不会自动循环。你
 ### 脚本
 
 ```bash
-python scripts/lint_skills.py <path>                        # 质量 lint（Q1-Q15、X1-X3）
+python scripts/audit_skill.py <path>                        # 质量 lint（Q1-Q15、X1-X3）
 python scripts/audit_skill.py <skill-dir>                   # 单技能审计（4 类）
 python scripts/audit_workflow.py <path>                      # 工作流审计（W1-W9，脚本自动化）
 python scripts/audit_workflow.py --focus-skills a,b <path>   # 聚焦式工作流审计

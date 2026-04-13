@@ -187,7 +187,7 @@ This does not affect the Go/No-Go recommendation for static and semantic layers.
 | Tool | Purpose |
 |------|---------|
 | `audit_workflow.py` | Workflow audit orchestration, semantic checks (W6, W8, W9) |
-| `lint_skills.py` | Graph analysis (G1-G5 → W1-W5) |
+| `audit_skill.py` | Graph analysis (G1-G5 → W1-W5) |
 | `evaluator` agent | Chain A/B eval (W10-W11), if available |
 
 Findings are diagnostic. The calling context decides follow-up actions.

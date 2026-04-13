@@ -3,7 +3,7 @@
 Workflow audit for bundle-plugins.
 
 Evaluates workflow quality across three layers: static structure (from
-lint_skills.py graph analysis), semantic interface (Integration/Inputs/Outputs
+audit_skill.py graph analysis), semantic interface (Integration/Inputs/Outputs
 completeness), and behavioral verification (chain eval — agent-only).
 
 Supports --focus-skills to partition findings into Focus Area and Context.
@@ -27,7 +27,7 @@ _SCRIPT_DIR = Path(__file__).resolve().parent
 if str(_SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR))
 
-import lint_skills
+import audit_skill
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -177,11 +177,11 @@ def _involves_focus(finding, focus_skills):
 
 
 # ---------------------------------------------------------------------------
-# Layer 1: Static Structure (W1-W5) — remap from lint_skills graph G1-G5
+# Layer 1: Static Structure (W1-W5) — remap from audit_skill graph G1-G5
 # ---------------------------------------------------------------------------
 
 def check_static(lint_results, focus_skills=None):
-    """Remap G1-G5 from lint_skills graph findings to W1-W5."""
+    """Remap G1-G5 from audit_skill graph findings to W1-W5."""
     findings = []
     graph_findings = lint_results.get("graph", [])
 
@@ -312,7 +312,7 @@ def run_workflow_audit(project_root, focus_skills=None):
     if focus_skills and isinstance(focus_skills, (list, tuple)):
         focus_skills = set(focus_skills)
 
-    lint_results = lint_skills.run_lint(root)
+    lint_results = audit_skill.run_lint(root)
 
     static_findings = check_static(lint_results, focus_skills)
     semantic_findings = check_semantic(root, lint_results, focus_skills)

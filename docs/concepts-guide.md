@@ -6,6 +6,8 @@ A guide to the building blocks of the Claude Code plugin ecosystem — and how b
 
 Understanding these concepts helps you see why bundles-forge is designed the way it is, and gives you the vocabulary to build your own bundle-plugins confidently.
 
+> **Canonical source:** This guide covers cross-cutting concepts that span multiple skills. For skill-specific details, see each skill's companion guide. The project architecture is summarized in `CLAUDE.md` and implemented across `skills/`.
+
 ---
 
 ## Component Taxonomy

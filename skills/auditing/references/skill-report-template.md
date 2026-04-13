@@ -192,7 +192,7 @@ python: "<version>"
 
 | Tool | Purpose |
 |------|---------|
-| `lint_skills.py` | Frontmatter validation, description conventions, cross-reference resolution |
+| `audit_skill.py` | Frontmatter validation, description conventions, cross-reference resolution |
 | `scan_security.py` | Security pattern scanning on SKILL.md content |
 | Manual/AI review | Qualitative assessment of instruction clarity, description anti-patterns |
 

@@ -1,6 +1,6 @@
 # Authoring Quality Checklist
 
-Definitive quality specification for SKILL.md files. `scripts/lint_skills.py` automates these checks. Use during authoring to catch issues before running the linter, or to investigate specific lint findings.
+Definitive quality specification for SKILL.md files. `scripts/audit_skill.py` automates these checks. Use during authoring to catch issues before running the linter, or to investigate specific lint findings.
 
 ## Frontmatter Checks
 
@@ -44,9 +44,9 @@ Definitive quality specification for SKILL.md files. `scripts/lint_skills.py` au
 ## Quick Validation Command
 
 ```bash
-python scripts/lint_skills.py <skill-directory>          # single skill
-python scripts/lint_skills.py <project-root>             # all skills
-python scripts/lint_skills.py --json <project-root>      # machine-readable
+python scripts/audit_skill.py <skill-directory>          # single skill
+python scripts/audit_skill.py <project-root>             # all skills
+python scripts/audit_skill.py --json <project-root>      # machine-readable
 ```
 
 ## Interpreting Results

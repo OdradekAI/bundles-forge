@@ -89,10 +89,10 @@ python scripts/audit_project.py --json <project-root>  # JSON output
 ```
 
 `audit_project.py` orchestrates three sub-scripts:
-- `lint_skills.py` — skill quality linting (Q1-Q15, S9, X1-X3, C1, G1-G5)
+- `audit_skill.py` — skill quality linting (Q1-Q15, S9, X1-X3, C1, G1-G5)
 - `scan_security.py` — security pattern scanning (7 attack surfaces)
 - `audit_workflow.py` — workflow integration analysis (W1-W9)
-- `check_docs.py` — documentation consistency (D1-D7)
+- `check_docs.py` — documentation consistency (D1-D9)
 
 Then adds its own checks for structure, manifests, version sync, hooks, and testing.
 
@@ -108,8 +108,8 @@ Then adds its own checks for structure, manifests, version sync, hooks, and test
 | 6 | Workflow | High (3) | Graph topology, integration symmetry, artifacts (W1-W11) |
 | 7 | Hooks | Medium (2) | Bootstrap injection, platform detection (functional correctness only) |
 | 8 | Testing | Medium (2) | Test directory, prompts, A/B eval results |
-| 9 | Documentation | Low (1) | Documentation consistency via `check_docs.py` (D1-D7) |
-| 10 | Security | High (3) | 6 attack surfaces — SC/HK/OC/AG/BS/PC IDs from `security-checklist.md` |
+| 9 | Documentation | Low (1) | Documentation consistency via `check_docs.py` (D1-D9) |
+| 10 | Security | High (3) | 7 attack surfaces — SC/HK/OC/AG/BS/MC/PC IDs from `security-checklist.md` |
 
 Total weight = 23. Overall score = `sum(score_i × weight_i) / 23`.
 
@@ -152,7 +152,7 @@ python scripts/audit_skill.py --json <skill-directory>     # JSON output
 You can also run the sub-scripts individually:
 
 ```bash
-python scripts/lint_skills.py <skill-directory>     # quality + cross-refs
+python scripts/audit_skill.py <skill-directory>     # quality + cross-refs
 python scripts/scan_security.py <skill-directory>   # security scan
 ```
 
@@ -213,7 +213,7 @@ python scripts/audit_workflow.py --json <project-root>                   # JSON 
 
 | Layer | Weight | Checks | Automation |
 |-------|--------|--------|------------|
-| Static Structure | High (3) | W1-W5: cycles, reachability, Inputs/Outputs presence, artifact ID matching | `lint_skills.py` graph analysis |
+| Static Structure | High (3) | W1-W5: cycles, reachability, Inputs/Outputs presence, artifact ID matching | `audit_skill.py` graph analysis |
 | Semantic Interface | Medium (2) | W6-W9: Integration completeness, artifact clarity, Calls/Called by symmetry | `audit_workflow.py` + agent review |
 | Behavioral Verification | Low (1) | W10-W11: chain A/B eval, trigger/exit in context | `evaluator` agent dispatch |
 
@@ -311,7 +311,7 @@ Auditing is a **pure diagnostic** scope: it records findings, scores, and go/no-
 
 ```bash
 # Full pipeline: lint → security → docs → full audit (audit_project orchestrates all)
-python scripts/lint_skills.py --json . > lint.json
+python scripts/audit_skill.py --json . > lint.json
 python scripts/scan_security.py --json . > security.json
 python scripts/check_docs.py --json . > docs.json
 python scripts/audit_project.py --json . > audit.json   # orchestrates lint + security + docs + workflow

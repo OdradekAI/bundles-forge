@@ -6,7 +6,7 @@ Validates that project documentation (CLAUDE.md, AGENTS.md, README.md,
 README translations, docs/) stays in sync with the actual project state
 (skills/, agents/, scripts/, .version-bump.json).
 
-Seven checks:
+Nine checks:
   D1 — Skill list sync across docs vs skills/ directory
   D2 — Cross-reference validity (bundles-forge:<name> → skills/<name>/)
   D3 — Platform manifest sync (CLAUDE.md table vs .version-bump.json)
@@ -14,6 +14,8 @@ Seven checks:
   D5 — Agent list sync (CLAUDE.md agents vs agents/ directory)
   D6 — README data sync (README.md vs README.zh.md hard data)
   D7 — Guide language sync (docs/*.md vs docs/*.zh.md hard data)
+  D8 — Canonical source declaration (docs/*.md guides → skill/agent file)
+  D9 — Numeric cross-validation (docs/*.md numbers vs canonical source)
 
 Usage:
     python scripts/check_docs.py [project-root]
@@ -615,6 +617,117 @@ def check_guide_language_sync(root, findings):
                         f"{rel_zh}: {sorted(missing_links)[:5]}"))
 
 
+# ---------------------------------------------------------------------------
+# Check D8 — Canonical source declaration
+# ---------------------------------------------------------------------------
+
+_CANONICAL_RE = re.compile(
+    r">\s*\*\*Canonical source:\*\*.*?`([^`]+)`", re.IGNORECASE)
+
+
+def check_canonical_source(root, findings):
+    """Verify each docs/*.md guide declares a canonical source that exists."""
+    docs_dir = root / "docs"
+    if not docs_dir.is_dir():
+        return
+
+    for doc_file in sorted(docs_dir.iterdir()):
+        if not doc_file.is_file() or doc_file.suffix != ".md":
+            continue
+        if doc_file.stem.endswith(".zh"):
+            continue
+
+        content = doc_file.read_text(encoding="utf-8", errors="replace")
+        rel_path = f"docs/{doc_file.name}"
+
+        m = _CANONICAL_RE.search(content)
+        if not m:
+            findings.append(dict(
+                check="D8", severity="warning",
+                message=f"{rel_path} has no '> **Canonical source:**' declaration"))
+            continue
+
+        ref_path = m.group(1)
+        resolved = root / ref_path
+        if not resolved.exists():
+            findings.append(dict(
+                check="D8", severity="warning",
+                message=f"{rel_path} declares canonical source '{ref_path}' "
+                        "but the file does not exist"))
+
+
+# ---------------------------------------------------------------------------
+# Check D9 — Numeric cross-validation
+# ---------------------------------------------------------------------------
+
+_NUMERIC_PATTERNS = [
+    (re.compile(r"(\d+)\s+attack\s+surfaces?", re.IGNORECASE), "attack surfaces"),
+    (re.compile(r"(\d+)\s+categor(?:y|ies)", re.IGNORECASE), "categories"),
+    (re.compile(r"(\d+)\s+targets?", re.IGNORECASE), "targets"),
+    (re.compile(r"(\d+)\s+checks?(?:\s|,|\.|\))", re.IGNORECASE), "checks"),
+    (re.compile(r"(\d+)\s+layers?", re.IGNORECASE), "layers"),
+    (re.compile(r"(\d+)\s+paths?(?:\s|,|\.|\))", re.IGNORECASE), "paths"),
+    (re.compile(r"(\d+)\s+skills?(?:\s|,|\.|\))", re.IGNORECASE), "skills"),
+]
+
+
+def _extract_key_numbers(text):
+    """Extract (label, set-of-numbers) pairs from text."""
+    results = {}
+    for pattern, label in _NUMERIC_PATTERNS:
+        nums = set()
+        for m in pattern.finditer(text):
+            nums.add(int(m.group(1)))
+        if nums:
+            results[label] = nums
+    return results
+
+
+def check_numeric_cross_validation(root, findings):
+    """Verify key numbers in docs/*.md guides match their canonical source."""
+    docs_dir = root / "docs"
+    if not docs_dir.is_dir():
+        return
+
+    for doc_file in sorted(docs_dir.iterdir()):
+        if not doc_file.is_file() or doc_file.suffix != ".md":
+            continue
+        if doc_file.stem.endswith(".zh"):
+            continue
+
+        content = doc_file.read_text(encoding="utf-8", errors="replace")
+        rel_path = f"docs/{doc_file.name}"
+
+        m = _CANONICAL_RE.search(content)
+        if not m:
+            continue
+
+        ref_path = m.group(1)
+        resolved = root / ref_path
+        if not resolved.exists():
+            continue
+
+        source_content = resolved.read_text(encoding="utf-8", errors="replace")
+        source_nums = _extract_key_numbers(source_content)
+        guide_nums = _extract_key_numbers(content)
+
+        for label, guide_values in guide_nums.items():
+            if label not in source_nums:
+                continue
+            source_values = source_nums[label]
+            mismatches = guide_values - source_values
+            if mismatches and source_values:
+                findings.append(dict(
+                    check="D9", severity="warning",
+                    message=f"{rel_path} mentions {sorted(mismatches)} {label} "
+                            f"but canonical source '{ref_path}' has "
+                            f"{sorted(source_values)}"))
+
+
+# ---------------------------------------------------------------------------
+# Check docs/ content consistency
+# ---------------------------------------------------------------------------
+
 def check_docs_content(root, findings):
     """Verify docs/ files reference accurate skill/script/agent names."""
     docs_dir = root / "docs"
@@ -668,6 +781,8 @@ def run_check(project_root):
     check_agent_sync(root, findings)
     check_readme_sync(root, findings)
     check_guide_language_sync(root, findings)
+    check_canonical_source(root, findings)
+    check_numeric_cross_validation(root, findings)
     check_docs_content(root, findings)
 
     summary = {"critical": 0, "warning": 0, "info": 0}

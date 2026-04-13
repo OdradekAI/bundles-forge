@@ -89,10 +89,10 @@ python scripts/audit_project.py --json <project-root>  # JSON 输出
 ```
 
 `audit_project.py` 编排四个子脚本：
-- `lint_skills.py` — 技能质量 lint（Q1-Q15、S9、X1-X3、C1、G1-G5）
+- `audit_skill.py` — 技能质量 lint（Q1-Q15、S9、X1-X3、C1、G1-G5）
 - `scan_security.py` — 安全模式扫描（7 大攻击面）
 - `audit_workflow.py` — 工作流集成分析（W1-W9）
-- `check_docs.py` — 文档一致性检查（D1-D7）
+- `check_docs.py` — 文档一致性检查（D1-D9）
 
 然后添加自身的结构、清单、版本同步、钩子和测试检查。
 
@@ -108,8 +108,8 @@ python scripts/audit_project.py --json <project-root>  # JSON 输出
 | 6 | 工作流 | 高 (3) | 图拓扑、集成对称性、制品（W1-W11） |
 | 7 | 钩子 | 中 (2) | 引导注入、平台检测（仅功能正确性） |
 | 8 | 测试 | 中 (2) | 测试目录、提示词、A/B 评估结果 |
-| 9 | 文档 | 低 (1) | 文档一致性：`check_docs.py`（D1-D7） |
-| 10 | 安全 | 高 (3) | 6 大攻击面 — `security-checklist.md` 中的 SC/HK/OC/AG/BS/PC 编号 |
+| 9 | 文档 | 低 (1) | 文档一致性：`check_docs.py`（D1-D9） |
+| 10 | 安全 | 高 (3) | 7 大攻击面 — `security-checklist.md` 中的 SC/HK/OC/AG/BS/MC/PC 编号 |
 
 总权重 = 23。总分 = `sum(score_i × weight_i) / 23`。
 
@@ -152,7 +152,7 @@ python scripts/audit_skill.py --json <skill-directory>     # JSON 输出
 也可以单独运行子脚本：
 
 ```bash
-python scripts/lint_skills.py <skill-directory>     # 质量 + 交叉引用
+python scripts/audit_skill.py <skill-directory>     # 质量 + 交叉引用
 python scripts/scan_security.py <skill-directory>   # 安全扫描
 ```
 
@@ -213,7 +213,7 @@ python scripts/audit_workflow.py --json <project-root>                   # JSON 
 
 | 层 | 权重 | 检查项 | 自动化 |
 |----|------|--------|--------|
-| 静态结构 | 高 (3) | W1-W5：环路、可达性、Inputs/Outputs 存在性、制品 ID 匹配 | `lint_skills.py` 图分析 |
+| 静态结构 | 高 (3) | W1-W5：环路、可达性、Inputs/Outputs 存在性、制品 ID 匹配 | `audit_skill.py` 图分析 |
 | 语义接口 | 中 (2) | W6-W9：Integration 完整性、制品清晰度、Calls/Called by 对称性 | `audit_workflow.py` + agent 审查 |
 | 行为验证 | 低 (1) | W10-W11：链路 A/B 评估、上下文中的触发/退出 | `evaluator` agent 派遣 |
 
@@ -311,7 +311,7 @@ python scripts/scan_security.py --json <project-root>     # JSON 输出
 
 ```bash
 # 完整流水线：lint → 安全 → 文档 → 完整审计（audit_project 编排所有子脚本）
-python scripts/lint_skills.py --json . > lint.json
+python scripts/audit_skill.py --json . > lint.json
 python scripts/scan_security.py --json . > security.json
 python scripts/check_docs.py --json . > docs.json
 python scripts/audit_project.py --json . > audit.json   # 编排 lint + security + docs + workflow

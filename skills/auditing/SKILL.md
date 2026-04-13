@@ -10,7 +10,7 @@ allowed-tools: Bash(python scripts/*)
 
 Systematically evaluate a bundle-plugin project or a single skill across applicable quality categories — including security scanning — score each, and produce a diagnostic report. This skill is a pure diagnostic tool: it identifies and reports issues but does not orchestrate fixes.
 
-**Core principle:** Measure and report. A scored audit gives orchestrating skills (blueprinting, optimizing, releasing) the information they need to decide what to fix.
+**Core principle:** Measure and report. A scored audit gives orchestrating skills (blueprinting, optimizing, releasing) the information they need to decide what to fix. When sources contradict, apply the authority hierarchy in `references/source-of-truth-policy.md`.
 
 **This skill includes security scanning.** Category 10 performs a security scan of skill content, hook scripts, plugin code, agent prompts, and bundled scripts. No need to invoke a separate security skill.
 
@@ -81,7 +81,7 @@ python scripts/scan_security.py <project-root>         # security-only scan
 python scripts/scan_security.py --json <project-root>  # security JSON output
 ```
 
-`audit_project.py` orchestrates `scan_security.py` (security), `lint_skills.py` (skill quality), `audit_workflow.py` (workflow integration), and `check_docs.py` (documentation consistency D1-D7), then adds structure, manifest, version-sync, hook, and testing checks.
+`audit_project.py` orchestrates `scan_security.py` (security), `audit_skill.py` (skill quality), `audit_workflow.py` (workflow integration), and `check_docs.py` (documentation consistency D1-D9), then adds structure, manifest, version-sync, hook, and testing checks.
 
 Dispatch the `auditor` agent (`agents/auditor.md`) for automated assessment if subagents are available. The auditor runs read-only, executes all 10-category checks, scores them, compiles the report, and saves it to `.bundles-forge/`. The auditor is the single source of truth for execution details (scoring formula, report format, qualitative assessment criteria).
 
@@ -171,7 +171,7 @@ python scripts/audit_skill.py <skill-directory>          # combined 4-category s
 python scripts/audit_skill.py <path>/SKILL.md            # also accepts SKILL.md path
 python scripts/audit_skill.py --json <skill-directory>   # JSON output
 
-python scripts/lint_skills.py <skill-directory>          # skill quality only
+python scripts/audit_skill.py <skill-directory>          # skill quality only
 python scripts/scan_security.py <skill-directory>        # security scan on skill files
 ```
 

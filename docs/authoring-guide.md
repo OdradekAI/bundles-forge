@@ -55,7 +55,7 @@ Best for: writing skills or agent definitions from scratch, either as part of a 
 4. Writes the full body: Overview, process steps, Common Mistakes, Inputs/Outputs/Integration
 5. Checks external dependencies — if the skill references MCP tools or CLI commands, follows declaration syntax and fallback patterns from the writing guide
 6. Evaluates token budget — extracts to `references/` if body exceeds 500 lines or heavy sections pass 100 lines
-7. Runs `lint_skills.py` validation
+7. Runs `audit_skill.py` validation
 
 **For agent definitions:** The same path applies, but the agent follows conventions from `references/agent-authoring-guide.md` instead — different frontmatter fields (`maxTurns`, `disallowedTools`), report-oriented body, and `.bundles-forge/` output format.
 
@@ -200,7 +200,7 @@ For the full agent authoring reference, see `skills/authoring/references/agent-a
 
 ## Validation
 
-After authoring, the skill always runs `python scripts/lint_skills.py` to validate the result.
+After authoring, the skill always runs `python scripts/audit_skill.py` to validate the result.
 
 ### What Gets Checked
 
@@ -224,7 +224,7 @@ For the full check-by-check reference, see `skills/authoring/references/quality-
 | No examples, only abstract rules | Rushing through authoring | Add at least one concrete example per key instruction |
 | Skipping project conventions | Working in isolation | Always read 2-3 existing skills first when in an established project |
 | Not wiring Integration section | Treating skills as standalone | Every skill needs Called by / Calls / Pairs with for the workflow graph |
-| Forgetting validation | Assuming content is correct | Always run `lint_skills.py` — catches issues before they propagate |
+| Forgetting validation | Assuming content is correct | Always run `audit_skill.py` — catches issues before they propagate |
 | Description too narrow | Being too specific | Be pushy — list related scenarios and edge cases |
 | Description too broad | Being too vague | Scope to the right context (e.g., "bundle-plugins" not "any project") |
 

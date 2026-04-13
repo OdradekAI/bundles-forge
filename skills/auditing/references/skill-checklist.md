@@ -38,7 +38,7 @@ The auditor agent (or inline auditor) may adjust the baseline by **±2 points** 
 | Check | Severity | Criteria | Automation |
 |-------|----------|----------|------------|
 | S2 | Warning | At least one platform manifest directory present | `audit_project.py` |
-| S9 | Info | Skill directory names match `name` field in SKILL.md frontmatter | `lint_skills.py` |
+| S9 | Info | Skill directory names match `name` field in SKILL.md frontmatter | `audit_skill.py` |
 <!-- END:skill/structure -->
 
 ---
@@ -50,21 +50,21 @@ Run all quality checks on the target SKILL.md.
 <!-- BEGIN:skill/quality -->
 | Check | Severity | Criteria | Automation |
 |-------|----------|----------|------------|
-| Q1 | Critical | YAML frontmatter present (between `---` delimiters) | `lint_skills.py` |
-| Q2 | Critical | `name` field exists in frontmatter | `lint_skills.py` |
-| Q3 | Critical | `description` field exists in frontmatter | `lint_skills.py` |
-| Q4 | Warning | `name` uses only letters, numbers, hyphens | `lint_skills.py` |
-| Q5 | Warning | `description` starts with "Use when..." | `lint_skills.py` |
-| Q6 | Warning | `description` describes triggering conditions, not workflow summary | `lint_skills.py` |
-| Q7 | Warning | `description` is under 250 characters (truncated in skill listing beyond this) | `lint_skills.py` |
-| Q8 | Warning | Frontmatter total under 1024 characters | `lint_skills.py` |
-| Q9 | Warning | SKILL.md body under 500 lines | `lint_skills.py` |
-| Q10 | Info | Skill has Overview section | `lint_skills.py` |
-| Q11 | Info | Skill has Common Mistakes section | `lint_skills.py` |
-| Q12 | Info | Heavy reference content (100+ lines) extracted to supporting files | `lint_skills.py` |
-| Q13 | Warning/Info | Token budget: bootstrap skill body ≤ 200 lines (warning); regular skill reports estimated token count when high (info) | `lint_skills.py` |
-| Q14 | Warning | `allowed-tools` frontmatter references scripts/paths that actually exist | `lint_skills.py` |
-| Q15 | Info | Conditional blocks (`If ... unavailable` etc.) over 30 lines should be in `references/` | `lint_skills.py` |
+| Q1 | Critical | YAML frontmatter present (between `---` delimiters) | `audit_skill.py` |
+| Q2 | Critical | `name` field exists in frontmatter | `audit_skill.py` |
+| Q3 | Critical | `description` field exists in frontmatter | `audit_skill.py` |
+| Q4 | Warning | `name` uses only letters, numbers, hyphens | `audit_skill.py` |
+| Q5 | Warning | `description` starts with "Use when..." | `audit_skill.py` |
+| Q6 | Warning | `description` describes triggering conditions, not workflow summary | `audit_skill.py` |
+| Q7 | Warning | `description` is under 250 characters (truncated in skill listing beyond this) | `audit_skill.py` |
+| Q8 | Warning | Frontmatter total under 1024 characters | `audit_skill.py` |
+| Q9 | Warning | SKILL.md body under 500 lines | `audit_skill.py` |
+| Q10 | Info | Skill has Overview section | `audit_skill.py` |
+| Q11 | Info | Skill has Common Mistakes section | `audit_skill.py` |
+| Q12 | Info | Heavy reference content (100+ lines) extracted to supporting files | `audit_skill.py` |
+| Q13 | Warning/Info | Token budget: bootstrap skill body ≤ 200 lines (warning); regular skill reports estimated token count when high (info) | `audit_skill.py` |
+| Q14 | Warning | `allowed-tools` frontmatter references scripts/paths that actually exist | `audit_skill.py` |
+| Q15 | Info | Conditional blocks (`If ... unavailable` etc.) over 30 lines should be in `references/` | `audit_skill.py` |
 <!-- END:skill/quality -->
 
 **Description anti-patterns (Q6):**
@@ -81,9 +81,9 @@ Static link resolution within the skill content.
 <!-- BEGIN:skill/cross_references -->
 | Check | Severity | Criteria | Automation |
 |-------|----------|----------|------------|
-| X1 | Warning | All `<project>:<skill-name>` references resolve to existing skills | `lint_skills.py` |
-| X2 | Warning | No broken relative-path references to supporting files | `lint_skills.py` |
-| X3 | Warning | Text references to subdirectories (`references/`, `templates/`, etc.) match actual skill directory contents | `lint_skills.py` |
+| X1 | Warning | All `<project>:<skill-name>` references resolve to existing skills | `audit_skill.py` |
+| X2 | Warning | No broken relative-path references to supporting files | `audit_skill.py` |
+| X3 | Warning | Text references to subdirectories (`references/`, `templates/`, etc.) match actual skill directory contents | `audit_skill.py` |
 <!-- END:skill/cross_references -->
 
 **How to check:**

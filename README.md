@@ -167,7 +167,7 @@ Via the agent, you can also audit remote projects:
 
 Exit codes: `0` = pass, `1` = warnings, `2` = critical findings. All scripts accept `--json` for CI integration.
 
-**After the audit:** Critical findings → fix or invoke `bundles-forge:optimizing`. Ready to publish → invoke `bundles-forge:releasing`.
+**After the audit:** The audit report is purely diagnostic — it identifies and scores issues but does not prescribe next steps. The user or an orchestrating skill (e.g., `optimizing`, `releasing`) decides what to fix and how.
 
 > For detailed usage, checklists, report templates, and CI integration patterns, see [`docs/auditing-guide.md`](docs/auditing-guide.md).
 
@@ -255,7 +255,7 @@ User runs /bundles-audit
   → Full project: 10 categories (structure, manifests, version sync,
     quality, cross-refs, workflow, hooks, testing, docs, security)
     → auditor agent runs checklist (if subagents available)
-    → Scripts: audit_project.py, audit_workflow.py, scan_security.py, lint_skills.py
+    → Scripts: audit_project.py, audit_workflow.py, scan_security.py, audit_skill.py
   → Single skill: 4 categories (structure, quality, cross-refs, security)
   → Workflow: 3 layers (static structure, semantic interface, behavioral)
   → Score + report with Critical / Warning / Info findings

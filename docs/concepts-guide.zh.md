@@ -6,6 +6,8 @@ Claude Code 插件生态的构建块详解 — 以及 bundles-forge 如何利用
 
 理解这些概念有助于看清 bundles-forge 的设计逻辑，也为你自信地构建自己的 bundle-plugin 提供必要的词汇表。
 
+> **Canonical source:** This guide covers cross-cutting concepts that span multiple skills. For skill-specific details, see each skill's companion guide. The project architecture is summarized in `CLAUDE.md` and implemented across `skills/`.
+
 ---
 
 ## 组件分类

@@ -17,18 +17,19 @@ bash tests/test-skill-discovery.sh                 # skill frontmatter validatio
 bash tests/test-version-sync.sh                    # version consistency across manifests
 python tests/test_scripts.py -v                    # Python script tests (unittest)
 python -m pytest tests/test_scripts.py -v          # same, via pytest
-python -m pytest tests/test_scripts.py -v -k test_lint_runs_without_error  # single test
+python -m pytest tests/test_scripts.py -v -k test_project_mode_runs_without_error  # single test
 ```
 
 ### Quality & Security
 
 ```bash
-python scripts/lint_skills.py [project-root]       # skill frontmatter/quality lint
-python scripts/scan_security.py [project-root]     # 7-surface security scan
-python scripts/audit_project.py [project-root]     # combined audit (calls lint + scan + workflow)
+python scripts/audit_skill.py [project-root]       # project-level skill quality audit (auto-detects mode)
 python scripts/audit_skill.py [skill-dir]          # single skill audit (4 categories)
+python scripts/audit_skill.py --all [project-root] # force project-level mode
+python scripts/scan_security.py [project-root]     # 7-surface security scan
+python scripts/audit_project.py [project-root]     # combined audit (calls audit_skill + scan + workflow)
 python scripts/audit_workflow.py [project-root]    # workflow integration audit (W1-W11)
-python scripts/check_docs.py [project-root]        # documentation consistency (7 checks: D1-D7)
+python scripts/check_docs.py [project-root]        # documentation consistency (9 checks: D1-D9)
 python scripts/generate_checklists.py [project-root]        # regenerate checklist tables from audit-checks.json registry
 python scripts/generate_checklists.py --check [project-root] # detect checklist drift (exit 1 if stale)
 ```
@@ -108,7 +109,8 @@ Version is synchronized across these files (declared in `.version-bump.json`):
 - **Pre-commit:** run `python scripts/bump_version.py --check` to detect version drift
 - **Pre-commit:** run `python scripts/generate_checklists.py --check` to detect checklist drift
 - **Pre-release:** run `bundles-forge:auditing` for full quality + security check
-- **Pre-release:** run `python scripts/check_docs.py` to verify documentation consistency
+- **Pre-release:** run `python scripts/check_docs.py` to verify documentation consistency (9 checks: D1-D9)
+- **Source of truth:** Skills are first-class citizens — see `skills/auditing/references/source-of-truth-policy.md` for the full hierarchy and contradiction resolution protocol
 
 ## Security Rules
 

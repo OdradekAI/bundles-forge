@@ -40,32 +40,37 @@ EXPECTED_SKILLS = {
 }
 
 
-class TestLintSkills(unittest.TestCase):
-    """Tests for scripts/lint_skills.py"""
+class TestAuditSkillProjectMode(unittest.TestCase):
+    """Tests for scripts/audit_skill.py in project-level mode."""
 
-    def test_lint_runs_without_error(self):
-        result = subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / "lint_skills.py"), str(REPO_ROOT)],
+    def _run_project(self, *extra_args):
+        return subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "audit_skill.py"),
+             "--all", *extra_args, str(REPO_ROOT)],
             capture_output=True, text=True
         )
-        self.assertIn("Skill Quality Lint", result.stdout)
 
-    def test_lint_json_output(self):
+    def test_project_mode_runs_without_error(self):
+        result = self._run_project()
+        self.assertIn("Skill Quality Audit", result.stdout)
+
+    def test_project_mode_autodetect(self):
         result = subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / "lint_skills.py"), "--json", str(REPO_ROOT)],
+            [sys.executable, str(SCRIPTS_DIR / "audit_skill.py"), str(REPO_ROOT)],
             capture_output=True, text=True
         )
+        self.assertIn("Skill Quality Audit", result.stdout)
+
+    def test_project_mode_json_output(self):
+        result = self._run_project("--json")
         data = json.loads(result.stdout)
         self.assertIn("skills", data)
         self.assertIn("summary", data)
         self.assertIsInstance(data["skills"], list)
         self.assertGreater(len(data["skills"]), 0)
 
-    def test_lint_finds_expected_skills(self):
-        result = subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / "lint_skills.py"), "--json", str(REPO_ROOT)],
-            capture_output=True, text=True
-        )
+    def test_project_mode_finds_expected_skills(self):
+        result = self._run_project("--json")
         data = json.loads(result.stdout)
         skill_names = {s["skill"] for s in data["skills"]}
         expected = {"blueprinting", "scaffolding", "authoring", "auditing",
@@ -74,11 +79,8 @@ class TestLintSkills(unittest.TestCase):
         self.assertTrue(expected.issubset(skill_names),
                         f"Missing skills: {expected - skill_names}")
 
-    def test_lint_no_deleted_skills(self):
-        result = subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / "lint_skills.py"), "--json", str(REPO_ROOT)],
-            capture_output=True, text=True
-        )
+    def test_project_mode_no_deleted_skills(self):
+        result = self._run_project("--json")
         data = json.loads(result.stdout)
         skill_names = {s["skill"] for s in data["skills"]}
         removed = {"scanning-security", "iterating-feedback", "managing-versions"}
@@ -187,11 +189,12 @@ class TestAuditProject(unittest.TestCase):
 
 
 class TestGraphRules(unittest.TestCase):
-    """Tests for G1-G4 graph analysis rules in lint_skills.py."""
+    """Tests for G1-G4 graph analysis rules in audit_skill.py."""
 
     def _get_lint_data(self):
         result = subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / "lint_skills.py"), "--json", str(REPO_ROOT)],
+            [sys.executable, str(SCRIPTS_DIR / "audit_skill.py"),
+             "--all", "--json", str(REPO_ROOT)],
             capture_output=True, text=True
         )
         return json.loads(result.stdout)
@@ -254,8 +257,8 @@ class TestArtifactMatching(unittest.TestCase):
     def test_g5_no_critical_mismatches(self):
         """G5: workflow edges have matching artifact IDs (info level only)."""
         result = subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / "lint_skills.py"), "--json",
-             str(REPO_ROOT)],
+            [sys.executable, str(SCRIPTS_DIR / "audit_skill.py"),
+             "--all", "--json", str(REPO_ROOT)],
             capture_output=True, text=True
         )
         data = json.loads(result.stdout)
@@ -273,7 +276,8 @@ class TestCrossReferences(unittest.TestCase):
 
     def test_no_broken_crossrefs(self):
         result = subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / "lint_skills.py"), "--json", str(REPO_ROOT)],
+            [sys.executable, str(SCRIPTS_DIR / "audit_skill.py"),
+             "--all", "--json", str(REPO_ROOT)],
             capture_output=True, text=True
         )
         data = json.loads(result.stdout)

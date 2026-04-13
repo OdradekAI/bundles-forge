@@ -25,8 +25,8 @@ When auditing a project, you will:
    - **Workflow**: Workflow graph topology, integration symmetry, artifact handoff (W1-W11)
    - **Hooks**: Bootstrap injection, platform detection, JSON escaping (functional correctness only — security checks like HTTP hooks, `CLAUDE_ENV_FILE` injection are in Security)
    - **Testing**: Test directory, test prompts, A/B eval results, platform coverage
-   - **Documentation**: Documentation consistency via `check_docs.py` (D1-D7) — skill list sync, cross-ref validity, manifest sync, script accuracy, agent sync, README/guide language sync
-   - **Security**: 6 attack surfaces using IDs from `security-checklist.md` — SC (skill content), HK (hooks), OC (OpenCode), AG (agents), BS (scripts), PC (plugin config)
+   - **Documentation**: Documentation consistency via `check_docs.py` (D1-D9) — skill list sync, cross-ref validity, manifest sync, script accuracy, agent sync, README/guide language sync, canonical source declarations, numeric cross-validation
+   - **Security**: 7 attack surfaces using IDs from `security-checklist.md` — SC (skill content), HK (hooks), OC (OpenCode), AG (agents), BS (scripts), MC (MCP configs), PC (plugin config)
 
    Category weights are defined in `skills/auditing/references/audit-checklist.md`.
 
@@ -82,7 +82,7 @@ When explicitly requested for a workflow audit (or when `--focus-skills` is spec
 
 **Three-layer process:**
 
-1. **Static Structure (W1-W5):** Run `python scripts/audit_workflow.py` (or `--focus-skills` variant). The script calls `lint_skills.py` for graph analysis (G1-G5 mapped to W1-W5) and produces automated findings.
+1. **Static Structure (W1-W5):** Run `python scripts/audit_workflow.py` (or `--focus-skills` variant). The script calls `audit_skill.py` for graph analysis (G1-G5 mapped to W1-W5) and produces automated findings.
 
 2. **Semantic Interface (W6-W9):** The script automates W6, W8, W9. For W7 (cycle rationale), review manually:
    - W7: For each declared cycle (`<!-- cycle:a,b -->`), verify the rationale makes sense (e.g. audit↔optimizing feedback loop is legitimate)
@@ -94,3 +94,18 @@ When explicitly requested for a workflow audit (or when `--focus-skills` is spec
 **Report:** Use `skills/auditing/references/workflow-report-template.md`. Save to `.bundles-forge/<project-name>-v<version>-workflow-audit.YYYY-MM-DD[.<lang>].md` (read name and version from `package.json`; append `.<lang>` when not English).
 
 End the report with: "**Next step:** The user can run `/bundles-optimize` for workflow fixes (Target 4: Workflow Chain Integrity)."
+
+### Contradiction Resolution
+
+When you encounter conflicting information between two sources during any audit mode, apply the authority hierarchy defined in `skills/auditing/references/source-of-truth-policy.md`:
+
+`SKILL.md` > `agents/*.md` > `references/` > `scripts/` > `CLAUDE.md`/`AGENTS.md` > `docs/` > `README`
+
+**During qualitative assessment (±2 adjustment):**
+
+1. If two sources make different claims about the same fact (e.g., number of attack surfaces, scoring formula, process steps), rule the higher-ranked source correct
+2. Tag the finding as `[Source Conflict]` in the report with both claims quoted and the resolution
+3. Assign severity based on contradiction type:
+   - **Warning** — hard contradiction: different numbers, opposite behaviors, missing required declarations
+   - **Info** — soft contradiction: tone differences, summary oversimplifications, implication gaps
+4. Include the fix recommendation: update the lower-ranked source to match the higher-ranked one

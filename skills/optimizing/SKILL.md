@@ -1,7 +1,7 @@
 ---
 name: optimizing
 description: "Use when optimizing a bundle-plugin or single skill — improving descriptions, reducing tokens, fixing audit findings, restructuring workflows, adding skills to fill gaps, or iterating on user feedback"
-allowed-tools: Python(scripts/lint_skills.py *)
+allowed-tools: Python(scripts/audit_skill.py *)
 ---
 
 # Optimizing Bundle-Plugins
@@ -52,8 +52,8 @@ After normalization, determine the scope from the resolved local path:
 Run the quality linter to identify frontmatter issues, description anti-patterns, and broken references before manual optimization:
 
 ```bash
-python scripts/lint_skills.py <project-root>        # markdown report
-python scripts/lint_skills.py --json <project-root>  # machine-readable
+python scripts/audit_skill.py <project-root>        # markdown report
+python scripts/audit_skill.py --json <project-root>  # machine-readable
 ```
 
 The linter automates checks Q1-Q12 and X1-X2 from the skill quality ruleset. Focus manual effort on the subjective targets below.
@@ -291,7 +291,7 @@ Read target skill
 ### Script Shortcuts
 
 ```bash
-python scripts/lint_skills.py <skill-directory>     # quality checks on single skill
+python scripts/audit_skill.py <skill-directory>     # quality checks on single skill
 ```
 
 ---

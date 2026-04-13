@@ -28,21 +28,21 @@ Total weight = 6. The behavioral layer has low weight because it requires evalua
 
 ## Layer 1: Static Structure (Weight: High)
 
-Automated checks — produced by `lint_skills.py` graph analysis (G1-G5) and consumed by `audit_workflow.py` as W1-W5.
+Automated checks — produced by `audit_skill.py` graph analysis (G1-G5) and consumed by `audit_workflow.py` as W1-W5.
 
 <!-- BEGIN:workflow/static -->
 | Check | Severity | Criteria | Automation |
 |-------|----------|----------|------------|
-| W1 | Warning/Info | No undeclared circular dependencies in the workflow graph. Cycles declared via `<!-- cycle:a,b -->` in `## Integration` are demoted to Info | `lint_skills.py` G1 |
-| W2 | Info | All skills are reachable from entry points (skills referenced by `using-*` bootstrap). Skills declaring "Called by: user directly" in `## Integration` are exempt | `lint_skills.py` G2 |
-| W3 | Info | Terminal skills (no outgoing cross-references) have an `## Outputs` section documenting final deliverables and are clearly identifiable as workflow endpoints | `lint_skills.py` G3 |
-| W4 | Info | Skills referenced by other skills have an `## Inputs` section declaring expected artifacts | `lint_skills.py` G4 |
-| W5 | Info | For each edge A→B, at least one artifact ID in A's `## Outputs` matches an ID in B's `## Inputs` | `lint_skills.py` G5 |
+| W1 | Warning/Info | No undeclared circular dependencies in the workflow graph. Cycles declared via `<!-- cycle:a,b -->` in `## Integration` are demoted to Info | `audit_skill.py` G1 |
+| W2 | Info | All skills are reachable from entry points (skills referenced by `using-*` bootstrap). Skills declaring "Called by: user directly" in `## Integration` are exempt | `audit_skill.py` G2 |
+| W3 | Info | Terminal skills (no outgoing cross-references) have an `## Outputs` section documenting final deliverables and are clearly identifiable as workflow endpoints | `audit_skill.py` G3 |
+| W4 | Info | Skills referenced by other skills have an `## Inputs` section declaring expected artifacts | `audit_skill.py` G4 |
+| W5 | Info | For each edge A→B, at least one artifact ID in A's `## Outputs` matches an ID in B's `## Inputs` | `audit_skill.py` G5 |
 <!-- END:workflow/static -->
 
 **How to run:**
 ```bash
-python scripts/lint_skills.py --json <project-root>
+python scripts/audit_skill.py --json <project-root>
 ```
 Inspect the `graph` key in the JSON output for G1-G5 findings, which map directly to W1-W5.
 

@@ -2,7 +2,7 @@
 """
 Comprehensive audit for bundle-plugins.
 
-Orchestrates scan_security.py and lint_skills.py, then runs additional
+Orchestrates scan_security.py and audit_skill.py, then runs additional
 structural, version-sync, hook, and documentation checks to produce a
 combined project health report.
 
@@ -27,7 +27,7 @@ import audit_workflow
 import bump_version
 import check_docs
 import scan_security
-import lint_skills
+import audit_skill
 
 # ---------------------------------------------------------------------------
 # Scoring
@@ -175,7 +175,7 @@ def check_version_sync(root):
     findings = []
     vb_path = root / ".version-bump.json"
     if not vb_path.exists():
-        findings.append(dict(check="V1", severity="warning",
+        findings.append(dict(check="V1", severity="critical",
                              message="Missing .version-bump.json"))
         return findings
 
@@ -251,7 +251,7 @@ def check_hooks(root):
 
 
 def check_documentation(root):
-    """Documentation consistency via check_docs.py (D1-D7)."""
+    """Documentation consistency via check_docs.py (D1-D9)."""
     result = check_docs.run_check(root)
     return result.get("findings", [])
 
@@ -304,7 +304,7 @@ def run_audit(project_root):
     root = Path(project_root).resolve()
 
     sec_results = scan_security.run_scan(root)
-    lint_results = lint_skills.run_lint(root)
+    lint_results = audit_skill.run_lint(root)
     workflow_results = audit_workflow.run_workflow_audit(root)
     structure = check_structure(root)
     manifests = check_manifests(root)

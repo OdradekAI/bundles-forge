@@ -8,6 +8,8 @@
 
 发布流水线是质量关卡 — 不是走过场。它确保每个版本内部一致、文档完善、无已知缺陷。用户应在启动发布流程前完成所有 agent、skill 和工作流（插件）的开发。
 
+> **权威信源：** 完整执行协议（前置条件、预检、版本升级、发布步骤）定义在 `skills/releasing/SKILL.md` 中。本指南帮助你理解*发布流水线*和*每个阶段的预期*——执行由 skill 自身处理。
+
 | 阶段 | 步骤 | 工具 | 阻塞？ |
 |------|------|------|--------|
 | 前置条件 | 干净 git 状态、分支检查、标签检查 | `git status`、`git tag -l` | 是（脏工作区阻塞） |
@@ -74,7 +76,7 @@ git branch --show-current
 # 版本漂移检测
 python scripts/bump_version.py --check
 
-# 文档一致性（7 项检查）
+# 文档一致性（9 项检查）
 python scripts/check_docs.py .
 ```
 
@@ -82,7 +84,7 @@ python scripts/check_docs.py .
 
 **完整审计：** 调用 `bundles-forge:auditing`（首选 — 通过 auditor 子代理提供 10 类定性评估与评分）。回退：`python scripts/audit_project.py .`（仅自动化检查，无定性评分）。
 
-**`check_docs.py` 检查项（D1–D7）：**
+**`check_docs.py` 检查项（D1–D9）：**
 
 | 检查 | 验证内容 |
 |------|---------|
@@ -93,6 +95,8 @@ python scripts/check_docs.py .
 | D5 — Agent 列表同步 | CLAUDE.md 中的 agent 与 `agents/` 目录一致 |
 | D6 — README 数据同步 | README.md 和 README.zh.md 之间的硬数据一致 |
 | D7 — Guide 语言同步 | `docs/` 中英文 guide 对的硬数据一致 |
+| D8 — 权威信源声明 | 每个 `docs/*.md` guide 必须有 `> **Canonical source:**` 声明指向已存在的 skill 或 agent 文件 |
+| D9 — 数字交叉验证 | `docs/*.md` guide 中的关键数字与其权威信源一致（如攻击面数量、类别数量） |
 
 ### 步骤 2：处理发现
 

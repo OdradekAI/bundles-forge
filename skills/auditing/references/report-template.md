@@ -176,13 +176,13 @@ python: "<version>"
 | `audit_project.py` | Orchestrates full audit |
 | `audit_workflow.py` | Workflow integration analysis |
 | `scan_security.py` | Security pattern scanning |
-| `lint_skills.py` | Skill quality linting |
+| `audit_skill.py` | Skill quality linting |
 | `bump_version.py` | Version drift detection |
 
 ### Limitations
 
 - `scan_security.py` uses regex — false positives possible on negated contexts; may miss obfuscated patterns
-- `lint_skills.py` uses a lightweight YAML parser — complex YAML edge cases may be missed
+- `audit_skill.py` uses a lightweight YAML parser — complex YAML edge cases may be missed
 - Token estimation uses heuristic rates (prose ~1.3×words, code ~chars/3.5, tables ~chars/3.0); actual counts vary by model
 
 ---
@@ -223,7 +223,7 @@ python: "<version>"
 <raw output>
 </details>
 
-<details><summary>lint_skills.py output</summary>
+<details><summary>audit_skill.py output</summary>
 <raw output>
 </details>
 

@@ -1,7 +1,7 @@
 ---
 name: authoring
 description: "Use when writing, completing, improving, or adapting SKILL.md and agents/*.md in a bundle-plugin — integrating external skills, filling scaffolded stubs, or rewriting for better triggering and token efficiency"
-allowed-tools: Python(scripts/lint_skills.py *)
+allowed-tools: Python(scripts/audit_skill.py *)
 ---
 
 # Authoring Skill Content
@@ -10,7 +10,7 @@ allowed-tools: Python(scripts/lint_skills.py *)
 
 Guide the authoring of effective SKILL.md files, agent definitions (`agents/*.md`), and supporting resources within a bundle-plugin. Good content is the difference between skills that agents consistently find and follow — and ones that get ignored or misinterpreted.
 
-**Core principle:** Write for the agent's experience. Every instruction should be discoverable (good description), loadable (right size), and followable (clear, motivated instructions).
+**Core principle:** Write for the agent's experience. Every instruction should be discoverable (good description), loadable (right size), and followable (clear, motivated instructions). Skills are the first-class source of truth in a bundle-plugin — docs and README must not contradict skill content (see `skills/auditing/references/source-of-truth-policy.md`).
 
 **Skill type:** Hybrid — follow the execution flow rigidly (Entry Detection → Path steps → Validation), but apply writing guidance flexibly based on context. The process is discipline-enforcing; the content decisions are pattern-based.
 
@@ -103,7 +103,7 @@ Enhance existing in-project content based on user feedback or optimization specs
 
 After completing any path, validate the authored content:
 
-1. **Run lint** — `python scripts/lint_skills.py <skill-directory>` on each authored/modified skill
+1. **Run lint** — `python scripts/audit_skill.py <skill-directory>` on each authored/modified skill
 2. **Review findings:**
    - **Critical** (Q1-Q3: missing frontmatter/name/description) — fix immediately before delivering
    - **Warning** (Q4-Q9, Q14, X1-X3: naming conventions, description rules, token budget, tool paths, broken references) — fix if straightforward, otherwise report to the user/caller
@@ -125,7 +125,7 @@ Read `references/quality-checklist.md` for the full check-by-check reference whe
 | Description too broad | Scope to the right context (e.g., "bundle-plugins" not just "any project") |
 | Skipping project conventions | Always read existing skills first when working in an established project |
 | Not wiring Integration section | Every skill needs Called by / Calls / Pairs with to connect to the workflow graph |
-| Forgetting validation | Always run `lint_skills.py` after authoring — catches issues before they propagate |
+| Forgetting validation | Always run `audit_skill.py` after authoring — catches issues before they propagate |
 
 ## Inputs
 
