@@ -151,11 +151,11 @@ Four audit scopes for different levels of granularity — the agent auto-detects
 ### Quick Start (Scripts)
 
 ```bash
-python scripts/audit_project.py .                                      # full project audit
-python scripts/audit_skill.py skills/authoring                         # single skill audit
-python scripts/audit_workflow.py .                                     # workflow audit
-python scripts/audit_workflow.py --focus-skills new-skill .            # focused workflow audit
-python scripts/scan_security.py .                                      # security-only scan
+python skills/auditing/scripts/audit_project.py .                                      # full project audit
+python skills/auditing/scripts/audit_skill.py skills/authoring                         # single skill audit
+python skills/auditing/scripts/audit_workflow.py .                                     # workflow audit
+python skills/auditing/scripts/audit_workflow.py --focus-skills new-skill .            # focused workflow audit
+python skills/auditing/scripts/scan_security.py .                                      # security-only scan
 ```
 
 Via the agent, you can also audit remote projects:
@@ -335,11 +335,11 @@ Skills, audit reports, and script output accumulate in the conversation context 
 
 - **Start a fresh session** for each major lifecycle phase (blueprinting, authoring, auditing)
 - **Use slash commands** (`/bundles-audit`, `/bundles-optimize`) to re-anchor the agent on the current task
-- **Prefer script output over inline checks** — `python scripts/audit_project.py .` produces a compact summary instead of the agent reasoning through each check
+- **Prefer script output over inline checks** — `python skills/auditing/scripts/audit_project.py .` produces a compact summary instead of the agent reasoning through each check
 
 ## Contributing
 
-Contributions welcome. Please follow the existing code style and ensure all platform manifests stay in sync using `python scripts/bump_version.py --check`.
+Contributions welcome. Please follow the existing code style and ensure all platform manifests stay in sync using `python skills/releasing/scripts/bump_version.py --check`.
 
 ## License
 

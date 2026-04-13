@@ -200,7 +200,7 @@
 
 ## 验证
 
-编写完成后，技能始终运行 `python scripts/audit_skill.py` 来验证结果。
+编写完成后，技能始终运行 `python skills/auditing/scripts/audit_skill.py` 来验证结果。
 
 ### 检查内容
 

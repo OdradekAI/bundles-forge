@@ -1,7 +1,7 @@
 ---
 name: optimizing
 description: "Use when optimizing a bundle-plugin or single skill — improving descriptions, reducing tokens, fixing audit findings, restructuring workflows, adding skills to fill gaps, or iterating on user feedback"
-allowed-tools: Python(scripts/audit_skill.py *)
+allowed-tools: Python(skills/auditing/scripts/audit_skill.py *)
 ---
 
 # Optimizing Bundle-Plugins
@@ -52,8 +52,8 @@ After normalization, determine the scope from the resolved local path:
 Run the quality linter to identify frontmatter issues, description anti-patterns, and broken references before manual optimization:
 
 ```bash
-python scripts/audit_skill.py <project-root>        # markdown report
-python scripts/audit_skill.py --json <project-root>  # machine-readable
+python skills/auditing/scripts/audit_skill.py <project-root>        # markdown report
+python skills/auditing/scripts/audit_skill.py --json <project-root>  # machine-readable
 ```
 
 The linter automates checks Q1-Q12 and X1-X2 from the skill quality ruleset. Focus manual effort on the subjective targets below.
@@ -133,8 +133,8 @@ When optimizing workflow transitions (Target 4), use chain evaluation to verify 
 Consume the `workflow-report` from `bundles-forge:auditing` (Workflow mode) to identify and fix workflow issues. If no workflow report is available, run the workflow audit first:
 
 ```bash
-python scripts/audit_workflow.py <project-root>                          # full workflow audit
-python scripts/audit_workflow.py --focus-skills skill-a,skill-b <root>   # focused on specific skills
+python skills/auditing/scripts/audit_workflow.py <project-root>                          # full workflow audit
+python skills/auditing/scripts/audit_workflow.py --focus-skills skill-a,skill-b <root>   # focused on specific skills
 ```
 
 **Fix by W-check priority:**
@@ -291,7 +291,7 @@ Read target skill
 ### Script Shortcuts
 
 ```bash
-python scripts/audit_skill.py <skill-directory>     # quality checks on single skill
+python skills/auditing/scripts/audit_skill.py <skill-directory>     # quality checks on single skill
 ```
 
 ---

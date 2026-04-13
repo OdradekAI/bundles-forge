@@ -10,10 +10,10 @@ This is a bundle-plugin engineering toolkit supporting 5 platforms. It contains 
 - Skill naming: lowercase with hyphens, directory name must match frontmatter `name` field
 - Descriptions: must start with "Use when...", describe triggering conditions, stay under 250 characters
 - Cross-references: use `bundles-forge:<skill-name>` format
-- Run `python scripts/bump_version.py --check` before committing
-- Run `python scripts/generate_checklists.py --check` before committing
+- Run `python skills/releasing/scripts/bump_version.py --check` before committing
+- Run `python skills/auditing/scripts/generate_checklists.py --check` before committing
 - Run `bundles-forge:auditing` before releases
-- Run `python scripts/check_docs.py` before releases (documentation consistency)
+- Run `python skills/auditing/scripts/check_docs.py` before releases (documentation consistency)
 
 ## Available Skills
 

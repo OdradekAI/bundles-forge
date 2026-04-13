@@ -3,8 +3,8 @@
 The registry lives at skills/auditing/references/audit-checks.json.
 
 Usage:
-    python scripts/generate_checklists.py [project-root]        # regenerate tables
-    python scripts/generate_checklists.py --check [project-root] # drift detection (exit 1 if stale)
+    python generate_checklists.py [project-root]        # regenerate tables
+    python generate_checklists.py --check [project-root] # drift detection (exit 1 if stale)
 """
 
 import json
@@ -291,7 +291,7 @@ def main():
                   "skills/auditing/references/audit-checks.json:")
             for f in stale_files:
                 print(f"  {f}")
-            print("\nRun: python scripts/generate_checklists.py")
+            print("\nRun: python generate_checklists.py")
             sys.exit(1)
         else:
             print("All checklists are in sync with audit-checks.json registry.")

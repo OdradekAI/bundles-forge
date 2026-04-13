@@ -74,15 +74,15 @@ git branch --show-current
 
 ```bash
 # 版本漂移检测
-python scripts/bump_version.py --check
+python skills/releasing/scripts/bump_version.py --check
 
 # 文档一致性（9 项检查）
-python scripts/check_docs.py .
+python skills/auditing/scripts/check_docs.py .
 ```
 
 **插件验证（仅 Claude Code）：** 在 Claude Code 环境中，运行 `claude plugin validate`（或会话内 `/plugin validate`）以验证 `plugin.json` schema、skill/agent/command frontmatter 和 `hooks.json` 有效性。其他平台通过 inspector agent 覆盖等效的结构检查。
 
-**完整审计：** 调用 `bundles-forge:auditing`（首选 — 通过 auditor 子代理提供 10 类定性评估与评分）。回退：`python scripts/audit_project.py .`（仅自动化检查，无定性评分）。
+**完整审计：** 调用 `bundles-forge:auditing`（首选 — 通过 auditor 子代理提供 10 类定性评估与评分）。回退：`python skills/auditing/scripts/audit_project.py .`（仅自动化检查，无定性评分）。
 
 **`check_docs.py` 检查项（D1–D9）：**
 
@@ -91,7 +91,7 @@ python scripts/check_docs.py .
 | D1 — 技能列表同步 | `skills/` 目录与 CLAUDE.md、AGENTS.md、README.md、README.zh.md 一致 |
 | D2 — 交叉引用有效性 | 所有 `bundles-forge:<name>` 引用指向已存在的 `skills/<name>/` |
 | D3 — 平台清单同步 | CLAUDE.md 平台清单表与 `.version-bump.json` 一致 |
-| D4 — 脚本准确性 | CLAUDE.md 引用的脚本存在于 `scripts/` |
+| D4 — 脚本准确性 | CLAUDE.md 引用的技能脚本存在于其声明的 `skills/.../scripts/` 路径 |
 | D5 — Agent 列表同步 | CLAUDE.md 中的 agent 与 `agents/` 目录一致 |
 | D6 — README 数据同步 | README.md 和 README.zh.md 之间的硬数据一致 |
 | D7 — Guide 语言同步 | `docs/` 中英文 guide 对的硬数据一致 |
@@ -154,7 +154,7 @@ git diff $(git describe --tags --abbrev=0)..HEAD
 ### 步骤 4：版本升级
 
 ```bash
-python scripts/bump_version.py <new-version>
+python skills/releasing/scripts/bump_version.py <new-version>
 ```
 
 这会更新 `.version-bump.json` 中声明的所有文件，并运行升级后审计以捕获遗漏。
@@ -186,9 +186,9 @@ python scripts/bump_version.py <new-version>
 ### 步骤 6：最终验证
 
 ```bash
-python scripts/bump_version.py --check   # 无版本漂移
-python scripts/bump_version.py --audit   # 无游离版本字符串
-python scripts/check_docs.py .           # 文档一致
+python skills/releasing/scripts/bump_version.py --check   # 无版本漂移
+python skills/releasing/scripts/bump_version.py --audit   # 无游离版本字符串
+python skills/auditing/scripts/check_docs.py .           # 文档一致
 ```
 
 三者必须全部以退出码 0（干净）退出后才能发布。
@@ -262,9 +262,9 @@ Marketplace 分发需确保 `.claude-plugin/marketplace.json` 存在且包含插
 对于尚未建立版本管理的新项目：
 
 1. 创建 `.version-bump.json`，包含所有版本承载清单的条目
-2. 添加 `scripts/bump_version.py`（从脚手架模板或 bundles-forge 复制）
-3. 验证：`python scripts/bump_version.py --check`
-4. 审计：`python scripts/bump_version.py --audit`
+2. 添加 `skills/releasing/scripts/bump_version.py`（从脚手架模板或 bundles-forge 复制）
+3. 验证：`python skills/releasing/scripts/bump_version.py --check`
+4. 审计：`python skills/releasing/scripts/bump_version.py --audit`
 
 完整项目搭建（含版本基础设施）请参见 `bundles-forge:scaffolding`。
 
@@ -297,11 +297,11 @@ Marketplace 分发需确保 `.claude-plugin/marketplace.json` 存在且包含插
 ### 命令
 
 ```bash
-python scripts/bump_version.py --check     # 检测版本漂移
-python scripts/bump_version.py --audit     # 查找未声明的版本字符串
-python scripts/bump_version.py <version>   # 升级所有清单
-python scripts/check_docs.py .             # 文档一致性检查
-python scripts/audit_project.py .          # 完整质量 + 安全审计
+python skills/releasing/scripts/bump_version.py --check     # 检测版本漂移
+python skills/releasing/scripts/bump_version.py --audit     # 查找未声明的版本字符串
+python skills/releasing/scripts/bump_version.py <version>   # 升级所有清单
+python skills/auditing/scripts/check_docs.py .             # 文档一致性检查
+python skills/auditing/scripts/audit_project.py .          # 完整质量 + 安全审计
 ```
 
 ### 退出码

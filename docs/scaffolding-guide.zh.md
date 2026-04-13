@@ -58,7 +58,7 @@
 **预期体验：** Agent 会询问你在构建什么、使用哪些平台、有多少技能。根据你的回答，它只生成必要的内容 — 不引入不必要的可选组件。
 
 **生成层次：**
-1. **核心** — `package.json`、`.gitignore`、`.version-bump.json`、`scripts/bump_version.py`、技能、命令
+1. **核心** — `package.json`、`.gitignore`、`.version-bump.json`、`skills/releasing/scripts/bump_version.py`、技能、命令
 2. **平台适配器** — 仅针对所选平台（清单、钩子、安装文档）
 3. **引导** — 如果有 3 个以上技能或工作流链
 4. **可选组件** — 仅在 Agent 检测到需要时（MCP 服务器、LSP 服务器、可执行文件、输出样式、默认设置、用户配置、市场条目）

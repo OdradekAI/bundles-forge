@@ -10,7 +10,7 @@ Nine checks:
   D1 — Skill list sync across docs vs skills/ directory
   D2 — Cross-reference validity (bundles-forge:<name> → skills/<name>/)
   D3 — Platform manifest sync (CLAUDE.md table vs .version-bump.json)
-  D4 — Command/script accuracy (CLAUDE.md scripts vs scripts/ directory)
+  D4 — Command/script accuracy (CLAUDE.md scripts vs actual file paths)
   D5 — Agent list sync (CLAUDE.md agents vs agents/ directory)
   D6 — README data sync (README.md vs README.zh.md hard data)
   D7 — Guide language sync (docs/*.md vs docs/*.zh.md hard data)
@@ -18,8 +18,8 @@ Nine checks:
   D9 — Numeric cross-validation (docs/*.md numbers vs canonical source)
 
 Usage:
-    python scripts/check_docs.py [project-root]
-    python scripts/check_docs.py --json [project-root]
+    python check_docs.py [project-root]
+    python check_docs.py --json [project-root]
 
 Exit codes: 0 = all pass, 1 = warnings, 2 = critical
 """
@@ -36,7 +36,7 @@ from pathlib import Path
 _TABLE_ROW_RE = re.compile(r"^\|(.+)\|\s*$", re.MULTILINE)
 _CROSS_REF_BACKTICK_RE = re.compile(r"`([a-z0-9-]+):([a-z0-9-]+)`")
 _CROSS_REF_BOLD_RE = re.compile(r"\*\*([a-z0-9-]+):([a-z0-9-]+)\*\*")
-_SCRIPT_REF_RE = re.compile(r"(?:python\s+)?scripts/([a-z_]+\.py)")
+_SCRIPT_REF_RE = re.compile(r"(?:python\s+)?(?:skills/[a-z-]+/scripts/([a-z_]+\.py))")
 _AGENT_FILE_RE = re.compile(r"`(agents/[a-z0-9_-]+\.md)`")
 _AGENT_BACKTICK_NAME_RE = re.compile(r"`([a-z0-9_-]+)`")
 
@@ -292,32 +292,17 @@ def check_platform_manifests(root, findings):
 # ---------------------------------------------------------------------------
 
 def check_script_references(root, findings):
-    """Verify scripts referenced in CLAUDE.md exist in scripts/ directory."""
+    """Verify skill scripts referenced in CLAUDE.md exist at their declared paths."""
     claude_md = _read_if_exists(root / "CLAUDE.md")
     if not claude_md:
         return
 
-    scripts_dir = root / "scripts"
-    actual_scripts = set()
-    if scripts_dir.is_dir():
-        actual_scripts = {f.name for f in scripts_dir.iterdir()
-                         if f.is_file() and f.suffix == ".py" and not f.name.startswith("_")}
-
-    referenced = set()
     for m in _SCRIPT_REF_RE.finditer(claude_md):
-        referenced.add(m.group(1))
-
-    for s in sorted(referenced - actual_scripts):
-        findings.append(dict(
-            check="D4", severity="critical",
-            message=f"CLAUDE.md references 'scripts/{s}' but file does not exist"))
-
-    for s in sorted(actual_scripts - referenced):
-        if s.startswith("_"):
-            continue
-        findings.append(dict(
-            check="D4", severity="info",
-            message=f"Script 'scripts/{s}' exists but is not documented in CLAUDE.md"))
+        full_match = m.group(0)
+        if not (root / full_match.split()[-1]).exists():
+            findings.append(dict(
+                check="D4", severity="critical",
+                message=f"CLAUDE.md references '{full_match}' but file does not exist"))
 
 
 # ---------------------------------------------------------------------------
@@ -758,11 +743,11 @@ def check_docs_content(root, findings):
                     message=f"Broken cross-reference '{prefix}:{skill_name}' in {rel_path}"))
 
         for m in _SCRIPT_REF_RE.finditer(content):
-            script_name = m.group(1)
-            if not (root / "scripts" / script_name).exists():
+            full_path = m.group(0).split()[-1]
+            if not (root / full_path).exists():
                 findings.append(dict(
                     check="D4", severity="warning",
-                    message=f"docs/{rel_path} references 'scripts/{script_name}' "
+                    message=f"docs/{rel_path} references '{full_path}' "
                             "which does not exist"))
 
 

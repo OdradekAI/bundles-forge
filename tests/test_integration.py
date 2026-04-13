@@ -21,7 +21,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 HOOK_PATH = REPO_ROOT / "hooks" / "session-start"
 SKILLS_DIR = REPO_ROOT / "skills"
-SCRIPTS_DIR = REPO_ROOT / "scripts"
+RELEASING_SCRIPTS = REPO_ROOT / "skills" / "releasing" / "scripts"
 VERSION_CONFIG = REPO_ROOT / ".version-bump.json"
 
 EXPECTED_SKILLS = [
@@ -213,13 +213,13 @@ class TestVersionSync(unittest.TestCase):
 
     def test_bump_version_script_exists(self):
         self.assertTrue(
-            (SCRIPTS_DIR / "bump_version.py").exists(),
-            "scripts/bump_version.py missing"
+            (RELEASING_SCRIPTS / "bump_version.py").exists(),
+            "skills/releasing/scripts/bump_version.py missing"
         )
 
     def test_no_version_drift(self):
         result = subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / "bump_version.py"), "--check"],
+            [sys.executable, str(RELEASING_SCRIPTS / "bump_version.py"), "--check"],
             capture_output=True, text=True
         )
         self.assertEqual(result.returncode, 0,

@@ -11,9 +11,9 @@ Supports --focus-skills to partition findings into Focus Area and Context.
 For agent-authored rich reports, see skills/auditing/references/workflow-report-template.md.
 
 Usage:
-    python scripts/audit_workflow.py [project-root]
-    python scripts/audit_workflow.py --focus-skills skill-a,skill-b [project-root]
-    python scripts/audit_workflow.py --json [project-root]
+    python audit_workflow.py [project-root]
+    python audit_workflow.py --focus-skills skill-a,skill-b [project-root]
+    python audit_workflow.py --json [project-root]
 
 Exit codes: 0 = pass, 1 = warnings, 2 = critical findings
 """

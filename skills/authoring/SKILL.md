@@ -1,7 +1,7 @@
 ---
 name: authoring
 description: "Use when writing, completing, improving, or adapting SKILL.md and agents/*.md in a bundle-plugin — integrating external skills, filling scaffolded stubs, or rewriting for better triggering and token efficiency"
-allowed-tools: Python(scripts/audit_skill.py *)
+allowed-tools: Python(skills/auditing/scripts/audit_skill.py *)
 ---
 
 # Authoring Skill Content
@@ -103,7 +103,7 @@ Enhance existing in-project content based on user feedback or optimization specs
 
 After completing any path, validate the authored content:
 
-1. **Run lint** — `python scripts/audit_skill.py <skill-directory>` on each authored/modified skill
+1. **Run lint** — `python skills/auditing/scripts/audit_skill.py <skill-directory>` on each authored/modified skill
 2. **Review findings:**
    - **Critical** (Q1-Q3: missing frontmatter/name/description) — fix immediately before delivering
    - **Warning** (Q4-Q9, Q14, X1-X3: naming conventions, description rules, token budget, tool paths, broken references) — fix if straightforward, otherwise report to the user/caller

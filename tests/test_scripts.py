@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Cross-platform tests for the Python scripts in scripts/.
+Cross-platform tests for the Python scripts in skills/auditing/scripts/
+and skills/releasing/scripts/.
 
 Run: python tests/test_scripts.py
 Or:  python -m pytest tests/test_scripts.py -v
@@ -16,7 +17,8 @@ import unittest
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-SCRIPTS_DIR = REPO_ROOT / "scripts"
+AUDITING_SCRIPTS = REPO_ROOT / "skills" / "auditing" / "scripts"
+RELEASING_SCRIPTS = REPO_ROOT / "skills" / "releasing" / "scripts"
 SKILLS_DIR = REPO_ROOT / "skills"
 HOOKS_DIR = REPO_ROOT / "hooks"
 
@@ -41,11 +43,11 @@ EXPECTED_SKILLS = {
 
 
 class TestAuditSkillProjectMode(unittest.TestCase):
-    """Tests for scripts/audit_skill.py in project-level mode."""
+    """Tests for skills/auditing/scripts/audit_skill.py in project-level mode."""
 
     def _run_project(self, *extra_args):
         return subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / "audit_skill.py"),
+            [sys.executable, str(AUDITING_SCRIPTS / "audit_skill.py"),
              "--all", *extra_args, str(REPO_ROOT)],
             capture_output=True, text=True
         )
@@ -56,7 +58,7 @@ class TestAuditSkillProjectMode(unittest.TestCase):
 
     def test_project_mode_autodetect(self):
         result = subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / "audit_skill.py"), str(REPO_ROOT)],
+            [sys.executable, str(AUDITING_SCRIPTS / "audit_skill.py"), str(REPO_ROOT)],
             capture_output=True, text=True
         )
         self.assertIn("Skill Quality Audit", result.stdout)
@@ -89,18 +91,18 @@ class TestAuditSkillProjectMode(unittest.TestCase):
 
 
 class TestScanSecurity(unittest.TestCase):
-    """Tests for scripts/scan_security.py"""
+    """Tests for skills/auditing/scripts/scan_security.py"""
 
     def test_scan_runs_without_crash(self):
         result = subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / "scan_security.py"), str(REPO_ROOT)],
+            [sys.executable, str(AUDITING_SCRIPTS / "scan_security.py"), str(REPO_ROOT)],
             capture_output=True, text=True
         )
         self.assertIn("Security Scan", result.stdout)
 
     def test_scan_json_output(self):
         result = subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / "scan_security.py"), "--json", str(REPO_ROOT)],
+            [sys.executable, str(AUDITING_SCRIPTS / "scan_security.py"), "--json", str(REPO_ROOT)],
             capture_output=True, text=True
         )
         data = json.loads(result.stdout)
@@ -110,7 +112,7 @@ class TestScanSecurity(unittest.TestCase):
 
     def test_scan_classifies_file_types(self):
         result = subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / "scan_security.py"), "--json", str(REPO_ROOT)],
+            [sys.executable, str(AUDITING_SCRIPTS / "scan_security.py"), "--json", str(REPO_ROOT)],
             capture_output=True, text=True
         )
         data = json.loads(result.stdout)
@@ -120,7 +122,7 @@ class TestScanSecurity(unittest.TestCase):
 
     def test_findings_have_confidence(self):
         result = subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / "scan_security.py"), "--json", str(REPO_ROOT)],
+            [sys.executable, str(AUDITING_SCRIPTS / "scan_security.py"), "--json", str(REPO_ROOT)],
             capture_output=True, text=True
         )
         data = json.loads(result.stdout)
@@ -132,7 +134,7 @@ class TestScanSecurity(unittest.TestCase):
     def test_suspicious_findings_affect_exit_code(self):
         """Suspicious findings should affect exit code (at least exit 1)."""
         result = subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / "scan_security.py"), "--json", str(REPO_ROOT)],
+            [sys.executable, str(AUDITING_SCRIPTS / "scan_security.py"), "--json", str(REPO_ROOT)],
             capture_output=True, text=True
         )
         data = json.loads(result.stdout)
@@ -145,7 +147,7 @@ class TestScanSecurity(unittest.TestCase):
 
     def test_summary_has_suspicious_counts(self):
         result = subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / "scan_security.py"), "--json", str(REPO_ROOT)],
+            [sys.executable, str(AUDITING_SCRIPTS / "scan_security.py"), "--json", str(REPO_ROOT)],
             capture_output=True, text=True
         )
         data = json.loads(result.stdout)
@@ -155,18 +157,18 @@ class TestScanSecurity(unittest.TestCase):
 
 
 class TestAuditProject(unittest.TestCase):
-    """Tests for scripts/audit_project.py"""
+    """Tests for skills/auditing/scripts/audit_project.py"""
 
     def test_audit_runs_without_crash(self):
         result = subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / "audit_project.py"), str(REPO_ROOT)],
+            [sys.executable, str(AUDITING_SCRIPTS / "audit_project.py"), str(REPO_ROOT)],
             capture_output=True, text=True
         )
         self.assertIn("Bundle-Plugin Audit", result.stdout)
 
     def test_audit_json_output(self):
         result = subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / "audit_project.py"), "--json", str(REPO_ROOT)],
+            [sys.executable, str(AUDITING_SCRIPTS / "audit_project.py"), "--json", str(REPO_ROOT)],
             capture_output=True, text=True
         )
         data = json.loads(result.stdout)
@@ -176,7 +178,7 @@ class TestAuditProject(unittest.TestCase):
 
     def test_audit_has_all_categories(self):
         result = subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / "audit_project.py"), "--json", str(REPO_ROOT)],
+            [sys.executable, str(AUDITING_SCRIPTS / "audit_project.py"), "--json", str(REPO_ROOT)],
             capture_output=True, text=True
         )
         data = json.loads(result.stdout)
@@ -193,7 +195,7 @@ class TestGraphRules(unittest.TestCase):
 
     def _get_lint_data(self):
         result = subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / "audit_skill.py"),
+            [sys.executable, str(AUDITING_SCRIPTS / "audit_skill.py"),
              "--all", "--json", str(REPO_ROOT)],
             capture_output=True, text=True
         )
@@ -257,7 +259,7 @@ class TestArtifactMatching(unittest.TestCase):
     def test_g5_no_critical_mismatches(self):
         """G5: workflow edges have matching artifact IDs (info level only)."""
         result = subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / "audit_skill.py"),
+            [sys.executable, str(AUDITING_SCRIPTS / "audit_skill.py"),
              "--all", "--json", str(REPO_ROOT)],
             capture_output=True, text=True
         )
@@ -276,7 +278,7 @@ class TestCrossReferences(unittest.TestCase):
 
     def test_no_broken_crossrefs(self):
         result = subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / "audit_skill.py"),
+            [sys.executable, str(AUDITING_SCRIPTS / "audit_skill.py"),
              "--all", "--json", str(REPO_ROOT)],
             capture_output=True, text=True
         )
@@ -478,12 +480,12 @@ class TestVersionSync(unittest.TestCase):
 
     def test_bump_version_script_exists(self):
         self.assertTrue(
-            (SCRIPTS_DIR / "bump_version.py").is_file(),
-            "scripts/bump_version.py missing")
+            (RELEASING_SCRIPTS / "bump_version.py").is_file(),
+            "skills/releasing/scripts/bump_version.py missing")
 
     def test_no_version_drift(self):
         result = subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / "bump_version.py"), "--check"],
+            [sys.executable, str(RELEASING_SCRIPTS / "bump_version.py"), "--check"],
             capture_output=True, text=True, cwd=str(REPO_ROOT))
         self.assertEqual(result.returncode, 0,
                          f"Version drift detected:\n{result.stdout}\n{result.stderr}")

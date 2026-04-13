@@ -10,10 +10,10 @@ audits and project-level linting.  Auto-detects mode from the path argument:
   - --all flag forces project-level mode
 
 Usage:
-    python scripts/audit_skill.py <skill-dir-or-SKILL.md>   # single skill
-    python scripts/audit_skill.py [project-root]             # project lint
-    python scripts/audit_skill.py --all [project-root]       # force project
-    python scripts/audit_skill.py --json <path>              # JSON output
+    python audit_skill.py <skill-dir-or-SKILL.md>   # single skill
+    python audit_skill.py [project-root]             # project lint
+    python audit_skill.py --all [project-root]       # force project
+    python audit_skill.py --json <path>              # JSON output
 
 Exit codes: 0 = pass, 1 = warnings, 2 = critical findings
 """
@@ -51,7 +51,7 @@ WORKFLOW_SUMMARY_PHRASES = re.compile(
 KEBAB_CASE_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 CROSS_REF_RE = re.compile(r"`([a-z0-9-]+):([a-z0-9-]+)`")
 RELATIVE_PATH_RE = re.compile(r"`((?:references|assets|scripts|templates)/[^`]+)`")
-ALLOWED_TOOLS_PATH_RE = re.compile(r"\b(scripts/[^\s*)+]+(?:\.py|\.sh|\.js)?)")
+ALLOWED_TOOLS_PATH_RE = re.compile(r"\b((?:skills/[a-z-]+/)?scripts/[^\s*)+]+(?:\.py|\.sh|\.js)?)")
 REFERENCED_DIR_RE = re.compile(
     r"(?:in|under|from|see)\s+`(references|templates|assets|examples)/`",
     re.IGNORECASE,

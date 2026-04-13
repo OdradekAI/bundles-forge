@@ -1,7 +1,7 @@
 ---
 name: auditing
 description: "Use when reviewing a bundle-plugin for structural issues, version drift, skill quality, workflow integration, or security risks — before releasing, after changes, or after adding skills. Auto-detects scope (full project vs skill vs workflow)"
-allowed-tools: Bash(python scripts/*)
+allowed-tools: Bash(python skills/auditing/scripts/*)
 ---
 
 # Auditing Bundle-Plugins
@@ -70,15 +70,15 @@ Scan project root
 ### Script Shortcuts
 
 ```bash
-python scripts/audit_project.py <project-root>        # full audit with status
-python scripts/audit_project.py --json <project-root>  # machine-readable
+python skills/auditing/scripts/audit_project.py <project-root>        # full audit with status
+python skills/auditing/scripts/audit_project.py --json <project-root>  # machine-readable
 
-python scripts/audit_workflow.py <project-root>                          # workflow-only audit
-python scripts/audit_workflow.py --focus-skills skill-a,skill-b <root>   # focused workflow audit
-python scripts/audit_workflow.py --json <project-root>                   # workflow JSON output
+python skills/auditing/scripts/audit_workflow.py <project-root>                          # workflow-only audit
+python skills/auditing/scripts/audit_workflow.py --focus-skills skill-a,skill-b <root>   # focused workflow audit
+python skills/auditing/scripts/audit_workflow.py --json <project-root>                   # workflow JSON output
 
-python scripts/scan_security.py <project-root>         # security-only scan
-python scripts/scan_security.py --json <project-root>  # security JSON output
+python skills/auditing/scripts/scan_security.py <project-root>         # security-only scan
+python skills/auditing/scripts/scan_security.py --json <project-root>  # security JSON output
 ```
 
 `audit_project.py` orchestrates `scan_security.py` (security), `audit_skill.py` (skill quality), `audit_workflow.py` (workflow integration), and `check_docs.py` (documentation consistency D1-D9), then adds structure, manifest, version-sync, hook, and testing checks.
@@ -167,12 +167,12 @@ When the target is a single skill directory or SKILL.md file, run only the 4 cat
 ### Script Shortcuts
 
 ```bash
-python scripts/audit_skill.py <skill-directory>          # combined 4-category skill audit
-python scripts/audit_skill.py <path>/SKILL.md            # also accepts SKILL.md path
-python scripts/audit_skill.py --json <skill-directory>   # JSON output
+python skills/auditing/scripts/audit_skill.py <skill-directory>          # combined 4-category skill audit
+python skills/auditing/scripts/audit_skill.py <path>/SKILL.md            # also accepts SKILL.md path
+python skills/auditing/scripts/audit_skill.py --json <skill-directory>   # JSON output
 
-python scripts/audit_skill.py <skill-directory>          # skill quality only
-python scripts/scan_security.py <skill-directory>        # security scan on skill files
+python skills/auditing/scripts/audit_skill.py <skill-directory>          # skill quality only
+python skills/auditing/scripts/scan_security.py <skill-directory>        # security scan on skill files
 ```
 
 ### Process & Report
@@ -205,9 +205,9 @@ When the user explicitly requests a workflow audit, or when the Full audit's Cro
 ### Script Shortcuts
 
 ```bash
-python scripts/audit_workflow.py <project-root>                          # full workflow audit
-python scripts/audit_workflow.py --focus-skills skill-a,skill-b <root>   # focused on specific skills
-python scripts/audit_workflow.py --json <project-root>                   # machine-readable
+python skills/auditing/scripts/audit_workflow.py <project-root>                          # full workflow audit
+python skills/auditing/scripts/audit_workflow.py --focus-skills skill-a,skill-b <root>   # focused on specific skills
+python skills/auditing/scripts/audit_workflow.py --json <project-root>                   # machine-readable
 ```
 
 Dispatch the `auditor` agent (`agents/auditor.md`) in Workflow Audit Mode for automated assessment if subagents are available. The auditor handles W1-W9 (Static Structure + Semantic Interface) across three layers defined in `references/workflow-checklist.md`. Full workflow audit protocol, focus mode, and report format are in `agents/auditor.md` (Workflow Audit Mode section).
@@ -229,7 +229,7 @@ Present workflow findings grouped by severity. The `workflow-report` is consumed
 
 | Mistake | Fix |
 |---------|-----|
-| Skipping version sync check | Always run `python scripts/bump_version.py --check` (full audit) |
+| Skipping version sync check | Always run `python skills/releasing/scripts/bump_version.py --check` (full audit) |
 | Not checking description anti-patterns | Descriptions that summarize workflow cause agents to shortcut |
 | Ignoring cross-reference resolution | Broken `project:skill-name` refs = broken workflow chains |
 | Running full 10-category audit on a single skill | Let scope auto-detection handle it — 6 categories don't apply |

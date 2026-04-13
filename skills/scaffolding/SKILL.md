@@ -1,7 +1,7 @@
 ---
 name: scaffolding
 description: "Use when generating project structure for new bundle-plugins, adding or removing platform support (Claude Code, Cursor, Codex, OpenCode, Gemini CLI), updating platform manifests, or migrating hooks and configuration between platforms"
-allowed-tools: Python(scripts/bump_version.py *)
+allowed-tools: Python(skills/releasing/scripts/bump_version.py *)
 ---
 
 # Scaffolding Bundle-Plugins
@@ -52,7 +52,7 @@ Generated for all intelligent-mode projects regardless of platform selection:
 | `LICENSE` | Default MIT unless specified |
 | `.gitignore` | node_modules, .worktrees, OS files |
 | `.version-bump.json` | Version sync manifest |
-| `scripts/bump_version.py` | Version management tool |
+| `skills/releasing/scripts/bump_version.py` | Version management tool |
 | `skills/<skill-name>/SKILL.md` | One directory per skill |
 | `commands/<entry-skill>.md` | One command per entry-point skill |
 
@@ -106,7 +106,7 @@ For platform-specific wiring details, read `references/platform-adapters.md`.
 8. **Generate commands** — one command per entry-point skill
 9. **Generate bootstrap** — if requested, create meta-skill with routing table
 10. **Generate optional components** — only what the design specifies. For MCP servers, use `assets/mcp-json.md` template and consult `references/external-integration.md` for transport selection and platform differences. When `userConfig` is specified, add the `userConfig` field to `plugin.json` with appropriate `sensitive` flags. When marketplace distribution is specified, generate `.claude-plugin/marketplace.json` with plugin metadata
-11. `git init` + initial commit; run `python scripts/bump_version.py --check`
+11. `git init` + initial commit; run `python skills/releasing/scripts/bump_version.py --check`
 
 ## Platform Adaptation: Existing Projects
 
@@ -118,7 +118,7 @@ For platform-specific wiring details, read `references/platform-adapters.md`.
 4. **Update version sync** — add version-bearing manifests to `.version-bump.json`
 5. **Update hooks** — if platform uses session hooks, ensure `session-start` handles its JSON format
 6. **Update documentation** — add install section to README; create platform-specific docs if needed
-7. **Verify** — validate manifests, `python scripts/bump_version.py --check`, test hooks
+7. **Verify** — validate manifests, `python skills/releasing/scripts/bump_version.py --check`, test hooks
 
 ### Removing a Platform
 
@@ -126,7 +126,7 @@ For platform-specific wiring details, read `references/platform-adapters.md`.
 2. **Update `.version-bump.json`** — remove entries for deleted manifests
 3. **Clean hooks** — delete platform-specific hook files; simplify `session-start` if branches removed
 4. **Update documentation** — remove install section from README and platform-specific docs
-5. **Verify** — `python scripts/bump_version.py --check`; run inspector validation
+5. **Verify** — `python skills/releasing/scripts/bump_version.py --check`; run inspector validation
 
 **Announce at start:** "I'm using the scaffolding skill to remove <platform> support."
 

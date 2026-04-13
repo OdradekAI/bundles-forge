@@ -74,15 +74,15 @@ Run all automated checks before proceeding:
 
 ```bash
 # Version drift detection
-python scripts/bump_version.py --check
+python skills/releasing/scripts/bump_version.py --check
 
 # Documentation consistency (9 checks)
-python scripts/check_docs.py .
+python skills/auditing/scripts/check_docs.py .
 ```
 
 **Plugin validation (Claude Code only):** If running in a Claude Code environment, run `claude plugin validate` (or `/plugin validate` in a session) to verify `plugin.json` schema, skill/agent/command frontmatter, and `hooks.json` validity. On other platforms, the inspector agent covers equivalent structural checks.
 
-**Full audit:** Invoke `bundles-forge:auditing` (preferred — includes qualitative assessment via auditor subagent with 10-category scoring). Fallback: `python scripts/audit_project.py .` (automated checks only, no qualitative scoring).
+**Full audit:** Invoke `bundles-forge:auditing` (preferred — includes qualitative assessment via auditor subagent with 10-category scoring). Fallback: `python skills/auditing/scripts/audit_project.py .` (automated checks only, no qualitative scoring).
 
 **`check_docs.py` checks (D1–D9):**
 
@@ -91,7 +91,7 @@ python scripts/check_docs.py .
 | D1 — Skill list sync | `skills/` directory matches CLAUDE.md, AGENTS.md, README.md, README.zh.md |
 | D2 — Cross-reference validity | All `bundles-forge:<name>` references point to existing `skills/<name>/` |
 | D3 — Platform manifest sync | CLAUDE.md Platform Manifests table matches `.version-bump.json` |
-| D4 — Script accuracy | Scripts referenced in CLAUDE.md exist in `scripts/` |
+| D4 — Script accuracy | Skill scripts referenced in CLAUDE.md exist at their declared `skills/.../scripts/` paths |
 | D5 — Agent list sync | Agents in CLAUDE.md match `agents/` directory |
 | D6 — README data sync | Hard data (skill names, commands, links) consistent between README.md and README.zh.md |
 | D7 — Guide language sync | Hard data (tables, code blocks, links) consistent between `docs/*.md` and `docs/*.zh.md` |
@@ -154,7 +154,7 @@ Re-run `check_docs.py` after making changes to confirm consistency.
 ### Step 4: Version Bump
 
 ```bash
-python scripts/bump_version.py <new-version>
+python skills/releasing/scripts/bump_version.py <new-version>
 ```
 
 This updates all files declared in `.version-bump.json` and runs a post-bump audit to catch any missed files.
@@ -186,9 +186,9 @@ This updates all files declared in `.version-bump.json` and runs a post-bump aud
 ### Step 6: Final Verification
 
 ```bash
-python scripts/bump_version.py --check   # No version drift
-python scripts/bump_version.py --audit   # No stray version strings
-python scripts/check_docs.py .           # Documentation consistent
+python skills/releasing/scripts/bump_version.py --check   # No version drift
+python skills/releasing/scripts/bump_version.py --audit   # No stray version strings
+python skills/auditing/scripts/check_docs.py .           # Documentation consistent
 ```
 
 All three must exit with code 0 (clean) before publishing.
@@ -262,9 +262,9 @@ Skip the full audit and change coherence review for hotfixes — speed matters. 
 For new projects that don't have version management yet:
 
 1. Create `.version-bump.json` with entries for all version-bearing manifests
-2. Add `scripts/bump_version.py` (from scaffold templates or copy from bundles-forge)
-3. Verify: `python scripts/bump_version.py --check`
-4. Audit: `python scripts/bump_version.py --audit`
+2. Add `skills/releasing/scripts/bump_version.py` (from scaffold templates or copy from bundles-forge)
+3. Verify: `python skills/releasing/scripts/bump_version.py --check`
+4. Audit: `python skills/releasing/scripts/bump_version.py --audit`
 
 See `bundles-forge:scaffolding` for full project setup including version infrastructure.
 
@@ -297,11 +297,11 @@ See `bundles-forge:scaffolding` for full project setup including version infrast
 ### Commands
 
 ```bash
-python scripts/bump_version.py --check     # Detect version drift
-python scripts/bump_version.py --audit     # Find undeclared version strings
-python scripts/bump_version.py <version>   # Bump all manifests
-python scripts/check_docs.py .             # Documentation consistency check
-python scripts/audit_project.py .          # Full quality + security audit
+python skills/releasing/scripts/bump_version.py --check     # Detect version drift
+python skills/releasing/scripts/bump_version.py --audit     # Find undeclared version strings
+python skills/releasing/scripts/bump_version.py <version>   # Bump all manifests
+python skills/auditing/scripts/check_docs.py .             # Documentation consistency check
+python skills/auditing/scripts/audit_project.py .          # Full quality + security audit
 ```
 
 ### Exit Codes

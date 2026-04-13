@@ -1,6 +1,6 @@
 # Authoring Quality Checklist
 
-Definitive quality specification for SKILL.md files. `scripts/audit_skill.py` automates these checks. Use during authoring to catch issues before running the linter, or to investigate specific lint findings.
+Definitive quality specification for SKILL.md files. `skills/auditing/scripts/audit_skill.py` automates these checks. Use during authoring to catch issues before running the linter, or to investigate specific lint findings.
 
 ## Frontmatter Checks
 
@@ -24,7 +24,7 @@ Definitive quality specification for SKILL.md files. `scripts/audit_skill.py` au
 | Q11 | Info | Should have `## Common Mistakes` section | Search for the heading (skipped for bootstrap `using-*` skills) |
 | Q12 | Info | Body over 300 lines should have `references/` files | If body is long, check whether a `references/` directory exists with content |
 | Q13 | Info | Token budget check — bootstrap < 200 lines, regular ~4000 tokens | Estimate tokens: prose ~1.3 tokens/word, code ~1 token/3.5 chars, tables ~1 token/3 chars |
-| Q14 | Warning | `allowed-tools` paths must exist in project | Verify that referenced scripts (`scripts/*.py`) actually exist |
+| Q14 | Warning | `allowed-tools` paths must exist in project | Verify that referenced scripts (e.g. `skills/**/scripts/*.py`) actually exist |
 | Q15 | Info | Large conditional blocks (30+ lines) should be in `references/` | Check "If...unavailable" guarded sections for excessive length |
 
 ## Cross-Reference Checks
@@ -44,9 +44,9 @@ Definitive quality specification for SKILL.md files. `scripts/audit_skill.py` au
 ## Quick Validation Command
 
 ```bash
-python scripts/audit_skill.py <skill-directory>          # single skill
-python scripts/audit_skill.py <project-root>             # all skills
-python scripts/audit_skill.py --json <project-root>      # machine-readable
+python skills/auditing/scripts/audit_skill.py <skill-directory>          # single skill
+python skills/auditing/scripts/audit_skill.py <project-root>             # all skills
+python skills/auditing/scripts/audit_skill.py --json <project-root>      # machine-readable
 ```
 
 ## Interpreting Results

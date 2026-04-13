@@ -23,15 +23,15 @@ python -m pytest tests/test_scripts.py -v -k test_project_mode_runs_without_erro
 ### Quality & Security
 
 ```bash
-python scripts/audit_skill.py [project-root]       # project-level skill quality audit (auto-detects mode)
-python scripts/audit_skill.py [skill-dir]          # single skill audit (4 categories)
-python scripts/audit_skill.py --all [project-root] # force project-level mode
-python scripts/scan_security.py [project-root]     # 7-surface security scan
-python scripts/audit_project.py [project-root]     # combined audit (calls audit_skill + scan + workflow)
-python scripts/audit_workflow.py [project-root]    # workflow integration audit (W1-W11)
-python scripts/check_docs.py [project-root]        # documentation consistency (9 checks: D1-D9)
-python scripts/generate_checklists.py [project-root]        # regenerate checklist tables from audit-checks.json registry
-python scripts/generate_checklists.py --check [project-root] # detect checklist drift (exit 1 if stale)
+python skills/auditing/scripts/audit_skill.py [project-root]       # project-level skill quality audit (auto-detects mode)
+python skills/auditing/scripts/audit_skill.py [skill-dir]          # single skill audit (4 categories)
+python skills/auditing/scripts/audit_skill.py --all [project-root] # force project-level mode
+python skills/auditing/scripts/scan_security.py [project-root]     # 7-surface security scan
+python skills/auditing/scripts/audit_project.py [project-root]     # combined audit (calls audit_skill + scan + workflow)
+python skills/auditing/scripts/audit_workflow.py [project-root]    # workflow integration audit (W1-W11)
+python skills/auditing/scripts/check_docs.py [project-root]        # documentation consistency (9 checks: D1-D9)
+python skills/auditing/scripts/generate_checklists.py [project-root]        # regenerate checklist tables from audit-checks.json registry
+python skills/auditing/scripts/generate_checklists.py --check [project-root] # detect checklist drift (exit 1 if stale)
 ```
 
 All scripts accept `--json` for machine-readable output. Exit codes: 0 = pass, 1 = warnings, 2 = critical.
@@ -39,9 +39,9 @@ All scripts accept `--json` for machine-readable output. Exit codes: 0 = pass, 1
 ### Version Management
 
 ```bash
-python scripts/bump_version.py --check             # detect version drift across manifests
-python scripts/bump_version.py --audit             # find undeclared version strings
-python scripts/bump_version.py <new-version>       # bump all files declared in .version-bump.json
+python skills/releasing/scripts/bump_version.py --check             # detect version drift across manifests
+python skills/releasing/scripts/bump_version.py --audit             # find undeclared version strings
+python skills/releasing/scripts/bump_version.py <new-version>       # bump all files declared in .version-bump.json
 ```
 
 ## Architecture
@@ -53,7 +53,9 @@ python scripts/bump_version.py <new-version>       # bump all files declared in 
 - `commands/` — slash command stubs (`bundles-*.md`) that redirect to skills via `bundles-forge:<skill-name>`
 - `hooks/` — session bootstrap: `session-start` reads `using-bundles-forge/SKILL.md` and injects it as platform-appropriate JSON context. `run-hook.cmd` is a polyglot wrapper (Windows cmd + bash)
 - `docs/` — guides (concepts, blueprinting, auditing, optimizing, releasing) with `*.zh.md` Chinese translations; checked by D7
-- `scripts/` — Python tooling sharing `_cli.py` for common argparse/exit-code patterns
+- `skills/auditing/scripts/` — audit, security scan, documentation checks, and checklist generation (shares `_cli.py` for argparse/exit-code patterns)
+- `skills/releasing/scripts/` — version bump tooling (`bump_version.py`)
+- `scripts/` — `bump-version.sh` wrapper for CLI convenience (forwards to `skills/releasing/scripts/bump_version.py`)
 
 ### Skill Architecture: Hub-and-Spoke Model
 
@@ -106,10 +108,10 @@ Version is synchronized across these files (declared in `.version-bump.json`):
 - **Heavy reference content:** extract to `references/` subdirectory (threshold: 100+ lines)
 - **Cross-references:** use `bundles-forge:<skill-name>` format
 - **Version bumps:** never edit version numbers manually — use `bump_version.py`
-- **Pre-commit:** run `python scripts/bump_version.py --check` to detect version drift
-- **Pre-commit:** run `python scripts/generate_checklists.py --check` to detect checklist drift
+- **Pre-commit:** run `python skills/releasing/scripts/bump_version.py --check` to detect version drift
+- **Pre-commit:** run `python skills/auditing/scripts/generate_checklists.py --check` to detect checklist drift
 - **Pre-release:** run `bundles-forge:auditing` for full quality + security check
-- **Pre-release:** run `python scripts/check_docs.py` to verify documentation consistency (9 checks: D1-D9)
+- **Pre-release:** run `python skills/auditing/scripts/check_docs.py` to verify documentation consistency (9 checks: D1-D9)
 - **Source of truth:** Skills are first-class citizens — see `skills/auditing/references/source-of-truth-policy.md` for the full hierarchy and contradiction resolution protocol
 
 ## Security Rules

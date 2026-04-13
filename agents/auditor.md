@@ -59,7 +59,7 @@ When auditing a project, you will:
    - Only flag issues that genuinely affect project quality or functionality
    - Acknowledge strengths alongside problems
    - Prioritize recommendations by impact
-   - For version sync: actually run `python scripts/bump_version.py --check` if available
+   - For version sync: actually run `python skills/releasing/scripts/bump_version.py --check` if available
    - For manifests: actually parse JSON to verify validity
    - For security: compare against legitimate baselines documented in the security checklist
    - If you are approaching your turn limit, prioritize completing the report summary and saving the file over finishing lower-priority checks
@@ -82,7 +82,7 @@ When explicitly requested for a workflow audit (or when `--focus-skills` is spec
 
 **Three-layer process:**
 
-1. **Static Structure (W1-W5):** Run `python scripts/audit_workflow.py` (or `--focus-skills` variant). The script calls `audit_skill.py` for graph analysis (G1-G5 mapped to W1-W5) and produces automated findings.
+1. **Static Structure (W1-W5):** Run `python skills/auditing/scripts/audit_workflow.py` (or `--focus-skills` variant). The script calls `audit_skill.py` for graph analysis (G1-G5 mapped to W1-W5) and produces automated findings.
 
 2. **Semantic Interface (W6-W9):** The script automates W6, W8, W9. For W7 (cycle rationale), review manually:
    - W7: For each declared cycle (`<!-- cycle:a,b -->`), verify the rationale makes sense (e.g. audit↔optimizing feedback loop is legitimate)

@@ -1,7 +1,7 @@
 ---
 name: releasing
 description: "Use when releasing a bundle-plugin, bumping versions, fixing version drift across manifests, setting up version sync infrastructure, updating CHANGELOG, or publishing to marketplaces. Orchestrates the full pre-release verification pipeline"
-allowed-tools: Python(scripts/bump_version.py *) Python(scripts/audit_project.py *) Python(scripts/check_docs.py *)
+allowed-tools: Python(skills/releasing/scripts/bump_version.py *) Python(skills/auditing/scripts/audit_project.py *) Python(skills/auditing/scripts/check_docs.py *)
 ---
 
 # Releasing Bundle-Plugins
@@ -32,22 +32,22 @@ Declares every file and JSON path containing the version:
     { "path": "gemini-extension.json", "field": "version" }
   ],
   "audit": {
-    "exclude": ["CHANGELOG.md", "node_modules", ".git", ".version-bump.json", "scripts/bump_version.py"]
+    "exclude": ["CHANGELOG.md", "node_modules", ".git", ".version-bump.json", "skills/releasing/scripts/bump_version.py"]
   }
 }
 ```
 
 Only include entries for platforms the project actually targets.
 
-### `scripts/bump_version.py`
+### `skills/releasing/scripts/bump_version.py`
 
 Three commands (requires Python 3):
 
 | Command | What It Does |
 |---------|-------------|
-| `python scripts/bump_version.py 1.2.3` | Update all declared files to new version |
-| `python scripts/bump_version.py --check` | Detect version drift between files |
-| `python scripts/bump_version.py --audit` | Check + scan repo for undeclared version strings |
+| `python skills/releasing/scripts/bump_version.py 1.2.3` | Update all declared files to new version |
+| `python skills/releasing/scripts/bump_version.py --check` | Detect version drift between files |
+| `python skills/releasing/scripts/bump_version.py --audit` | Check + scan repo for undeclared version strings |
 
 ### When to Check Versions
 
@@ -102,7 +102,7 @@ If the working tree is dirty, stop immediately and ask the user to commit or sta
    └── Sync README.md and README.zh.md
          │
 4. Version bump
-   └── python scripts/bump_version.py <new-version>
+   └── python skills/releasing/scripts/bump_version.py <new-version>
          │
 5. Documentation update
    ├── Update CHANGELOG.md (what changed, migration notes)
@@ -143,15 +143,15 @@ Run all automated checks. If any critical issues are found, resolve them before 
 
 ```bash
 # Version drift
-python scripts/bump_version.py --check
+python skills/releasing/scripts/bump_version.py --check
 
 # Documentation consistency (skill lists, cross-refs, manifests, READMEs)
-python scripts/check_docs.py <project-root>
+python skills/auditing/scripts/check_docs.py <project-root>
 ```
 
 **Plugin validation (Claude Code only):** If running in a Claude Code environment, run `claude plugin validate` (or `/plugin validate` in a session) to verify `plugin.json` schema, skill/agent/command frontmatter, and `hooks/hooks.json` validity. Skip this step on other platforms — the inspector agent covers equivalent structural checks.
 
-**Full audit:** Invoke `bundles-forge:auditing` (preferred — includes qualitative assessment via auditor subagent with 10-category scoring). Fallback: `python scripts/audit_project.py <project-root>` (automated checks only, no qualitative scoring).
+**Full audit:** Invoke `bundles-forge:auditing` (preferred — includes qualitative assessment via auditor subagent with 10-category scoring). Fallback: `python skills/auditing/scripts/audit_project.py <project-root>` (automated checks only, no qualitative scoring).
 
 If audit status is FAIL, resolve critical issues before releasing. If security findings are critical, block the release.
 
@@ -216,7 +216,7 @@ Help the user choose the right version increment:
 Pre-release versions follow semver pre-release syntax. The bump script accepts any valid version string — pre-release versions work the same as stable ones across all manifests.
 
 ```bash
-python scripts/bump_version.py <new-version>
+python skills/releasing/scripts/bump_version.py <new-version>
 ```
 
 This updates all declared files and runs an audit to catch any missed files.
@@ -252,9 +252,9 @@ This updates all declared files and runs an audit to catch any missed files.
 After all changes, re-run verification to confirm nothing broke:
 
 ```bash
-python scripts/bump_version.py --check   # No drift
-python scripts/bump_version.py --audit   # No stray versions
-python scripts/check_docs.py .           # Documentation consistent
+python skills/releasing/scripts/bump_version.py --check   # No drift
+python skills/releasing/scripts/bump_version.py --audit   # No stray versions
+python skills/auditing/scripts/check_docs.py .           # Documentation consistent
 ```
 
 ### Step 7: Publish
@@ -300,9 +300,9 @@ For urgent fixes between planned releases:
 When setting up version infrastructure for the first time:
 
 1. Create `.version-bump.json` with entries for all version-bearing manifests
-2. Create `scripts/bump_version.py` (from scaffold templates)
-3. Run `python scripts/bump_version.py --check` to verify initial sync
-4. Run `python scripts/bump_version.py --audit` to catch any missed files
+2. Create `skills/releasing/scripts/bump_version.py` (from scaffold templates)
+3. Run `python skills/releasing/scripts/bump_version.py --check` to verify initial sync
+4. Run `python skills/releasing/scripts/bump_version.py --audit` to catch any missed files
 
 ## Distribution Strategy
 

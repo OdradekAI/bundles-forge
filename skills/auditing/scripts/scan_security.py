@@ -15,8 +15,8 @@ Each rule has a confidence level:
     decisions on whether to block on suspicious findings.
 
 Usage:
-    python scripts/scan_security.py [project-root]
-    python scripts/scan_security.py --json [project-root]
+    python scan_security.py [project-root]
+    python scan_security.py --json [project-root]
 
 Exit codes: 0 = clean, 1 = warnings only, 2 = critical findings
            (both deterministic and suspicious findings affect exit codes)

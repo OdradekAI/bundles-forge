@@ -6,9 +6,9 @@ Reads .version-bump.json and bumps version numbers across all declared
 files, detects drift, and audits for undeclared version strings.
 
 Usage:
-    python scripts/bump_version.py <new-version>
-    python scripts/bump_version.py --check
-    python scripts/bump_version.py --audit
+    python skills/releasing/scripts/bump_version.py [project-root] <new-version>
+    python skills/releasing/scripts/bump_version.py [project-root] --check
+    python skills/releasing/scripts/bump_version.py [project-root] --audit
 
 Exit codes: 0 = in sync, 1 = drift or undeclared files found
 """
@@ -240,8 +240,10 @@ def cmd_bump(repo_root, new_version, dry_run=False):
 def main():
     parser = argparse.ArgumentParser(
         description="Version synchronization tool for bundle-plugins.")
-    parser.add_argument("command", nargs="?", default=None,
-                        help="New version (X.Y.Z), --check, or --audit")
+    parser.add_argument("project_root", nargs="?", default=".",
+                        help="Bundle-plugin project root (default: current directory)")
+    parser.add_argument("version", nargs="?", default=None,
+                        help="New version (X.Y.Z) for bump mode")
     parser.add_argument("--check", action="store_true",
                         help="Report current versions (detect drift)")
     parser.add_argument("--audit", action="store_true",
@@ -250,8 +252,11 @@ def main():
                         help="Preview version bump without writing files")
     args = parser.parse_args()
 
-    script_dir = Path(__file__).resolve().parent
-    repo_root = script_dir.parent
+    if SEMVER_RE.match(args.project_root) and args.version is None:
+        args.version = args.project_root
+        args.project_root = "."
+
+    repo_root = Path(args.project_root).resolve()
 
     if args.check:
         has_drift = cmd_check(repo_root)
@@ -259,11 +264,8 @@ def main():
     elif args.audit:
         has_issues = cmd_audit(repo_root)
         sys.exit(1 if has_issues else 0)
-    elif args.command:
-        if args.command.startswith("--"):
-            print(f"error: unknown flag '{args.command}'", file=sys.stderr)
-            sys.exit(1)
-        cmd_bump(repo_root, args.command, dry_run=args.dry_run)
+    elif args.version:
+        cmd_bump(repo_root, args.version, dry_run=args.dry_run)
     else:
         parser.print_help()
 

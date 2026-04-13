@@ -9,8 +9,8 @@ combined project health report.
 For agent-authored rich reports, see skills/auditing/references/report-template.md.
 
 Usage:
-    python scripts/audit_project.py [project-root]
-    python scripts/audit_project.py --json [project-root]
+    python audit_project.py [project-root]
+    python audit_project.py --json [project-root]
 
 Exit codes: 0 = pass, 1 = warnings, 2 = critical findings
 """
@@ -20,8 +20,11 @@ import sys
 from pathlib import Path
 
 _SCRIPT_DIR = Path(__file__).resolve().parent
+_RELEASING_DIR = _SCRIPT_DIR.parent.parent.parent / "skills" / "releasing" / "scripts"
 if str(_SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR))
+if str(_RELEASING_DIR) not in sys.path:
+    sys.path.insert(0, str(_RELEASING_DIR))
 
 import audit_workflow
 import bump_version
@@ -87,7 +90,7 @@ def compute_weighted_average(scores):
 def check_structure(root):
     """Directory layout and required files."""
     findings = []
-    required_dirs = ["skills", "hooks", "scripts"]
+    required_dirs = ["skills", "hooks"]
 
     for d in required_dirs:
         if not (root / d).is_dir():
@@ -195,10 +198,10 @@ def check_version_sync(root):
         findings.append(dict(check="V3", severity="critical",
                              message=f"Version drift detected: {drift}"))
 
-    bump_script = root / "scripts" / "bump_version.py"
+    bump_script = root / "scripts" / "bump-version.sh"
     if not bump_script.exists():
         findings.append(dict(check="V4", severity="info",
-                             message="Missing scripts/bump_version.py"))
+                             message="Missing scripts/bump-version.sh"))
 
     return findings
 

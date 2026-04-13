@@ -78,7 +78,7 @@ Declares every file containing the project version, plus audit exclusions:
       "node_modules",
       ".git",
       ".version-bump.json",
-      "scripts/bump_version.py"
+      "skills/releasing/scripts/bump_version.py"
     ]
   }
 }
@@ -306,16 +306,18 @@ Markdown files used as prompts when dispatching subagents. Referenced by skills 
 
 Markdown files that define slash commands for platforms that support them (Cursor). Each file is one command.
 
-## `scripts/` — Project Tooling
+## `skills/releasing/scripts/` — Version tooling
 
 ### `bump_version.py`
 
 Version synchronization tool. Reads `.version-bump.json` and provides:
-- `python scripts/bump_version.py <version>` — update all declared files
-- `python scripts/bump_version.py --check` — detect drift between files
-- `python scripts/bump_version.py --audit` — check + scan repo for undeclared version strings
+- `python skills/releasing/scripts/bump_version.py <version>` — update all declared files
+- `python skills/releasing/scripts/bump_version.py --check` — detect drift between files
+- `python skills/releasing/scripts/bump_version.py --audit` — check + scan repo for undeclared version strings
 
 Requires Python 3.
+
+Audit and documentation scripts live under `skills/auditing/scripts/` (for example `audit_project.py`, `audit_skill.py`, `scan_security.py`).
 
 ## `tests/` — Integration Tests
 

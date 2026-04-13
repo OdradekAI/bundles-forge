@@ -38,7 +38,7 @@ The auditor agent (or inline auditor) may adjust the baseline by **±2 points** 
 <!-- BEGIN:structure -->
 | Check | Severity | Criteria | Automation |
 |-------|----------|----------|------------|
-| S1 | Critical | `skills/`, `hooks/`, `scripts/` directories exist | `audit_project.py` |
+| S1 | Critical | `skills/` and `hooks/` directories exist | `audit_project.py` |
 | S2 | Warning | At least one platform manifest directory present | `audit_project.py` |
 | S3 | Warning | `.gitignore` exists | `audit_project.py` |
 | S5 | Warning | `README.md` exists | `audit_project.py` |
@@ -87,15 +87,16 @@ Run these checks only for platforms the project claims to support.
 | V1 | Critical | `.version-bump.json` exists and is valid | `audit_project.py` |
 | V2 | Warning | All files listed in `.version-bump.json` actually exist | `audit_project.py` |
 | V3 | Critical | All listed files have the same version string (no drift) | `audit_project.py` |
-| V4 | Info | `scripts/bump_version.py` exists | `audit_project.py` |
+| V4 | Info | `scripts/bump-version.sh` wrapper exists | `audit_project.py` |
 | V5 | Warning | Every platform manifest is listed in `.version-bump.json` | `agent-only` |
-| V6 | Info | `python scripts/bump_version.py --check` exits 0 | `agent-only` |
-| V7 | Info | `python scripts/bump_version.py --audit` finds no undeclared version strings | `agent-only` |
+| V6 | Info | `python skills/releasing/scripts/bump_version.py --check` exits 0 | `agent-only` |
+| V7 | Info | `python skills/releasing/scripts/bump_version.py --audit` finds no undeclared version strings | `agent-only` |
+| V8 | Warning | `skills/scaffolding/assets/scripts/bump_version.py` template is in sync with `skills/releasing/scripts/bump_version.py` source | `agent-only` |
 <!-- END:version_sync -->
 
 **Quick drift check:**
 ```bash
-python scripts/bump_version.py --check
+python skills/releasing/scripts/bump_version.py --check
 ```
 
 ---
@@ -150,9 +151,9 @@ Static link resolution — verifies that references within skill content point t
 2. Verify each `<name>` matches a directory under `skills/`
 3. Extract all relative file references and verify they exist
 4. Scan for prose references to subdirectories and verify they exist
-5. Run `python scripts/audit_skill.py --json` — X1-X3 findings are in per-skill results
+5. Run `python skills/auditing/scripts/audit_skill.py --json` — X1-X3 findings are in per-skill results
 
-**Workflow graph checks** have been moved to a dedicated category. See `references/workflow-checklist.md` and run `python scripts/audit_workflow.py` for workflow-specific analysis.
+**Workflow graph checks** have been moved to a dedicated category. See `references/workflow-checklist.md` and run `python skills/auditing/scripts/audit_workflow.py` for workflow-specific analysis.
 
 ---
 
@@ -216,7 +217,7 @@ Documentation consistency checks — verifies that project docs stay in sync wit
 | D1 | Warning | Skill names in AGENTS.md / CLAUDE.md / README match skills/ directory | `check_docs.py` |
 | D2 | Critical | Cross-references (`project:skill`) in all .md files resolve to existing skills | `check_docs.py` |
 | D3 | Warning | CLAUDE.md Platform Manifests table matches `.version-bump.json` | `check_docs.py` |
-| D4 | Critical | Scripts referenced in CLAUDE.md exist in scripts/ | `check_docs.py` |
+| D4 | Critical | Skill scripts referenced in CLAUDE.md exist at their declared `skills/.../scripts/` paths | `check_docs.py` |
 | D5 | Warning | Agent names in CLAUDE.md match agents/ directory | `check_docs.py` |
 | D6 | Warning | README.md and README.zh.md hard data (skills, agents, commands, links) in sync | `check_docs.py` |
 | D7 | Warning | docs/*.md and docs/*.zh.md pairs have consistent hard data (tables, commands, links) | `check_docs.py` |

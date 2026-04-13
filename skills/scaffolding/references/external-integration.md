@@ -22,8 +22,8 @@ Use CLI when the tool interaction is **stateless and single-shot**: run a comman
 
 | Good fit | Examples |
 |----------|---------|
-| Linting / validation | `python scripts/audit_skill.py` |
-| Version management | `python scripts/bump_version.py` |
+| Linting / validation | `python skills/auditing/scripts/audit_skill.py` |
+| Version management | `python skills/releasing/scripts/bump_version.py` |
 | Data transformation | `jq`, `yq`, format converters |
 | File generation | Template rendering, code generation |
 | Git operations | `git status`, `git diff` |

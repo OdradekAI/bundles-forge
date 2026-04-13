@@ -14,7 +14,7 @@
       ".git",
       ".repos",
       ".version-bump.json",
-      "scripts/bump_version.py"
+      "skills/releasing/scripts/bump_version.py"
     ]
   }
 }

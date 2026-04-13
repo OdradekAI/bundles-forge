@@ -121,7 +121,7 @@ These targets apply to both project optimization and single-skill optimization.
 Run the linter to catch mechanical issues:
 
 ```bash
-python scripts/audit_skill.py <project-root>
+python skills/auditing/scripts/audit_skill.py <project-root>
 ```
 
 Description-specific checks are **Q3-Q7**: missing description (Q3), "Use when..." prefix (Q5), workflow summary anti-pattern (Q6), and length >250 characters (Q7). The full lint suite covers Q1-Q15 and X1-X3 — see Quick Reference for the complete list.
@@ -143,7 +143,7 @@ Every token in a frequently-loaded skill costs context budget across every sessi
 |-----------|---------|
 | Cross-reference instead of repeating | `See bundles-forge:authoring` instead of duplicating rules |
 | One excellent example over three mediocre | Remove redundant examples that teach the same concept |
-| Move flag docs to --help | Reference `python scripts/audit_skill.py --help` instead of listing all flags |
+| Move flag docs to --help | Reference `python skills/auditing/scripts/audit_skill.py --help` instead of listing all flags |
 | Eliminate intra-project redundancy | Don't repeat what's in another skill's `references/` |
 
 ### Target 3: Progressive Disclosure
@@ -165,14 +165,14 @@ The three-level loading system ensures minimal context usage:
 
 Consumes workflow audit findings to identify and fix workflow issues. The workflow audit has two layers:
 
-- **Script-automated (W1-W9):** Static graph analysis and semantic checks — run via `python scripts/audit_workflow.py`
+- **Script-automated (W1-W9):** Static graph analysis and semantic checks — run via `python skills/auditing/scripts/audit_workflow.py`
 - **Evaluator-only (W10-W11):** Chain evaluation and behavioral verification — requires `evaluator` agent dispatch
 
 If no workflow report is available:
 
 ```bash
-python scripts/audit_workflow.py <project-root>
-python scripts/audit_workflow.py --focus-skills skill-a,skill-b <root>
+python skills/auditing/scripts/audit_workflow.py <project-root>
+python skills/auditing/scripts/audit_workflow.py --focus-skills skill-a,skill-b <root>
 ```
 
 **Fix priority guide:**
@@ -439,11 +439,11 @@ Yes. Pass a GitHub URL directly — the skill performs a shallow clone automatic
 ### Scripts
 
 ```bash
-python scripts/audit_skill.py <path>                        # Quality lint (Q1-Q15, X1-X3)
-python scripts/audit_skill.py <skill-dir>                   # Single skill audit (4 categories)
-python scripts/audit_workflow.py <path>                      # Workflow audit (W1-W9, script-automated)
-python scripts/audit_workflow.py --focus-skills a,b <path>   # Focused workflow audit
-python scripts/scan_security.py <path>                       # Security scan (7 surfaces)
+python skills/auditing/scripts/audit_skill.py <path>                        # Quality lint (Q1-Q15, X1-X3)
+python skills/auditing/scripts/audit_skill.py <skill-dir>                   # Single skill audit (4 categories)
+python skills/auditing/scripts/audit_workflow.py <path>                      # Workflow audit (W1-W9, script-automated)
+python skills/auditing/scripts/audit_workflow.py --focus-skills a,b <path>   # Focused workflow audit
+python skills/auditing/scripts/scan_security.py <path>                       # Security scan (7 surfaces)
 ```
 
 W10-W11 (chain evaluation and behavioral verification) require `evaluator` agent dispatch and are not produced by the script.

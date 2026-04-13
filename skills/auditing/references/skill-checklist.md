@@ -91,7 +91,7 @@ Static link resolution within the skill content.
 2. Verify each `<name>` matches a directory under `skills/`
 3. Extract all relative file references and verify they exist
 4. Scan for prose references to subdirectories and verify they exist
-5. Run `python scripts/audit_skill.py <skill-directory>` — results include X1-X3 findings
+5. Run `python skills/auditing/scripts/audit_skill.py <skill-directory>` — results include X1-X3 findings
 
 ---
 

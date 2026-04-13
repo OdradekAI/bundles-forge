@@ -2,7 +2,7 @@
 
 Three-layer report for single skill audits (auto-detected by scope). Lighter than the full project template — no Risk Matrix, Methodology, or Appendix as separate layers. Evidence is inline in each finding; scope and tools are captured in the Skill Profile.
 
-This template is for **agent-authored reports** (dispatched via `agents/auditor.md`). For CLI/CI summary output, use `scripts/audit_skill.py` (produces compact Markdown or JSON).
+This template is for **agent-authored reports** (dispatched via `agents/auditor.md`). For CLI/CI summary output, use `skills/auditing/scripts/audit_skill.py` (produces compact Markdown or JSON).
 
 For full project audits (10 categories), use `references/report-template.md` instead.
 
@@ -192,8 +192,8 @@ python: "<version>"
 
 | Tool | Purpose |
 |------|---------|
-| `audit_skill.py` | Frontmatter validation, description conventions, cross-reference resolution |
-| `scan_security.py` | Security pattern scanning on SKILL.md content |
+| `skills/auditing/scripts/audit_skill.py` | Frontmatter validation, description conventions, cross-reference resolution |
+| `skills/auditing/scripts/scan_security.py` | Security pattern scanning on SKILL.md content |
 | Manual/AI review | Qualitative assessment of instruction clarity, description anti-patterns |
 
 ### Out of Scope
