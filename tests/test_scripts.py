@@ -340,5 +340,138 @@ class TestGenerateChecklists(unittest.TestCase):
                          f"Checklist drift detected:\n{result.stdout}\n{result.stderr}")
 
 
+class TestSecurityScannerRefinements(unittest.TestCase):
+    """Tests for audit_security.py false-positive reduction (v1.7.0 fixes)."""
+
+    @classmethod
+    def setUpClass(cls):
+        sys.path.insert(0, str(AUDITING_SCRIPTS))
+        import audit_security
+        cls.mod = audit_security
+
+    def test_classify_file_skill_reference(self):
+        """references/*.md classified as skill_reference, not skill_content."""
+        from pathlib import PurePosixPath
+        rel = PurePosixPath("skills/scaffolding/references/external-integration.md")
+        self.assertEqual(self.mod.classify_file(rel), "skill_reference")
+
+    def test_classify_file_skill_content_unchanged(self):
+        """SKILL.md still classified as skill_content."""
+        from pathlib import PurePosixPath
+        rel = PurePosixPath("skills/scaffolding/SKILL.md")
+        self.assertEqual(self.mod.classify_file(rel), "skill_content")
+
+    def test_reference_sc1_downgraded_to_warning(self):
+        """SC1 in SKILL_REFERENCE_RULES has risk=warning, not critical."""
+        sc1_rules = [r for r in self.mod.SKILL_REFERENCE_RULES if r[0] == "SC1"]
+        self.assertTrue(len(sc1_rules) > 0)
+        for cid, risk, _pat, _desc, _conf in sc1_rules:
+            self.assertEqual(risk, "warning",
+                             f"SC1 in skill_reference should be warning, got {risk}")
+
+    def test_reference_sc2_downgraded_to_warning(self):
+        """SC2 in SKILL_REFERENCE_RULES has risk=warning, not critical."""
+        sc2_rules = [r for r in self.mod.SKILL_REFERENCE_RULES if r[0] == "SC2"]
+        self.assertTrue(len(sc2_rules) > 0)
+        for cid, risk, _pat, _desc, _conf in sc2_rules:
+            self.assertEqual(risk, "warning",
+                             f"SC2 in skill_reference should be warning, got {risk}")
+
+    def test_hk4_skips_without_network_imports(self):
+        """HK4 does not fire when file has no network library imports."""
+        import tempfile, os
+        content = '#!/usr/bin/env python3\n"""Hook for the host IDE."""\nprint("ok")\n'
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False,
+                                         encoding="utf-8") as f:
+            f.write(content)
+            f.flush()
+            tmp_path = Path(f.name)
+        try:
+            findings = self.mod.scan_file(tmp_path, Path("hooks/test.py"), "hook_script")
+            hk4 = [f for f in findings if f["check_id"] == "HK4"]
+            self.assertEqual(hk4, [], "HK4 should not fire without network imports")
+        finally:
+            os.unlink(tmp_path)
+
+    def test_hk4_fires_with_network_imports(self):
+        """HK4 fires when file has network imports and DNS command."""
+        import tempfile, os
+        content = '#!/usr/bin/env python3\nimport socket\nhost lookup\n'
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False,
+                                         encoding="utf-8") as f:
+            f.write(content)
+            f.flush()
+            tmp_path = Path(f.name)
+        try:
+            findings = self.mod.scan_file(tmp_path, Path("hooks/test.py"), "hook_script")
+            hk4 = [f for f in findings if f["check_id"] == "HK4"]
+            self.assertGreater(len(hk4), 0, "HK4 should fire with network imports present")
+        finally:
+            os.unlink(tmp_path)
+
+    def test_sc12_skips_in_code_fence(self):
+        """SC12 does not fire inside markdown code fences."""
+        import tempfile, os
+        content = (
+            "---\nname: test\n---\n# Test\n"
+            "```python\n"
+            'tags = "<EXTREMELY_IMPORTANT>"\n'
+            "```\n"
+        )
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False,
+                                         encoding="utf-8") as f:
+            f.write(content)
+            f.flush()
+            tmp_path = Path(f.name)
+        try:
+            findings = self.mod.scan_file(tmp_path, Path("skills/test/SKILL.md"),
+                                          "skill_content")
+            sc12 = [f for f in findings if f["check_id"] == "SC12"]
+            self.assertEqual(sc12, [], "SC12 should not fire inside code fences")
+        finally:
+            os.unlink(tmp_path)
+
+    def test_sc12_skips_inline_backtick(self):
+        """SC12 does not fire when wrapped in inline backticks."""
+        import tempfile, os
+        content = (
+            "---\nname: test\n---\n# Test\n"
+            "Wraps in `<EXTREMELY_IMPORTANT>` tags\n"
+        )
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False,
+                                         encoding="utf-8") as f:
+            f.write(content)
+            f.flush()
+            tmp_path = Path(f.name)
+        try:
+            findings = self.mod.scan_file(tmp_path, Path("skills/test/SKILL.md"),
+                                          "skill_content")
+            sc12 = [f for f in findings if f["check_id"] == "SC12"]
+            self.assertEqual(sc12, [], "SC12 should not fire for backtick-wrapped refs")
+        finally:
+            os.unlink(tmp_path)
+
+    def test_sc12_fires_outside_code_fence(self):
+        """SC12 still fires for bare EXTREMELY_IMPORTANT outside code fences."""
+        import tempfile, os
+        content = (
+            "---\nname: test\n---\n# Test\n"
+            "<EXTREMELY_IMPORTANT>\n"
+        )
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False,
+                                         encoding="utf-8") as f:
+            f.write(content)
+            f.flush()
+            tmp_path = Path(f.name)
+        try:
+            findings = self.mod.scan_file(tmp_path, Path("skills/test/SKILL.md"),
+                                          "skill_content")
+            sc12 = [f for f in findings if f["check_id"] == "SC12"]
+            self.assertGreater(len(sc12), 0,
+                               "SC12 should fire for bare EXTREMELY_IMPORTANT")
+        finally:
+            os.unlink(tmp_path)
+
+
 if __name__ == "__main__":
     unittest.main()

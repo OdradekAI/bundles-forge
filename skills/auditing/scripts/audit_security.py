@@ -77,6 +77,11 @@ SKILL_CONTENT_RULES = _compile([
     ("SC15", "info", None, "Excessively long line (>500 chars)", _SUS),
 ])
 
+SKILL_REFERENCE_RULES = [
+    (cid, "warning" if cid in ("SC1", "SC2") else risk, pat, desc, conf)
+    for cid, risk, pat, desc, conf in SKILL_CONTENT_RULES
+]
+
 HOOK_RULES = _compile([
     ("HK1", "critical", r"\b(curl|wget|nc|ncat|telnet)\b",
      "Network command in hook script", _DET),
@@ -167,6 +172,16 @@ _USER_PRIORITY_CONTEXT_RE = re.compile(
     re.IGNORECASE,
 )
 
+_NETWORK_IMPORT_RE = re.compile(
+    r"\b(?:import\s+(?:socket|urllib|requests|httpx|dns|http\.client)"
+    r"|from\s+(?:socket|urllib|requests|httpx|dns|http\.client)\s+import)",
+    re.IGNORECASE,
+)
+
+_INLINE_BACKTICK_EXTREMELY_RE = re.compile(
+    r"`[^`]*EXTREMELY.?IMPORTANT[^`]*`"
+)
+
 SCRIPT_RULES = _compile([
     ("BS1", "critical", r"\b(curl|wget)\b",
      "Network calls in bundled script", _DET),
@@ -215,7 +230,7 @@ def classify_file(rel_path):
     if "skills" in parts and "references" in parts and name.endswith(".md"):
         if "auditing" in parts:
             return None
-        return "skill_content"
+        return "skill_reference"
     return None
 
 # ---------------------------------------------------------------------------
@@ -310,6 +325,7 @@ def scan_file(path, rel_path, file_type):
 
     rule_map = {
         "skill_content": SKILL_CONTENT_RULES,
+        "skill_reference": SKILL_REFERENCE_RULES,
         "hook_script": HOOK_RULES,
         "opencode_plugin": OPENCODE_RULES,
         "agent_prompt": AGENT_RULES,
@@ -325,10 +341,16 @@ def scan_file(path, rel_path, file_type):
     lines = content.splitlines()
     findings = []
     has_pipefail = "set -euo pipefail" in content
+    has_network_imports = bool(_NETWORK_IMPORT_RE.search(content))
+    in_code_fence = False
 
     for line_num, line in enumerate(lines, 1):
+        stripped_line = line.strip()
+        if stripped_line.startswith("```"):
+            in_code_fence = not in_code_fence
+
         # SC13: Unicode control characters
-        if file_type == "skill_content":
+        if file_type in ("skill_content", "skill_reference"):
             for ch in line:
                 cp = ord(ch)
                 if cp in (0x200B, 0x200C, 0x200D, 0xFEFF,
@@ -339,7 +361,7 @@ def scan_file(path, rel_path, file_type):
                         confidence=_DET))
 
         # SC15: long lines
-        if file_type == "skill_content" and len(line) > 500:
+        if file_type in ("skill_content", "skill_reference") and len(line) > 500:
             findings.append(dict(
                 check_id="SC15", risk="info", line=line_num,
                 description=f"Line length {len(line)} chars",
@@ -372,7 +394,13 @@ def scan_file(path, rel_path, file_type):
                     continue
                 if check_id == "SC11" and _USER_PRIORITY_CONTEXT_RE.search(line):
                     continue
+                if check_id == "HK4" and not has_network_imports:
+                    continue
                 if check_id == "SC12" and "using-" in str(rel_path):
+                    continue
+                if check_id == "SC12" and in_code_fence:
+                    continue
+                if check_id == "SC12" and "`" in line and _INLINE_BACKTICK_EXTREMELY_RE.search(line):
                     continue
                 findings.append(dict(
                     check_id=check_id, risk=risk, line=line_num,
