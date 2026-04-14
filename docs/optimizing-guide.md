@@ -60,6 +60,8 @@ Are you optimizing an entire project or a single skill?
 | GitHub subdirectory URL | Clone repo, extract subdirectory |
 | Zip/tar.gz file path | Extract to temp directory |
 
+Remote sources (GitHub URLs, archives) are cloned or downloaded without executing hooks or scripts — the skill scans for risks before running any project code.
+
 If download fails, the skill reports the error and suggests alternatives (provide a local path or zip file).
 
 ### Input Sources
@@ -91,6 +93,20 @@ optimizing diagnoses → delegates content edits to authoring → verifies via a
 2. Review the report — prioritize critical findings.
 3. Run `bundles-forge:optimizing` with the audit report (or your goals). It diagnoses, delegates content work to `bundles-forge:authoring` as needed, applies non-content optimizations per its protocol, and **invokes** `bundles-forge:auditing` for post-change verification (**optimizing** triggers this step — auditing does not auto-start optimizing).
 4. Review the verification report — if issues remain, decide manually whether to run another optimizing or authoring pass.
+
+### Target Routing
+
+Select targets based on audit findings or user request — don't run all 8 sequentially:
+
+| Finding / Signal | Target |
+|------------------|--------|
+| Q-findings (description anti-patterns, frontmatter issues) | Target 1, 2, 3 |
+| W-findings (workflow integrity issues) | Target 4 |
+| Platform gaps identified | Target 5 |
+| Security findings (SC/AG checks) | Target 6 |
+| User requests adding/replacing/reorganizing skills | Target 7 |
+| Component signals (userConfig, MCP, LSP needs) | Target 8 |
+| User behavioral feedback about skill quality | Feedback Iteration |
 
 ---
 
@@ -346,7 +362,7 @@ The user chooses which fallback to use.
 
 ## Feedback Iteration
 
-When a user reports that a skill triggered but produced wrong results, the feedback process provides structured iteration.
+A cross-cutting concern available in both project and skill optimization modes. When a user reports that a skill triggered but produced wrong results, the feedback process provides structured iteration.
 
 ### Feedback Classification
 

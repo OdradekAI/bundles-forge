@@ -1,7 +1,7 @@
 ---
 name: optimizing
 description: "Use when optimizing a bundle-plugin or single skill — improving descriptions, reducing tokens, fixing audit findings, restructuring workflows, adding skills to fill gaps, or iterating on user feedback"
-allowed-tools: Python(skills/auditing/scripts/audit_skill.py *)
+allowed-tools: Python(skills/auditing/scripts/*)
 ---
 
 # Optimizing Bundle-Plugins
@@ -11,6 +11,8 @@ allowed-tools: Python(skills/auditing/scripts/audit_skill.py *)
 Orchestrate targeted improvement of a bundle-plugin project or a single skill. Unlike a full audit, optimization focuses on goals: better triggering, lower token cost, tighter workflow chains, and feedback-driven skill refinement. This skill diagnoses issues, decides on improvements, and delegates content changes to `bundles-forge:authoring`.
 
 **Core principle:** Optimize for the agent's experience. Diagnose → decide → delegate → verify.
+
+**Skill type:** Hybrid — follow the execution flow rigidly (diagnose → decide → delegate → verify), but select targets and adapt execution strategies flexibly based on audit findings and user goals.
 
 **Announce at start:** "I'm using the optimizing skill to improve [this project / this skill]."
 
@@ -24,10 +26,12 @@ The target can be a local path, a GitHub URL, or a zip file. Normalize the input
 |-------|--------|
 | Local directory path | Use directly |
 | Local SKILL.md file path | Use its parent directory |
-| GitHub repo URL (`https://github.com/user/repo`) | `git clone --depth 1` to temp dir |
+| GitHub repo URL (`https://github.com/user/repo`) | `git clone --depth 1 --no-checkout` to temp dir, then `git checkout` |
 | GitHub subdirectory URL (`…/tree/main/skills/xxx`) | Clone repo (shallow), extract the subdirectory path |
 | Zip/tar.gz file path | Extract to temp directory |
 | GitHub release/archive URL (`.zip`/`.tar.gz`) | Download, then extract to temp directory |
+
+**Security rule for remote sources:** Always clone/download without executing hooks or scripts. Use `--no-checkout` + selective `git checkout`, or extract archives without running post-install scripts.
 
 **If clone/download fails:** Tell the user what failed (network error, 404, auth required, rate limit) and suggest alternatives — provide the repo as a local path or zip file. Do not silently skip or proceed with partial data.
 
@@ -46,6 +50,27 @@ After normalization, determine the scope from the resolved local path:
 ---
 
 ## Project Optimization
+
+### Process
+
+1. **Identify target** — what specifically needs improvement?
+2. **Measure current state** — run Script-Assisted Checks, consume audit findings
+3. **Apply improvement** — delegate changes to the appropriate target below
+4. **Verify** — did it actually improve? For descriptions: create test prompts, verify triggering before and after
+
+### Target Routing
+
+Select targets based on audit findings or user request — don't run all 8 sequentially:
+
+| Finding / Signal | Target |
+|------------------|--------|
+| Q-findings (description anti-patterns, frontmatter issues) | Target 1, 2, 3 |
+| W-findings (workflow integrity issues) | Target 4 |
+| Platform gaps identified | Target 5 |
+| Security findings (SC/AG checks) | Target 6 |
+| User requests adding/replacing/reorganizing skills | Target 7 |
+| Component signals (userConfig, MCP, LSP needs) | Target 8 |
+| User behavioral feedback about skill quality | Feedback Iteration |
 
 ### Script-Assisted Checks
 
@@ -97,19 +122,6 @@ When optimizing a description, never overwrite the original blindly. Use a copy-
 
 **When to skip A/B eval:** If the change is purely additive (adding triggering conditions that were previously missing) and doesn't modify existing trigger phrases, a simple verification pass is sufficient.
 
-### Chain A/B Eval
-
-When optimizing workflow transitions (Target 4), use chain evaluation to verify end-to-end quality:
-
-1. Define a realistic end-to-end scenario (e.g. "design and scaffold a new bundle-plugin")
-2. Dispatch `evaluator` agent (`agents/evaluator.md`) with label "chain" and the ordered skill list
-3. Review transition quality ratings — focus on "broken" handoffs
-4. Address broken handoffs by improving `## Inputs` / `## Outputs` declarations in the affected skills
-
-**When to use chain eval:** After modifying Inputs/Outputs sections, adding new skills to a workflow chain, or when audit findings indicate workflow integrity issues (G1-G4).
-
-**If subagent dispatch is unavailable:** Read `agents/evaluator.md` and follow its Chain Evaluation protocol inline within this conversation. Note that chain eval is sequential by nature (it traces a pipeline), so ordering bias is not a concern here.
-
 ### Target 2: Token Efficiency
 
 > **Canonical source:** Token budgets are defined in `bundles-forge:authoring` (Token Efficiency section).
@@ -148,7 +160,16 @@ python skills/auditing/scripts/audit_workflow.py --focus-skills skill-a,skill-b 
 | W9 (empty/placeholder sections) | Write meaningful semantic descriptions for each artifact in Inputs/Outputs |
 | W10 (asymmetric integration) | Ensure `**Calls:**` and `**Called by:**` declarations are symmetric across connected skills |
 
-**After fixes:** Use Chain A/B Eval (W11) to verify end-to-end handoff quality — dispatch `evaluator` agent with label "chain" and the ordered skill list. Focus on "broken" handoffs. First-time diagnosis should come from the Workflow audit; Chain Eval here is the post-fix verification step.
+**After fixes — Chain A/B Eval:**
+
+Use chain evaluation to verify end-to-end handoff quality after workflow changes. Follow the same dispatch and fallback pattern as Description A/B Eval, with these differences:
+
+1. Define a realistic end-to-end scenario (e.g. "design and scaffold a new bundle-plugin")
+2. Dispatch `evaluator` with label "chain" and the ordered skill list
+3. Review transition quality ratings — focus on "broken" handoffs
+4. Address broken handoffs by improving `## Inputs` / `## Outputs` declarations
+
+**When to use:** After modifying Inputs/Outputs sections, adding new skills to a workflow chain, or when audit findings indicate workflow integrity issues (G1-G4). Chain eval is sequential by nature (traces a pipeline), so ordering bias is not a concern.
 
 ### Target 5: Platform Coverage (project only)
 
@@ -165,7 +186,13 @@ Fix security findings from `bundles-forge:auditing` Category 10.
 - Ensure agent prompts include scope constraints
 - Strip encoding tricks or obfuscated content from SKILL.md files
 
-**Process:** Run `bundles-forge:auditing` first, then address security findings by priority — critical before warnings, warnings before info.
+**Process:** Run security scan first, then address findings by priority — critical before warnings, warnings before info:
+
+```bash
+python skills/auditing/scripts/audit_security.py <project-root>
+```
+
+Alternatively, invoke `bundles-forge:auditing` for a full audit that includes security (Category 10).
 
 ### Target 7: Skill & Workflow Restructuring (project only)
 
@@ -247,15 +274,6 @@ Add, adjust, or migrate optional plugin components based on evolving project nee
 
 **Verification** — after scaffolding completes, run `bundles-forge:auditing` to confirm structural integrity and security compliance (especially for new MCP servers and userConfig sensitive values).
 
-### Project Process
-
-1. **Identify target** — what specifically needs improvement?
-2. **Measure current state** — how does it perform now?
-3. **Apply improvement** — make the change
-4. **Verify** — did it actually improve?
-
-For description optimization specifically: create test prompts, verify triggering before and after.
-
 ---
 
 ## Skill Optimization (Lightweight Mode)
@@ -278,15 +296,12 @@ When the target is a single skill, run only the targets that apply at skill scop
 
 ### Skill Process
 
-```
-Read target skill
-  → Consume `skill-report` if available (or extract per-skill findings from `audit-report`)
-  → Determine goal: engineering optimization or feedback iteration?
-  → Engineering: diagnose applicable targets (1-4, partial 6)
-  → Feedback: run feedback process (below)
-  → Delegate content changes to bundles-forge:authoring
-  → Run bundles-forge:auditing (skill mode) for verification
-```
+1. **Read target skill** — consume `skill-report` if available (or extract per-skill findings from `audit-report`)
+2. **Determine goal** — engineering optimization or feedback iteration?
+3. **Engineering path:** diagnose applicable targets (1-4, partial 6)
+4. **Feedback path:** run the Feedback Iteration process (below)
+5. **Delegate** content changes to `bundles-forge:authoring`
+6. **Verify** — run `bundles-forge:auditing` (skill mode) for post-change verification
 
 ### Script Shortcuts
 
@@ -298,7 +313,7 @@ python skills/auditing/scripts/audit_skill.py <skill-directory>     # quality ch
 
 ## Feedback Iteration
 
-Process user feedback about a specific skill's behavior or output quality. Use this when a user reports that a skill triggered but produced wrong results, skipped steps, or needs better wording. Works in both project and skill scope.
+Process user feedback about a specific skill's behavior or output quality. This is a cross-cutting concern — available in both project and skill optimization modes. Use this when a user reports that a skill triggered but produced wrong results, skipped steps, or needs better wording.
 
 ### Classify the Feedback
 
@@ -334,21 +349,11 @@ Receive feedback
 
 ### A/B Eval for Feedback Changes
 
-After applying changes to the copy, verify with a parallel comparison:
+Follow the same dispatch and fallback pattern as Description A/B Eval (Target 1), with these differences:
 
-```
-1. Identify the specific scenario from the user's feedback (the input that produced wrong results)
-2. Dispatch two `evaluator` agents (`agents/evaluator.md`) in parallel:
-   - Evaluator A: label "original", follows the ORIGINAL skill → processes the scenario
-   - Evaluator B: label "optimized", follows the OPTIMIZED skill → processes the scenario
-3. Compare outputs side-by-side
-4. Present to user: "Original produced X, optimized produced Y — which is better?"
-5. User decides → adopt or discard
-```
-
-**When to skip A/B eval:** If the feedback is about structural issues (missing section, wrong heading level, broken reference) rather than behavioral differences, a simple verification pass is sufficient — no need for subagent comparison.
-
-**If subagent dispatch is unavailable:** Same fallback as description A/B eval — read `agents/evaluator.md` for the execution protocol, then ask the user to choose sequential inline (randomized order) or skip A/B.
+- **Test scenario:** Use the specific scenario from the user's feedback (the input that produced wrong results), not synthetic test prompts
+- **What to compare:** Output quality and behavioral correctness, not triggering accuracy
+- **When to skip:** If the feedback is about structural issues (missing section, wrong heading level, broken reference) rather than behavioral differences, a simple verification pass is sufficient
 
 **Rules:**
 - Never apply feedback without user confirmation of the improvement plan
