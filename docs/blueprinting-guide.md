@@ -112,7 +112,7 @@ Questions 4a, 5, 6, and 7 are only asked in **adaptive mode**. Quick mode skips 
 |---|---|---|
 | **Use when** | Bundling standalone skills for distribution | Building an orchestrated workflow |
 | **Needs exploration** | 2 questions (problem + users) | 5 questions (full needs exploration) |
-| **Architecture depth** | 3 questions (name, platforms, skills) | 8+ questions with conditional follow-ups |
+| **Architecture depth** | 5 steps (assumptions, mode, name, platforms, skills) | 8+ questions with conditional follow-ups |
 | **Default platform** | Claude Code only | User-selected |
 | **Bootstrap** | Skipped (not needed) | Recommended for 3+ skills |
 | **Commands** | Not generated | Entry-point skills get matching commands |

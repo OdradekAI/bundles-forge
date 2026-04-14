@@ -99,7 +99,7 @@ bundles-forge audit-skill <project-root>        # markdown report
 bundles-forge audit-skill --json <project-root>  # machine-readable
 ```
 
-The linter automates checks Q1-Q12 and X1-X2 from the skill quality ruleset. Focus manual effort on the subjective targets below.
+The linter automates checks Q1-Q15 and X1-X3 from the skill quality ruleset. Focus manual effort on the subjective targets below.
 
 ### Skill Health Assessment
 
@@ -209,7 +209,7 @@ Use chain evaluation to verify end-to-end handoff quality after workflow changes
 3. Review transition quality ratings — focus on "broken" handoffs
 4. Address broken handoffs by improving `## Inputs` / `## Outputs` declarations
 
-**When to use:** After modifying Inputs/Outputs sections, adding new skills to a workflow chain, or when audit findings indicate workflow integrity issues (G1-G4). Chain eval is sequential by nature (traces a pipeline), so ordering bias is not a concern.
+**When to use:** After modifying Inputs/Outputs sections, adding new skills to a workflow chain, or when audit findings indicate workflow integrity issues (W1-W4). Chain eval is sequential by nature (traces a pipeline), so ordering bias is not a concern.
 
 ### Target 5: Platform Coverage (project only)
 
