@@ -46,14 +46,14 @@ Before writing any content, check whether you're working within an existing bund
 Write skill or agent content from scratch.
 
 1. **Gather requirements** — from `skill-inventory` (blueprinting), user description, or conversation context. Identify: skill purpose, triggering scenarios, expected inputs/outputs, relationship to other skills
-2. **Read writing guide** — load `references/skill-writing-guide.md` for frontmatter reference, description rules, and instruction style guidance
+2. **Load writing guide** — read `references/skill-writing-guide.md` (frontmatter conventions, description rules, instruction style)
 3. **Write frontmatter** — `name` (kebab-case matching directory), `description` (start with "Use when...", under 250 chars, triggering conditions only)
 4. **Write Overview** — 1-3 sentences: what the skill does, core principle, skill type declaration (rigid / flexible / hybrid)
 5. **Write the process** — step-by-step execution flow. Use imperative form. Explain why, not just what. Include at least one concrete example per key instruction
 6. **Write Common Mistakes** — table of pitfalls and fixes (at least 3 entries)
 7. **Write Inputs / Outputs / Integration** — declare artifact IDs, calling relationships, and pairing skills
 8. **Check external dependencies** — if the skill references MCP tools or CLI commands, read `references/skill-writing-guide.md` "External Tool References" section for declaration syntax, fallback patterns, and CLI vs MCP guidance
-9. **Evaluate token budget** — if body exceeds 300 lines, extract heavy sections to `references/`. For agent definitions, read `references/agent-authoring-guide.md` for the different structure
+9. **Evaluate token budget** — if body exceeds 300 lines, extract heavy sections to `references/`
 10. **Run validation** (see Post-Action Validation below)
 
 ## Path 2: Integrate Content
@@ -62,7 +62,7 @@ Adapt an existing/external skill to fit a project's conventions and workflow.
 
 1. **Read the incoming skill** — understand its purpose, triggering scenarios, and current structure
 2. **Read project conventions** (from Step 0) — identify gaps between the incoming skill and project patterns
-3. **Read writing guide** — load `references/skill-writing-guide.md` for the authoritative convention set
+3. **Load writing guide** — read `references/skill-writing-guide.md` (frontmatter conventions, description rules, instruction style)
 4. **Adapt frontmatter** — rewrite `description` to match project style (verb form, scoping), ensure `name` follows project kebab-case convention
 5. **Adapt body structure** — restructure sections to match project patterns (Overview, Process, Common Mistakes, Inputs/Outputs/Integration)
 6. **Wire Integration section** — add cross-references to existing project skills, declare Inputs/Outputs that connect to the project's workflow graph
@@ -76,7 +76,7 @@ Fill in scaffolded skill stubs with substantive content.
 
 1. **Read scaffold structure** — identify which directories and stub files exist
 2. **Read project conventions** (from Step 0) — match the style of already-completed skills
-3. **Read writing guide** — load `references/skill-writing-guide.md` for frontmatter and body conventions
+3. **Load writing guide** — read `references/skill-writing-guide.md` (frontmatter conventions, description rules, instruction style)
 4. **Complete frontmatter** — fill in `description` (triggering conditions, "Use when...", under 250 chars). If `name` is already set, verify it matches directory name
 5. **Write Overview** — core principle + skill type declaration
 6. **Write the process** — step-by-step flow based on the skill's intended purpose from the design document or user context
@@ -94,7 +94,7 @@ Enhance existing in-project content based on user feedback or optimization specs
    - Token budget exceeded → extract to `references/`, cut redundancy
    - Missing sections → add Overview, Common Mistakes, Inputs/Outputs
    - Instruction style issues → reframe directives as reasoning, add examples
-3. **Read writing guide** if needed — load `references/skill-writing-guide.md` for specific convention details
+3. **Load writing guide** if needed — read `references/skill-writing-guide.md` (frontmatter conventions, description rules, instruction style)
 4. **Apply changes** — make targeted improvements. Preserve what works; don't rewrite content that already follows conventions
 5. **Verify Integration section** — ensure cross-references still resolve after changes, artifact IDs match consuming skills
 6. **Run validation** (see Post-Action Validation below)
@@ -104,13 +104,9 @@ Enhance existing in-project content based on user feedback or optimization specs
 After completing any path, validate the authored content:
 
 1. **Run lint** — `python skills/auditing/scripts/audit_skill.py <skill-directory>` on each authored/modified skill
-2. **Review findings:**
-   - **Critical** (Q1-Q3: missing frontmatter/name/description) — fix immediately before delivering
-   - **Warning** (Q4-Q9, Q14, X1-X3: naming conventions, description rules, token budget, tool paths, broken references) — fix if straightforward, otherwise report to the user/caller
-   - **Info** (Q10-Q13, Q15, S9: missing sections, heavy inline content, directory name mismatch) — report as improvement suggestions
+   - **If audit script is unavailable:** review against `references/quality-checklist.md` manually
+2. **Act on findings** — fix Critical immediately, fix Warning if straightforward, report Info as suggestions
 3. **Report results** — tell the user/calling skill what was validated and any remaining warnings
-
-Read `references/quality-checklist.md` for the full check-by-check reference when investigating specific findings.
 
 ## Common Mistakes
 
@@ -150,10 +146,3 @@ Read `references/quality-checklist.md` for the full check-by-check reference whe
 - **bundles-forge:scaffolding** — scaffolding generates directory structure, authoring fills it with content
 - **bundles-forge:auditing** — auditing validates authored content for quality, cross-references, and security
 
-## References
-
-For detailed writing conventions and rules, read the relevant reference on demand:
-
-- **`references/skill-writing-guide.md`** — frontmatter field reference (all 11 fields + Claude Code features like `$ARGUMENTS`, dynamic context injection, skill lifecycle), description writing rules, instruction style, token efficiency, progressive disclosure, skill types, and supporting resource guidance
-- **`references/agent-authoring-guide.md`** — agent definition structure, frontmatter fields, body conventions, agent vs skill differences, fallback patterns
-- **`references/quality-checklist.md`** — Q1-Q15 and X1-X3 lint checks as a self-review checklist during authoring

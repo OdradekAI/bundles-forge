@@ -31,6 +31,8 @@ import bump_version
 import audit_docs
 import audit_security
 import audit_skill
+import _graph
+from _parsing import parse_all_skills
 
 # ---------------------------------------------------------------------------
 # Scoring
@@ -113,22 +115,22 @@ def check_manifests(root):
             try:
                 data = json.loads(fpath.read_text(encoding="utf-8"))
                 if not isinstance(data, dict):
-                    findings.append(dict(check="M1", severity="critical",
+                    findings.append(dict(check="P2", severity="critical",
                                          message=f"{path_str}: not a JSON object"))
                     continue
                 skills_val = data.get("skills", [])
                 if isinstance(skills_val, str):
                     if skills_val and not (root / skills_val).exists():
-                        findings.append(dict(check="M2", severity="critical",
+                        findings.append(dict(check="P3", severity="critical",
                                              message=f"{path_str}: skill path not found: {skills_val}"))
                 elif isinstance(skills_val, list):
                     for entry in skills_val:
                         sp = entry if isinstance(entry, str) else entry.get("path", "")
                         if sp and not (root / sp).exists():
-                            findings.append(dict(check="M2", severity="critical",
+                            findings.append(dict(check="P3", severity="critical",
                                                  message=f"{path_str}: skill path not found: {sp}"))
             except json.JSONDecodeError as e:
-                findings.append(dict(check="M1", severity="critical",
+                findings.append(dict(check="P2", severity="critical",
                                      message=f"{path_str}: invalid JSON — {e}"))
 
     opencode_dir = root / ".opencode" / "plugins"
@@ -136,7 +138,7 @@ def check_manifests(root):
         for js_file in opencode_dir.glob("*.js"):
             content = js_file.read_text(encoding="utf-8", errors="replace")
             if "module.exports" not in content and "export" not in content:
-                findings.append(dict(check="M3", severity="warning",
+                findings.append(dict(check="P6", severity="warning",
                                      message=f"{js_file.relative_to(root)}: no module.exports"))
 
     return findings
@@ -295,16 +297,19 @@ def check_testing(root):
 def run_audit(project_root):
     root = Path(project_root).resolve()
 
+    parsed_skills = parse_all_skills(root)
+
     sec_results = audit_security.run_scan(root)
-    lint_results = audit_skill.run_lint(root)
-    workflow_results = audit_workflow.run_workflow_audit(root)
+    lint_results = audit_skill.run_lint(root, parsed_skills=parsed_skills)
+    workflow_results = audit_workflow.run_workflow_audit(
+        root, parsed_skills=parsed_skills, lint_results=lint_results)
+    graph_findings = _graph.run_graph_analysis(parsed_skills)
     structure = check_structure(root)
     manifests = check_manifests(root)
     version_sync = check_version_sync(root)
     hooks = check_hooks(root)
     docs = check_documentation(root)
     testing = check_testing(root)
-    graph_findings = lint_results.get("graph", [])
 
     def _count(findings, key="severity"):
         c = {"critical": 0, "warning": 0, "info": 0}

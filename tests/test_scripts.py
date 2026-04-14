@@ -166,62 +166,58 @@ class TestAuditPlugin(unittest.TestCase):
 
 
 class TestGraphRules(unittest.TestCase):
-    """Tests for G1-G4 graph analysis rules in audit_skill.py."""
+    """Tests for W1-W4 graph analysis rules via _graph.run_graph_analysis."""
 
-    def _get_lint_data(self):
+    def _get_graph_data(self):
         result = subprocess.run(
-            [sys.executable, str(AUDITING_SCRIPTS / "audit_skill.py"),
-             "--all", "--json", str(REPO_ROOT)],
+            [sys.executable, str(AUDITING_SCRIPTS / "audit_workflow.py"),
+             "--json", str(REPO_ROOT)],
             capture_output=True, text=True
         )
-        return json.loads(result.stdout)
-
-    def test_lint_json_has_graph_key(self):
-        """lint --json output includes 'graph' key when >=2 skills."""
-        data = self._get_lint_data()
-        self.assertIn("graph", data,
-                       "lint JSON output missing 'graph' key")
-        self.assertIsInstance(data["graph"], list)
+        data = json.loads(result.stdout)
+        return [f for f in data.get("focus_findings", [])
+                + data.get("context_findings", [])
+                if f.get("layer") == "static"]
 
     def test_no_undeclared_circular_dependencies(self):
-        """G1: no undeclared circular dependency findings (warning level)."""
-        data = self._get_lint_data()
+        """W1: no undeclared circular dependency findings (warning level)."""
+        findings = self._get_graph_data()
         undeclared_cycles = [
-            f for f in data["graph"]
-            if f["check"] == "G1" and f["severity"] == "warning"
+            f for f in findings
+            if f["check"] == "W1" and f["severity"] == "warning"
         ]
         self.assertEqual(undeclared_cycles, [],
                          f"Undeclared circular dependencies:\n"
                          + "\n".join(f["message"] for f in undeclared_cycles))
 
     def test_all_skills_reachable(self):
-        """G2: all skills reachable from using-* entry points or declared direct-call."""
-        data = self._get_lint_data()
+        """W2: all skills reachable from using-* entry points or declared direct-call."""
+        findings = self._get_graph_data()
         unreachable = [
-            f for f in data["graph"]
-            if f["check"] == "G2"
+            f for f in findings
+            if f["check"] == "W2"
         ]
         self.assertEqual(unreachable, [],
                          f"Unreachable skills:\n"
                          + "\n".join(f["message"] for f in unreachable))
 
     def test_terminal_skills_have_outputs(self):
-        """G3: terminal skills have ## Outputs section."""
-        data = self._get_lint_data()
+        """W3: terminal skills have ## Outputs section."""
+        findings = self._get_graph_data()
         missing_outputs = [
-            f for f in data["graph"]
-            if f["check"] == "G3"
+            f for f in findings
+            if f["check"] == "W3"
         ]
         self.assertEqual(missing_outputs, [],
                          f"Terminal skills without Outputs:\n"
                          + "\n".join(f["message"] for f in missing_outputs))
 
     def test_referenced_skills_have_inputs(self):
-        """G4: skills with incoming refs have ## Inputs section."""
-        data = self._get_lint_data()
+        """W4: skills with incoming refs have ## Inputs section."""
+        findings = self._get_graph_data()
         missing_inputs = [
-            f for f in data["graph"]
-            if f["check"] == "G4"
+            f for f in findings
+            if f["check"] == "W4"
         ]
         self.assertEqual(missing_inputs, [],
                          f"Referenced skills without Inputs:\n"
@@ -229,23 +225,25 @@ class TestGraphRules(unittest.TestCase):
 
 
 class TestArtifactMatching(unittest.TestCase):
-    """Tests for G5 artifact identifier matching."""
+    """Tests for W5 artifact identifier matching."""
 
-    def test_g5_no_critical_mismatches(self):
-        """G5: workflow edges have matching artifact IDs (info level only)."""
+    def test_w5_no_critical_mismatches(self):
+        """W5: workflow edges have matching artifact IDs (info level only)."""
         result = subprocess.run(
-            [sys.executable, str(AUDITING_SCRIPTS / "audit_skill.py"),
-             "--all", "--json", str(REPO_ROOT)],
+            [sys.executable, str(AUDITING_SCRIPTS / "audit_workflow.py"),
+             "--json", str(REPO_ROOT)],
             capture_output=True, text=True
         )
         data = json.loads(result.stdout)
-        g5_findings = [
-            f for f in data.get("graph", [])
-            if f["check"] == "G5"
+        all_findings = (data.get("focus_findings", [])
+                        + data.get("context_findings", []))
+        w5_findings = [
+            f for f in all_findings
+            if f["check"] == "W5"
         ]
-        for f in g5_findings:
+        for f in w5_findings:
             self.assertEqual(f["severity"], "info",
-                             f"G5 should be info-level: {f['message']}")
+                             f"W5 should be info-level: {f['message']}")
 
 
 class TestCrossReferences(unittest.TestCase):

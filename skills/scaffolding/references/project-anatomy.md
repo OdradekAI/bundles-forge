@@ -61,30 +61,9 @@ Gemini reads this file on session start (declared via `contextFileName` in `gemi
 
 ### `.version-bump.json`
 
-Declares every file containing the project version, plus audit exclusions:
+Declares every file containing the project version, plus audit exclusions. Structure: a `files` array (one entry per version-bearing manifest with `path` and `field`) and an `audit.exclude` list to prevent false positives when scanning for stale version strings.
 
-```json
-{
-  "files": [
-    { "path": "package.json", "field": "version" },
-    { "path": ".claude-plugin/plugin.json", "field": "version" },
-    { "path": ".cursor-plugin/plugin.json", "field": "version" },
-    { "path": "gemini-extension.json", "field": "version" }
-  ],
-  "audit": {
-    "exclude": [
-      "CHANGELOG.md",
-      "RELEASE-NOTES.md",
-      "node_modules",
-      ".git",
-      ".version-bump.json",
-      "skills/releasing/scripts/bump_version.py"
-    ]
-  }
-}
-```
-
-Only include entries for platforms the project actually targets. The `audit.exclude` list prevents false positives when scanning for stale version strings.
+Only include entries for platforms the project actually targets. See `assets/root/version-bump.json` for the canonical template.
 
 ### `.gitignore`
 
@@ -204,15 +183,7 @@ The plugin uses OpenCode's hook API: `config` for path registration, `experiment
 
 ### `session-start.py`
 
-Python script that injects the bootstrap skill content as session context. Written in Python for cross-platform compatibility (Windows/Mac/Linux). Platform-aware: checks `CURSOR_PLUGIN_ROOT` first, then `CLAUDE_PLUGIN_ROOT`, with a plain-text fallback for unknown platforms.
-
-| Platform | Env Variable | JSON Output |
-|----------|-------------|-------------|
-| Cursor | `CURSOR_PLUGIN_ROOT` | `{"additional_context": "..."}` |
-| Claude Code | `CLAUDE_PLUGIN_ROOT` | `{"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": "..."}}` |
-| Unknown | Neither set | Plain text on stdout |
-
-The script reads the bootstrap SKILL.md, JSON-escapes it, and wraps it in `<EXTREMELY_IMPORTANT>` tags. On read failure, emits a warning to stderr and exits 0 (no-op) rather than blocking the session.
+Python script for cross-platform bootstrap injection. Reads the bootstrap SKILL.md, wraps it, and emits platform-appropriate JSON. Shared between Claude Code and Cursor. For the full pipeline (6 steps), platform detection table, and hook format comparison, see `references/platform-adapters.md` § "Shared Hook: session-start.py".
 
 ### `hooks.json`
 

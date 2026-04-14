@@ -16,13 +16,9 @@ Systematically evaluate a bundle-plugin project or a single skill across applica
 
 **Announce at start:** "I'm using the auditing skill to audit [this project / this skill]."
 
-### Security-Only Mode
+## Resolve Input & Detect Scope
 
-When invoked via `bundles-scan` or when the user explicitly requests a security-only scan, run only Category 10 (Security) and the `audit_security.py` script. Skip Categories 1-8. Report in the same format but with only the Security category scored. This provides a quick security check without the overhead of a full 10-category audit.
-
-## Step 1: Resolve Input & Detect Scope
-
-The target can be a local path, a GitHub URL, or a zip file. Normalize the input to a local directory before scope detection.
+The target can be a local path, a GitHub URL, or a zip file. Normalize to a local directory, then detect scope. This applies to all three audit modes.
 
 ### Input Normalization
 
@@ -66,11 +62,11 @@ python skills/auditing/scripts/audit_plugin.py --json <project-root>  # machine-
 
 `audit_plugin.py` orchestrates `audit_security.py` (security), `audit_skill.py` (skill quality), `audit_workflow.py` (workflow integration), and `audit_docs.py` (documentation consistency D1-D9), then adds structure, manifest, version-sync, hook, and testing checks.
 
-### Step 2: Run Script Baseline
+### Run Script Baseline
 
 Run `python skills/auditing/scripts/audit_plugin.py --json <project-root>` to collect the deterministic baseline. This ensures script-checkable items (structure, manifests, version sync, skill quality, cross-references, hooks, documentation, security patterns) are verified with reproducible results regardless of agent behavior.
 
-### Step 3: Dispatch Auditor
+### Dispatch Auditor
 
 Pass the JSON script output to the `auditor` agent (`agents/auditor.md`) as input context. The auditor uses these results as its baseline scores and adds qualitative assessment (±2 score adjustments, narrative evaluation, report compilation). The auditor is the single source of truth for scoring formula, report format, and qualitative assessment criteria.
 
@@ -107,7 +103,7 @@ The auditor executes all 10 categories, scores each on a 0-10 scale, and compile
 
 **Third-party skill scanning:** When scanning skills from external sources, clone/download without executing hooks, run the audit, and review critical findings with the user before installation. Never auto-install without scanning.
 
-### Step 4: Behavioral Verification (Optional)
+### Behavioral Verification (Optional)
 
 If subagents are available, dispatch the `evaluator` agent (`agents/evaluator.md`) with label "chain" to run behavioral verification (W10-W11) on workflow chains. This validates that skill handoffs work end-to-end, not just structurally. Append evaluator results to the Workflow category in the audit report.
 
@@ -189,6 +185,12 @@ After the auditor returns the workflow report, dispatch `evaluator` agent (`agen
 ### Report Findings
 
 Present workflow findings grouped by severity. The `workflow-report` is consumed by the calling context for targeted fixes.
+
+---
+
+## Security-Only Mode
+
+When invoked via `bundles-scan` or when the user explicitly requests a security-only scan, run only Category 10 (Security) and the `audit_security.py` script. Skip Categories 1-8. Report in the same format but with only the Security category scored. This provides a quick security check without the overhead of a full 10-category audit.
 
 ---
 

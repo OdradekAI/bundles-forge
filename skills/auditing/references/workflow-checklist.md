@@ -33,11 +33,11 @@ Automated checks — produced by `audit_skill.py` graph analysis (G1-G5) and con
 <!-- BEGIN:workflow/static -->
 | Check | Severity | Criteria | Automation |
 |-------|----------|----------|------------|
-| W1 | Warning/Info | No undeclared circular dependencies in the workflow graph. Cycles declared via `<!-- cycle:a,b -->` in `## Integration` are demoted to Info | `audit_skill.py` G1 |
-| W2 | Info | All skills are reachable from entry points (skills referenced by `using-*` bootstrap). Skills declaring "Called by: user directly" in `## Integration` are exempt | `audit_skill.py` G2 |
-| W3 | Info | Terminal skills (no outgoing cross-references) have an `## Outputs` section documenting final deliverables and are clearly identifiable as workflow endpoints | `audit_skill.py` G3 |
-| W4 | Info | Skills referenced by other skills have an `## Inputs` section declaring expected artifacts | `audit_skill.py` G4 |
-| W5 | Info | For each edge A→B, at least one artifact ID in A's `## Outputs` matches an ID in B's `## Inputs` | `audit_skill.py` G5 |
+| W1 | Warning/Info | No undeclared circular dependencies in the workflow graph. Cycles declared via `<!-- cycle:a,b -->` in `## Integration` are demoted to Info | `_graph.py` |
+| W2 | Info | All skills are reachable from entry points (skills referenced by `using-*` bootstrap). Skills declaring "Called by: user directly" in `## Integration` are exempt | `_graph.py` |
+| W3 | Info | Terminal skills (no outgoing cross-references) have an `## Outputs` section documenting final deliverables and are clearly identifiable as workflow endpoints | `_graph.py` |
+| W4 | Info | Skills referenced by other skills have an `## Inputs` section declaring expected artifacts | `_graph.py` |
+| W5 | Info | For each edge A→B, at least one artifact ID in A's `## Outputs` matches an ID in B's `## Inputs` | `_graph.py` |
 <!-- END:workflow/static -->
 
 **How to run:**
@@ -57,8 +57,8 @@ Agent or manual checks — verify that Integration sections are complete, artifa
 |-------|----------|----------|------------|
 | W6 | Info | Skills with workflow dependencies document them in an `## Integration` section with `**Calls:**` and/or `**Called by:**` blocks | `audit_workflow.py` (partial) |
 | W7 | Info | Workflow chain has no semantically unreasonable circular dependencies — declared cycles (`<!-- cycle:a,b -->`) have a clear rationale (e.g. feedback loop between audit and optimize) | `agent-only` |
-| W8 | Warning | `## Inputs` and `## Outputs` sections contain meaningful semantic descriptions — not empty, not placeholder text (e.g. "TBD", "TODO"), each artifact has a name and one-line purpose | `audit_workflow.py` (W9→W8) |
-| W9 | Warning | For newly added skills: Integration section uses the correct project cross-reference prefix, `**Calls:**` / `**Called by:**` declarations are symmetric with the skills they reference (if A calls B, B should list A in Called by) | `audit_workflow.py` (W10→W9) |
+| W8 | Warning | `## Inputs` and `## Outputs` sections contain meaningful semantic descriptions — not empty, not placeholder text (e.g. "TBD", "TODO"), each artifact has a name and one-line purpose | `audit_workflow.py` |
+| W9 | Warning | For newly added skills: Integration section uses the correct project cross-reference prefix, `**Calls:**` / `**Called by:**` declarations are symmetric with the skills they reference (if A calls B, B should list A in Called by) | `audit_workflow.py` |
 <!-- END:workflow/semantic -->
 
 **Symmetry check (W9):** For each edge A→B declared in A's `**Calls:**`, verify that B's `**Called by:**` lists A. Asymmetric declarations indicate incomplete integration.

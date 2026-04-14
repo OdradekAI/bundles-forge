@@ -2,9 +2,9 @@
 """
 Workflow audit for bundle-plugins.
 
-Evaluates workflow quality across three layers: static structure (from
-audit_skill.py graph analysis), semantic interface (Integration/Inputs/Outputs
-completeness), and behavioral verification (chain eval — agent-only).
+Evaluates workflow quality across three layers: static structure (W1-W5 via
+_graph.run_graph_analysis), semantic interface (W6-W9), and behavioral
+verification (W10-W11 — agent-only).
 
 Supports --focus-skills to partition findings into Focus Area and Context.
 
@@ -28,6 +28,9 @@ if str(_SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR))
 
 import audit_skill
+import _graph
+from _parsing import parse_all_skills
+from _scoring import compute_baseline_score, compute_weighted_average
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -39,79 +42,15 @@ LAYER_WEIGHTS = {
     "behavioral": 1,
 }
 
-_G_TO_W = {"G1": "W1", "G2": "W2", "G3": "W3", "G4": "W4", "G5": "W5"}
-
 _PLACEHOLDER_RE = re.compile(
     r"^\s*[-*]?\s*(?:TBD|TODO|WIP|placeholder|fill in|coming soon)\s*$",
     re.IGNORECASE,
 )
-_CALLS_HEADER_RE = re.compile(r"\*\*Calls?:?\*\*", re.IGNORECASE)
-_CALLED_BY_HEADER_RE = re.compile(r"\*\*Called\s+by:?\*\*", re.IGNORECASE)
-_BOLD_REF_RE = re.compile(r"\*\*([a-z0-9-]+):([a-z0-9-]+)\*\*")
-_BACKTICK_REF_RE = re.compile(r"`([a-z0-9-]+):([a-z0-9-]+)`")
-
-
-# ---------------------------------------------------------------------------
-# Scoring
-# ---------------------------------------------------------------------------
-
-from _scoring import compute_baseline_score, compute_weighted_average
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-def _read_skill_content(skills_dir, skill_name):
-    path = skills_dir / skill_name / "SKILL.md"
-    if path.exists():
-        return path.read_text(encoding="utf-8", errors="replace")
-    return ""
-
-
-def _detect_project_prefixes(project_root):
-    """Return the set of valid cross-reference prefixes for the project."""
-    prefixes = {project_root.name}
-    pkg_path = project_root / "package.json"
-    if pkg_path.exists():
-        try:
-            pkg = json.loads(pkg_path.read_text(encoding="utf-8"))
-            prefixes.add(pkg.get("name", project_root.name))
-            abbrev = pkg.get("abbreviation")
-            if abbrev:
-                prefixes.add(abbrev)
-        except (json.JSONDecodeError, OSError):
-            pass
-    return prefixes
-
-
-def _extract_refs_from_block(content, header_re, valid_prefixes):
-    """Extract skill refs from a **Calls:** or **Called by:** block."""
-    refs = set()
-    lines = content.splitlines()
-    in_block = False
-    for line in lines:
-        if header_re.search(line):
-            in_block = True
-            for m in _BOLD_REF_RE.finditer(line):
-                if m.group(1) in valid_prefixes:
-                    refs.add(m.group(2))
-            for m in _BACKTICK_REF_RE.finditer(line):
-                if m.group(1) in valid_prefixes:
-                    refs.add(m.group(2))
-            continue
-        if in_block:
-            if line.startswith("- ") or line.startswith("  "):
-                for m in _BOLD_REF_RE.finditer(line):
-                    if m.group(1) in valid_prefixes:
-                        refs.add(m.group(2))
-                for m in _BACKTICK_REF_RE.finditer(line):
-                    if m.group(1) in valid_prefixes:
-                        refs.add(m.group(2))
-            elif line.strip() and not line.startswith("-"):
-                in_block = False
-    return refs
-
 
 def _extract_section_content(content, section_name):
     """Return lines between ## <section_name> and the next ## heading."""
@@ -153,18 +92,16 @@ def _involves_focus(finding, focus_skills):
 
 
 # ---------------------------------------------------------------------------
-# Layer 1: Static Structure (W1-W5) — remap from audit_skill graph G1-G5
+# Layer 1: Static Structure (W1-W5) — from _graph.run_graph_analysis
 # ---------------------------------------------------------------------------
 
-def check_static(lint_results, focus_skills=None):
-    """Remap G1-G5 from audit_skill graph findings to W1-W5."""
+def check_static(parsed_skills, focus_skills=None):
+    """Run W1-W5 via _graph.run_graph_analysis and tag with layer/focus."""
     findings = []
-    graph_findings = lint_results.get("graph", [])
+    graph_findings = _graph.run_graph_analysis(parsed_skills)
 
     for gf in graph_findings:
         wf = dict(gf)
-        old_check = wf.get("check", "")
-        wf["check"] = _G_TO_W.get(old_check, old_check)
         wf["layer"] = "static"
         wf["focus"] = _involves_focus(wf, focus_skills)
         findings.append(wf)
@@ -176,29 +113,25 @@ def check_static(lint_results, focus_skills=None):
 # Layer 2: Semantic Interface (W6-W9)
 # ---------------------------------------------------------------------------
 
-def check_semantic(project_root, lint_results, focus_skills=None):
+def check_semantic(parsed_skills, lint_results, focus_skills=None):
     """Run W6-W9 semantic checks on skill Integration/Inputs/Outputs."""
     findings = []
-    skills_dir = project_root / "skills"
-    valid_prefixes = _detect_project_prefixes(project_root)
-    skill_names = set()
-
-    for sr in lint_results.get("skills", []):
-        skill_names.add(sr["skill"])
+    valid_prefixes = parsed_skills["valid_prefixes"]
+    skill_names = set(parsed_skills["skills"].keys())
 
     if len(skill_names) < 2:
         return findings
 
-    skill_contents = {}
-    for sname in skill_names:
-        skill_contents[sname] = _read_skill_content(skills_dir, sname)
+    skill_contents = {
+        sname: sdata["content"]
+        for sname, sdata in parsed_skills["skills"].items()
+        if sdata["content"]
+    }
 
-    # Build calls/called-by maps
     calls_map = {}
     called_by_map = {s: set() for s in skill_names}
     for sname, content in skill_contents.items():
-        outgoing = _extract_refs_from_block(content, _CALLS_HEADER_RE,
-                                            valid_prefixes)
+        outgoing = _graph.extract_calls(content, valid_prefixes)
         outgoing = {r for r in outgoing if r in skill_names and r != sname}
         calls_map[sname] = outgoing
         for target in outgoing:
@@ -206,8 +139,8 @@ def check_semantic(project_root, lint_results, focus_skills=None):
 
     declared_called_by = {}
     for sname, content in skill_contents.items():
-        declared_called_by[sname] = _extract_refs_from_block(
-            content, _CALLED_BY_HEADER_RE, valid_prefixes)
+        declared_called_by[sname] = _graph.extract_called_by(
+            content, valid_prefixes)
 
     # W6: Integration section with Calls/Called by for skills that have deps
     for sname, content in skill_contents.items():
@@ -276,22 +209,29 @@ def check_semantic(project_root, lint_results, focus_skills=None):
 # Orchestrator
 # ---------------------------------------------------------------------------
 
-def run_workflow_audit(project_root, focus_skills=None):
+def run_workflow_audit(project_root, focus_skills=None,
+                       parsed_skills=None, lint_results=None):
     """Run the full workflow audit. Returns structured results dict.
 
     Args:
         project_root: Path to the bundle-plugin root.
         focus_skills: Optional set of skill names to focus on. If provided,
             findings are tagged with focus=True/False.
+        parsed_skills: Optional pre-computed result from parse_all_skills().
+        lint_results: Optional pre-computed result from audit_skill.run_lint().
     """
     root = Path(project_root).resolve()
     if focus_skills and isinstance(focus_skills, (list, tuple)):
         focus_skills = set(focus_skills)
 
-    lint_results = audit_skill.run_lint(root)
+    if parsed_skills is None:
+        parsed_skills = parse_all_skills(root)
 
-    static_findings = check_static(lint_results, focus_skills)
-    semantic_findings = check_semantic(root, lint_results, focus_skills)
+    if lint_results is None:
+        lint_results = audit_skill.run_lint(root, parsed_skills=parsed_skills)
+
+    static_findings = check_static(parsed_skills, focus_skills)
+    semantic_findings = check_semantic(parsed_skills, lint_results, focus_skills)
     behavioral_findings = []
 
     def _count(findings):

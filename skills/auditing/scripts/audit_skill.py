@@ -28,18 +28,19 @@ if str(_SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR))
 
 import audit_security
+from _parsing import (
+    FRONTMATTER_RE,
+    parse_frontmatter,
+    estimate_tokens,
+    parse_all_skills,
+    detect_project_meta,
+)
+from _graph import CROSS_REF_RE, extract_all_refs
 
 # ---------------------------------------------------------------------------
-# Frontmatter parsing (pure-stdlib, zero external dependencies)
-#
-# Why not PyYAML: bundle-plugins are designed for `git clone` → immediate use.
-# Requiring `pip install pyyaml` would break zero-setup workflows (CI runners,
-# containers, restricted corporate environments). Python 3.8+ stdlib is the
-# only hard dependency.
+# Per-skill linting rules (Q1-Q15, S9, X1-X3)
 # ---------------------------------------------------------------------------
 
-FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
-_BLOCK_SCALAR_RE = re.compile(r"^[|>][+-]?\d*$")
 WORKFLOW_SUMMARY_PHRASES = re.compile(
     r"first\b.*then\b.*finally|step\s+\d|phase\s+\d|"
     r"scans?\s+.*checks?\s+.*generates?|"
@@ -49,7 +50,6 @@ WORKFLOW_SUMMARY_PHRASES = re.compile(
     re.IGNORECASE,
 )
 KEBAB_CASE_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
-CROSS_REF_RE = re.compile(r"`([a-z0-9-]+):([a-z0-9-]+)`")
 RELATIVE_PATH_RE = re.compile(r"`((?:references|assets|scripts|templates)/[^`]+)`")
 ALLOWED_TOOLS_PATH_RE = re.compile(r"\b((?:skills/[a-z-]+/)?scripts/[^\s*)+]+(?:\.py|\.sh|\.js)?)")
 REFERENCED_DIR_RE = re.compile(
@@ -67,64 +67,6 @@ CONDITIONAL_BLOCK_RE = re.compile(
     re.IGNORECASE,
 )
 
-
-def parse_frontmatter(content):
-    m = FRONTMATTER_RE.match(content)
-    if not m:
-        return None, content
-    raw = m.group(1)
-    fm = {}
-    current_key = None
-    block_join = " "
-    for line in raw.split("\n"):
-        if line.startswith("  ") and current_key:
-            sep = block_join if fm[current_key] else ""
-            fm[current_key] += sep + line.strip()
-            continue
-        idx = line.find(":")
-        if idx > 0:
-            key = line[:idx].strip()
-            val = line[idx + 1:].strip()
-            if _BLOCK_SCALAR_RE.match(val):
-                fm[key] = ""
-                current_key = key
-                block_join = "\n" if val[0] == "|" else " "
-                continue
-            if (val.startswith('"') and val.endswith('"')) or \
-               (val.startswith("'") and val.endswith("'")):
-                val = val[1:-1]
-            fm[key] = val
-            current_key = key
-            block_join = " "
-    body_start = m.end()
-    return fm, content[body_start:]
-
-
-_CODE_BLOCK_RE = re.compile(r"```[\s\S]*?```")
-_TABLE_ROW_RE = re.compile(r"^\|.+\|$", re.MULTILINE)
-
-
-def estimate_tokens(content):
-    """Estimate token count with separate rates for code, tables, and prose."""
-    code_blocks = _CODE_BLOCK_RE.findall(content)
-    table_rows = _TABLE_ROW_RE.findall(content)
-
-    code_chars = sum(len(b) for b in code_blocks)
-    table_chars = sum(len(r) for r in table_rows)
-
-    code_tokens = int(code_chars / 3.5)
-    table_tokens = int(table_chars / 3.0)
-
-    prose_content = _CODE_BLOCK_RE.sub("", content)
-    prose_content = _TABLE_ROW_RE.sub("", prose_content)
-    prose_tokens = int(len(prose_content.split()) * 1.3)
-
-    return prose_tokens + code_tokens + table_tokens
-
-
-# ---------------------------------------------------------------------------
-# Per-skill linting rules (Q1-Q15, S9, X1-X3)
-# ---------------------------------------------------------------------------
 
 def lint_skill(skill_dir, project_root, project_name, project_abbreviation=None):
     findings = []
@@ -203,14 +145,12 @@ def lint_skill(skill_dir, project_root, project_name, project_abbreviation=None)
     valid_prefixes = {project_name}
     if project_abbreviation:
         valid_prefixes.add(project_abbreviation)
-    for match in CROSS_REF_RE.finditer(content):
-        proj, skill_name = match.group(1), match.group(2)
-        if proj in valid_prefixes:
-            target = skills_root / skill_name
-            if not target.is_dir():
-                findings.append(dict(check="X1", severity="warning",
-                                     message=f"Cross-ref '{proj}:{skill_name}' — "
-                                             f"skills/{skill_name}/ not found"))
+    for ref in extract_all_refs(content, valid_prefixes):
+        target = skills_root / ref
+        if not target.is_dir():
+            findings.append(dict(check="X1", severity="warning",
+                                 message=f"Cross-ref '{project_name}:{ref}' — "
+                                         f"skills/{ref}/ not found"))
 
     # X2: Relative path references (skip template placeholders like <platform>)
     for match in RELATIVE_PATH_RE.finditer(content):
@@ -236,7 +176,7 @@ def lint_skill(skill_dir, project_root, project_name, project_abbreviation=None)
     body_lines = len(body.splitlines())
     estimated_tokens = estimate_tokens(body)
     if is_bootstrap and body_lines > 200:
-        findings.append(dict(check="Q13", severity="info",
+        findings.append(dict(check="Q13", severity="warning",
                              message=f"Bootstrap skill body is {body_lines} lines "
                                      f"(~{estimated_tokens} tokens, estimated); "
                                      f"budget is 200 lines"))
@@ -305,39 +245,37 @@ def lint_skill(skill_dir, project_root, project_name, project_abbreviation=None)
 
 
 # ---------------------------------------------------------------------------
-# Project-level runner (C1, G1-G5, S10, S12)
+# Project-level runner (C1, S10, S12)
 # ---------------------------------------------------------------------------
 
-def run_lint(project_root):
+def run_lint(project_root, parsed_skills=None):
     """Run project-level lint across all skills.
 
+    Args:
+        project_root: Path to the bundle-plugin root.
+        parsed_skills: Optional pre-computed result from parse_all_skills().
+            If not provided, parse_all_skills() is called internally.
+
     Returns a dict consumed by audit_plugin.py and audit_workflow.py:
-    {"skills": [...], "summary": {...}, "graph": [...], ...}
+    {"skills": [...], "summary": {...}, ...}
     """
     project_root = Path(project_root).resolve()
-    skills_dir = project_root / "skills"
-    project_name = project_root.name
 
-    project_abbreviation = None
-    pkg_path = project_root / "package.json"
-    if pkg_path.exists():
-        try:
-            pkg = json.loads(pkg_path.read_text(encoding="utf-8"))
-            project_name = pkg.get("name", project_name)
-            project_abbreviation = pkg.get("abbreviation")
-        except (json.JSONDecodeError, OSError):
-            pass
+    if parsed_skills is None:
+        parsed_skills = parse_all_skills(project_root)
+
+    skills_dir = parsed_skills["skills_dir"]
+    project_name = parsed_skills["project_name"]
+    project_abbreviation = parsed_skills["project_abbreviation"]
 
     results = {"skills": [], "summary": {"critical": 0, "warning": 0, "info": 0}}
 
-    skill_dirs = [d for d in sorted(skills_dir.iterdir()) if d.is_dir()]
+    skill_dirs = [d for d in sorted(skills_dir.iterdir()) if d.is_dir()] if skills_dir.is_dir() else []
     if not skill_dirs:
         print("warning: skills/ directory is empty — no skills to check",
               file=sys.stderr)
 
-    for skill_dir in sorted(skills_dir.iterdir()):
-        if not skill_dir.is_dir():
-            continue
+    for skill_dir in skill_dirs:
         findings = lint_skill(skill_dir, project_root, project_name,
                               project_abbreviation)
         skill_result = {
@@ -360,24 +298,21 @@ def run_lint(project_root):
         has_overview = []
         has_subagent_fallback = []
         desc_verb_forms = []
-        for sr in results["skills"]:
-            sname = sr["skill"]
-            sdir = skills_dir / sname
-            smd = sdir / "SKILL.md"
-            if not smd.exists():
+        for sname, sdata in parsed_skills["skills"].items():
+            content = sdata["content"]
+            if not content:
                 continue
-            scontent = smd.read_text(encoding="utf-8", errors="replace")
 
             is_bootstrap = sname.startswith("using-")
             if not is_bootstrap:
                 has_overview.append(
-                    "## Overview" in scontent or "## overview" in scontent.lower())
+                    "## Overview" in content or "## overview" in content.lower())
                 has_subagent_fallback.append(
-                    "subagent" in scontent.lower()
-                    and ("unavailable" in scontent.lower()
-                         or "not available" in scontent.lower()))
+                    "subagent" in content.lower()
+                    and ("unavailable" in content.lower()
+                         or "not available" in content.lower()))
 
-            sfm, _ = parse_frontmatter(scontent)
+            sfm = sdata["frontmatter"]
             if sfm:
                 desc = sfm.get("description", "")
                 after_when = re.sub(r"(?i)^use\s+when\s+", "", desc).strip()
@@ -418,134 +353,6 @@ def run_lint(project_root):
             results["summary"][f["severity"]] += 1
 
     # -------------------------------------------------------------------
-    # Graph analysis (G1-G5) — workflow DAG checks
-    # -------------------------------------------------------------------
-    if len(results["skills"]) >= 2:
-        import _graph
-
-        graph_findings = []
-
-        graph_valid_prefixes = {project_name}
-        if project_abbreviation:
-            graph_valid_prefixes.add(project_abbreviation)
-
-        graph = {}
-        skill_contents = {}
-        for sr in results["skills"]:
-            sname = sr["skill"]
-            sdir = skills_dir / sname
-            smd = sdir / "SKILL.md"
-            if not smd.exists():
-                continue
-            scontent = smd.read_text(encoding="utf-8", errors="replace")
-            skill_contents[sname] = scontent
-            refs = _graph.extract_calls(scontent, graph_valid_prefixes)
-            refs.discard(sname)
-            existing_refs = {r for r in refs
-                            if (skills_dir / r).is_dir()}
-            graph[sname] = existing_refs
-
-        all_skill_names = set(graph.keys())
-
-        # G1: Cycle detection
-        for cycle in _graph.find_minimal_cycles(graph):
-            cycle_set = set(cycle)
-            declared = True
-            for node in cycle_set:
-                content = skill_contents.get(node, "")
-                decl_sets = _graph.get_declared_cycle_sets(content)
-                if any(cycle_set.issubset(ds) for ds in decl_sets):
-                    continue
-                declared = False
-                break
-            sev = "info" if declared else "warning"
-            chain = " -> ".join(cycle) + " -> " + cycle[0]
-            msg = f"Circular dependency: {chain}"
-            if declared:
-                msg += " (declared feedback loop)"
-            graph_findings.append(dict(check="G1", severity=sev, message=msg))
-
-        # G2: Reachability from entry points
-        entry_points = set()
-        for sname, scontent in skill_contents.items():
-            if sname.startswith("using-"):
-                for match in CROSS_REF_RE.finditer(scontent):
-                    proj, skill_ref = match.group(1), match.group(2)
-                    if proj in graph_valid_prefixes and skill_ref in all_skill_names:
-                        entry_points.add(skill_ref)
-                entry_points.add(sname)
-
-        if entry_points:
-            reachable = set(entry_points)
-            queue = list(entry_points)
-            while queue:
-                current = queue.pop(0)
-                for neighbor in graph.get(current, set()):
-                    if neighbor not in reachable:
-                        reachable.add(neighbor)
-                        queue.append(neighbor)
-
-            for sname in sorted(all_skill_names - reachable):
-                content = skill_contents.get(sname, "")
-                if "Called by: user directly" in content:
-                    continue
-                graph_findings.append(dict(
-                    check="G2", severity="info",
-                    message=f"Skill '{sname}' is not reachable from any "
-                            "entry point (add to bootstrap routing or declare "
-                            "'Called by: user directly' in Integration)"))
-
-        # G3: Terminal skills (no outgoing edges) without Outputs section
-        for sname in sorted(all_skill_names):
-            if not graph.get(sname):
-                content = skill_contents.get(sname, "")
-                if "## Outputs" not in content and not sname.startswith("using-"):
-                    graph_findings.append(dict(
-                        check="G3", severity="info",
-                        message=f"Terminal skill '{sname}' has no outgoing "
-                                "references and no ## Outputs section"))
-
-        # G4: Skills with incoming edges but no Inputs section
-        has_incoming = set()
-        for sname, refs in graph.items():
-            has_incoming.update(refs)
-        for sname in sorted(has_incoming):
-            content = skill_contents.get(sname, "")
-            if "## Inputs" not in content:
-                graph_findings.append(dict(
-                    check="G4", severity="info",
-                    message=f"Skill '{sname}' is referenced by other skills "
-                            "but has no ## Inputs section"))
-
-        # G5: Artifact identifier matching (experimental)
-        skill_outputs = {}
-        skill_inputs = {}
-        for sname, scontent in skill_contents.items():
-            skill_outputs[sname] = _graph.extract_artifact_ids(
-                scontent, "Outputs", graph_valid_prefixes)
-            skill_inputs[sname] = _graph.extract_artifact_ids(
-                scontent, "Inputs", graph_valid_prefixes)
-
-        for src, targets in graph.items():
-            src_out = skill_outputs.get(src, set())
-            if not src_out:
-                continue
-            for tgt in targets:
-                tgt_in = skill_inputs.get(tgt, set())
-                if not tgt_in:
-                    continue
-                if not src_out & tgt_in:
-                    graph_findings.append(dict(
-                        check="G5", severity="info",
-                        message=f"No matching artifact IDs between "
-                                f"'{src}' outputs {sorted(src_out)} and "
-                                f"'{tgt}' inputs {sorted(tgt_in)}"))
-
-        results["graph"] = graph_findings
-        for f in graph_findings:
-            results["summary"][f["severity"]] += 1
-
-    # -------------------------------------------------------------------
     # Agent architecture checks (S10, S12)
     # -------------------------------------------------------------------
     agents_dir = project_root / "agents"
@@ -574,11 +381,10 @@ def run_lint(project_root):
 
         for sr in results["skills"]:
             sname = sr["skill"]
-            sdir = skills_dir / sname
-            smd = sdir / "SKILL.md"
-            if not smd.exists():
+            sdata = parsed_skills["skills"].get(sname, {})
+            scontent = sdata.get("content", "")
+            if not scontent:
                 continue
-            scontent = smd.read_text(encoding="utf-8", errors="replace")
 
             dispatched_agents = _DISPATCH_RE.findall(scontent)
             if not dispatched_agents:
@@ -686,16 +492,7 @@ def run_skill_audit(skill_path):
     """
     skill_dir, project_root = resolve_skill_path(skill_path)
 
-    project_name = project_root.name
-    project_abbreviation = None
-    pkg_path = project_root / "package.json"
-    if pkg_path.exists():
-        try:
-            pkg = json.loads(pkg_path.read_text(encoding="utf-8"))
-            project_name = pkg.get("name", project_name)
-            project_abbreviation = pkg.get("abbreviation")
-        except (json.JSONDecodeError, OSError):
-            pass
+    project_name, project_abbreviation = detect_project_meta(project_root)
 
     lint_findings = lint_skill(
         skill_dir, project_root, project_name, project_abbreviation)
@@ -899,20 +696,15 @@ def detect_mode(raw_path, force_all=False):
 # ---------------------------------------------------------------------------
 
 def main():
-    import argparse
+    from _cli import make_parser, exit_by_severity
 
-    parser = argparse.ArgumentParser(
-        description="Skill audit for bundle-plugins (single skill or project-level).")
-    parser.add_argument("path", nargs="?", default=".",
-                        help="Skill directory, SKILL.md file, or project root "
-                             "(default: current directory)")
+    parser = make_parser(
+        "Skill audit for bundle-plugins (single skill or project-level).")
     parser.add_argument("--all", action="store_true",
                         help="Force project-level mode (audit all skills)")
-    parser.add_argument("--json", action="store_true",
-                        help="Output JSON instead of markdown")
     args = parser.parse_args()
 
-    mode, resolved = detect_mode(args.path, force_all=args.all)
+    mode, resolved = detect_mode(args.project_root, force_all=args.all)
 
     if mode == "project":
         if not (resolved / "skills").is_dir():
@@ -923,7 +715,6 @@ def main():
             print(json.dumps(results, indent=2))
         else:
             print(format_project_markdown(results))
-        from _cli import exit_by_severity
         exit_by_severity(results["summary"])
     else:
         results = run_skill_audit(resolved)
@@ -931,7 +722,6 @@ def main():
             print(json.dumps(results, indent=2))
         else:
             print(format_skill_markdown(results))
-        from _cli import exit_by_severity
         exit_by_severity(results["summary"])
 
 

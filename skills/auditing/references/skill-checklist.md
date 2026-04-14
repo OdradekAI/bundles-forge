@@ -105,6 +105,7 @@ Security checks scoped to the skill's content and references. Uses IDs from `sec
 | SC1 | Critical | Instructions to read `.env`, `.ssh/`, `credentials`, `secrets`, `tokens`, `api_key` files | `audit_security.py` (suspicious) |
 | SC9 | Critical | Phrases like "ignore previous instructions", "override safety", "disable verification" | `audit_security.py` |
 | SC13 | Critical | Unicode homoglyphs, zero-width characters, right-to-left override characters | `audit_security.py` |
+| SC15 | Info | Excessively long line (>500 chars) — may indicate obfuscated or machine-generated content | `audit_security.py` |
 | AG1 | Critical | Instructions to "ignore", "override", or "bypass" safety guidelines or user instructions | `audit_security.py` (suspicious) |
 | AG6 | Info | Missing scope constraints (agent prompt doesn't limit what files/actions are in scope) | `agent-only` |
 <!-- END:skill/security -->

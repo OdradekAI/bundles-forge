@@ -26,7 +26,7 @@ The same threat class appears across multiple attack surfaces with surface-speci
 | Sensitive data access | SC1, SC3-SC4 | HK5-HK6, HK15 | OC8-OC10 | AG2 | BS3 | MC1, MC3 | PC4-PC5 |
 | Safety overrides | SC9-SC11 | — | OC11-OC12 | AG1, AG4-AG5 | — | — | — |
 | System modification | SC5-SC8 | HK8-HK12 | OC1-OC3 | — | BS2, BS4-BS5 | MC2, MC5 | PC1-PC3 |
-| Encoding/obfuscation | SC12-SC14 | — | — | — | — | — | — |
+| Encoding/obfuscation | SC12-SC15 | — | — | — | — | — | — |
 <!-- END:security/threat_mapping -->
 
 ---
@@ -70,6 +70,7 @@ Scan every `SKILL.md` and every markdown file in `references/` directories.
 | SC12 | Warning | Use of `<EXTREMELY_IMPORTANT>` or similar emphasis tags outside the bootstrap skill | `audit_security.py` |
 | SC13 | Critical | Unicode homoglyphs, zero-width characters, right-to-left override characters | `audit_security.py` |
 | SC14 | Warning | Base64-encoded content that decodes to instructions or commands | `agent-only` |
+| SC15 | Info | Excessively long line (>500 chars) — may indicate obfuscated or machine-generated content | `audit_security.py` |
 <!-- END:security/skill_content -->
 
 ---

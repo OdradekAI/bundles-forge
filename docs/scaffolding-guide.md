@@ -36,6 +36,21 @@ Are you coming from blueprinting with a design document?
             └─ Platform adaptation → See "Platform Adaptation" below
 ```
 
+### End-to-End Flow
+
+All six scaffolding operations follow the same three-phase structure: detect context, generate/modify files, validate output.
+
+| Operation | Entry Condition | Phase 1 | Phase 2 | Phase 3 |
+|-----------|----------------|---------|---------|---------|
+| New project (minimal) | Design or user + no project | Load Claude Code template | Generate manifest + skills + docs | git init, validate JSON |
+| New project (intelligent) | Design or user + no project | Load template index, templates, anatomy | Replace placeholders, generate per-platform, skills, commands, bootstrap, optional | git init, version check |
+| New project (custom) | User + no project | Same as intelligent | Same, but each component confirmed interactively | git init, version check |
+| Add platform | Existing project + target platform | Detect current platforms, read adapter reference | Generate adapter files, update version sync + hooks + docs | Validate manifests, version check |
+| Remove platform | Existing project + target platform | Identify files to remove | Delete manifests, clean hooks, update docs | Version check, inspector validation |
+| Manage optional components | Existing project + component type | Read external-integration decision tree | Generate/remove component files, update manifests + skills + docs | Inspector validation |
+
+After every operation, scaffolding runs deterministic checks (`audit_skill.py`) and dispatches the inspector agent for semantic validation.
+
 ### Minimal Mode
 
 Best for: packaging 1-3 standalone skills for marketplace distribution with zero infrastructure overhead.

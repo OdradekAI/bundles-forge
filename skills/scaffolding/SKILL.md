@@ -10,23 +10,27 @@ allowed-tools: Python(skills/releasing/scripts/bump_version.py *)
 
 Generate new bundle-plugin projects and manage platform support across their lifecycle. Handles initial project generation (greenfield) and ongoing platform adaptation (add, fix, migrate, remove).
 
-**Core principle:** Generate only what's needed. Every platform, every file has a reason to exist.
+**Core principle:** Generate only what's needed. Every platform, every file has a reason to exist. This skill generates structure only — it does not run its own scripts. Validation is delegated to `bundles-forge:auditing`; version checks to `bump_version.py`.
 
-**Announce at start:** "I'm using the scaffolding skill to [generate your project / add <platform> support / remove <platform> support]."
+**Skill type:** Hybrid — follow the generation/adaptation process rigidly, but mode selection and component choices are flexible based on user context.
+
+**Announce at start:** "I'm using the scaffolding skill to [generate your project / add <platform> support / remove <platform> support / add <component> / remove <component>]."
 
 ## Entry Detection
 
 Determine the operation based on context:
 
-1. **Design document provided** (from `bundles-forge:blueprinting`) → **New Project** flow (minimal / intelligent mode as specified)
-2. **User request + no existing project** → **New Project** flow (ask mode: intelligent or custom)
+1. **Design document provided** (from `bundles-forge:blueprinting`) → **New Project** flow
+2. **User request + no existing project** → **New Project** flow
 3. **User request + existing project** → **Platform Adaptation** flow (add / fix / migrate / remove)
 
-For new projects invoked directly by users (not via blueprinting), choose between:
-- **intelligent** — recommend architecture based on user description, avoid unnecessary components
-- **custom** — present the full architecture option set, ask the user about each component
-
 ## New Project: Scaffold Layers
+
+For new projects, first select a mode:
+- **Design document** specifies the mode (minimal or intelligent)
+- **Direct invocation** — choose between:
+  - **intelligent** — recommend architecture based on user description, avoid unnecessary components
+  - **custom** — present the full architecture option set, ask the user about each component
 
 ### Minimal Mode (quick packaging)
 
@@ -41,7 +45,9 @@ Lean plugin for marketplace distribution:
 
 No hooks, no bootstrap, no version infrastructure. Add these later by re-running scaffolding in platform adaptation mode.
 
-### Intelligent Mode — Core
+### Intelligent Mode
+
+#### Core
 
 Generated for all intelligent-mode projects regardless of platform selection:
 
@@ -56,7 +62,7 @@ Generated for all intelligent-mode projects regardless of platform selection:
 | `skills/<skill-name>/SKILL.md` | One directory per skill |
 | `commands/<entry-skill>.md` | One command per entry-point skill |
 
-### Intelligent Mode — Platform Adapters (selected platforms only)
+#### Platform Adapters (selected platforms only)
 
 | Platform | Files |
 |----------|-------|
@@ -68,14 +74,14 @@ Generated for all intelligent-mode projects regardless of platform selection:
 
 For platform-specific wiring details, read `references/platform-adapters.md`.
 
-### Intelligent Mode — Bootstrap (if requested)
+#### Bootstrap (if requested)
 
 | File | Purpose |
 |------|---------|
 | `skills/using-<project>/SKILL.md` | Meta-skill: instruction priority, skill routing table |
 | `skills/using-<project>/references/` | Per-platform tool mappings |
 
-### Intelligent Mode — Optional Components (only if specified)
+#### Optional Components (only if specified)
 
 | Component | Files | When to Include |
 |-----------|-------|-----------------|
@@ -96,16 +102,22 @@ For platform-specific wiring details, read `references/platform-adapters.md`.
 4. `git init` + initial commit; validate manifest JSON
 
 **Intelligent mode:**
+
+*Phase 1 — Load context:*
 1. **Read template index** — load `references/scaffold-templates.md`
 2. **Read templates** — load from `assets/` (infrastructure, docs, bootstrap)
 3. **Read platform templates** — load from `assets/platforms/<platform>/`
 4. **Read anatomy** — load `references/project-anatomy.md`
+
+*Phase 2 — Generate:*
 5. **Replace placeholders** — substitute `<project-name>`, `<author-name>`, etc.
 6. **Generate per-platform** — only create files for target platforms
 7. **Generate skill stubs** — one directory per skill
 8. **Generate commands** — one command per entry-point skill
 9. **Generate bootstrap** — if requested, create meta-skill with routing table
 10. **Generate optional components** — only what the design specifies. For MCP servers, use `assets/mcp-json.md` template and consult `references/external-integration.md` for transport selection and platform differences. When `userConfig` is specified, add the `userConfig` field to `plugin.json` with appropriate `sensitive` flags. When marketplace distribution is specified, generate `.claude-plugin/marketplace.json` with plugin metadata
+
+*Phase 3 — Finalize:*
 11. `git init` + initial commit; run `python skills/releasing/scripts/bump_version.py --check`
 
 ## Platform Adaptation: Existing Projects
@@ -128,8 +140,6 @@ For platform-specific wiring details, read `references/platform-adapters.md`.
 4. **Update documentation** — remove install section from README and platform-specific docs
 5. **Verify** — `python skills/releasing/scripts/bump_version.py --check`; run inspector validation
 
-**Announce at start:** "I'm using the scaffolding skill to remove <platform> support."
-
 ### Adding Optional Components
 
 Add MCP servers, CLI executables, LSP servers, userConfig, output styles, or default settings to an existing project:
@@ -141,8 +151,6 @@ Add MCP servers, CLI executables, LSP servers, userConfig, output styles, or def
 5. **Update README** — add setup instructions for the new component (especially MCP server config for non-Claude Code platforms, LSP binary installation)
 6. **Verify** — run inspector validation to confirm structural integrity
 
-**Announce at start:** "I'm using the scaffolding skill to add [MCP / CLI / LSP / userConfig / output-styles] to this project."
-
 ### Removing Optional Components
 
 Remove MCP servers, CLI executables, or LSP servers from an existing project. Read `references/external-integration.md` "Optional Component Removal" section for step-by-step instructions covering:
@@ -151,8 +159,6 @@ Remove MCP servers, CLI executables, or LSP servers from an existing project. Re
 - Removing CLI executables (`bin/`, `allowed-tools`, skill body)
 - Removing LSP servers (`.lsp.json`, README)
 - Downgrading MCP to CLI (replace MCP with lighter CLI alternative)
-
-**Announce at start:** "I'm using the scaffolding skill to remove [MCP / CLI / LSP] components."
 
 ## Post-Action Validation
 
@@ -163,17 +169,6 @@ Remove MCP servers, CLI executables, or LSP servers from an existing project. Re
 - **Platform adaptation** → focused inspection (hook semantics and template quality for affected platforms)
 
 **If subagent dispatch is unavailable:** Ask — "Subagents are not available. Run validation inline?" If confirmed, read `agents/inspector.md` and follow its instructions within this conversation, then report PASS/FAIL.
-
-## Quick Reference: Placeholder Map
-
-| Placeholder | Source |
-|-------------|--------|
-| `<project-name>` | Design or existing project name |
-| `<Project Name>` | Title-cased project name |
-| `<author-name>` | User or git config |
-| `<author-email>` | User or git config |
-| `<repo-url>` | User-provided or constructed |
-| `<one-line description>` | From design or user |
 
 ## Common Mistakes
 

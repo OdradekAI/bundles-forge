@@ -61,10 +61,11 @@ Run these checks only for platforms the project claims to support.
 | Check | Severity | Criteria | Automation |
 |-------|----------|----------|------------|
 | P1 | Critical | Each target platform has its manifest file present | `agent-only` |
-| P2 | Critical | Manifest JSON is valid (parseable, no syntax errors) | `audit_plugin.py` (M1) |
-| P3 | Critical | Cursor manifest paths (`skills`, `hooks`) resolve to existing directories/files | `audit_plugin.py` (M2) |
+| P2 | Critical | Manifest JSON is valid (parseable, no syntax errors) | `audit_plugin.py` |
+| P3 | Critical | Cursor manifest paths (`skills`, `hooks`) resolve to existing directories/files | `audit_plugin.py` |
 | P4 | Warning | Manifest metadata (name, version, description) is filled in | `agent-only` |
 | P5 | Warning | Author and repository fields are populated | `agent-only` |
+| P6 | Warning | OpenCode `.js` plugin files contain `module.exports` or `export` statement | `audit_plugin.py` |
 | P7 | Info | `claude plugin validate` (or `/plugin validate`) passes without errors — quick schema check for `plugin.json`, frontmatter, and `hooks.json` (Claude Code environments only) | `agent-only` |
 <!-- END:platform_manifests -->
 

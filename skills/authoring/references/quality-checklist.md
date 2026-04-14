@@ -23,7 +23,7 @@ Definitive quality specification for SKILL.md files. `skills/auditing/scripts/au
 | Q10 | Info | Should have `## Overview` section | Search for the heading (skipped for bootstrap `using-*` skills) |
 | Q11 | Info | Should have `## Common Mistakes` section | Search for the heading (skipped for bootstrap `using-*` skills) |
 | Q12 | Info | Body over 300 lines should have `references/` files | If body is long, check whether a `references/` directory exists with content |
-| Q13 | Info | Token budget check — bootstrap < 200 lines, regular ~4000 tokens | Estimate tokens: prose ~1.3 tokens/word, code ~1 token/3.5 chars, tables ~1 token/3 chars |
+| Q13 | Warning/Info | Token budget: bootstrap body over 200 lines (warning); regular skill high token count (info) | Estimate tokens: prose ~1.3 tokens/word, code ~1 token/3.5 chars, tables ~1 token/3 chars |
 | Q14 | Warning | `allowed-tools` paths must exist in project | Verify that referenced scripts (e.g. `skills/**/scripts/*.py`) actually exist |
 | Q15 | Info | Large conditional blocks (30+ lines) should be in `references/` | Check "If...unavailable" guarded sections for excessive length |
 
@@ -52,5 +52,5 @@ python skills/auditing/scripts/audit_skill.py --json <project-root>      # machi
 ## Interpreting Results
 
 - **Critical** findings (Q1-Q3) mean the skill won't be discovered by agents — fix immediately
-- **Warning** findings (Q4-Q9, Q14, X1-X3) mean the skill works but has quality issues — fix before delivery
-- **Info** findings (Q10-Q13, Q15, S9) are improvement opportunities — address if time permits, report otherwise
+- **Warning** findings (Q4-Q9, Q13 bootstrap, Q14, X1-X3) mean the skill works but has quality issues — fix before delivery
+- **Info** findings (Q10-Q12, Q13 regular, Q15, S9) are improvement opportunities — address if time permits, report otherwise

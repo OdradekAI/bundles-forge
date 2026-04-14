@@ -8,7 +8,7 @@ Replace all placeholders before writing to the target project.
 
 | Placeholder | Source |
 |-------------|--------|
-| `<project-name>` | Design: project name (kebab-case) |
+| `<project-name>` | Design or existing project name (kebab-case) |
 | `<Project Name>` | Title-cased project name |
 | `<author-name>` | User or git config |
 | `<author-email>` | User or git config |
@@ -34,14 +34,12 @@ Replace all placeholders before writing to the target project.
 | Template File | Target Path | Purpose |
 |---------------|-------------|---------|
 | `assets/root/README.md` | `README.md` | Project README (adapt sections per target platforms) |
-| `assets/root/AGENTS.md` | `AGENTS.md` | Codex pointer to CLAUDE.md |
-| `assets/root/GEMINI.md` | `GEMINI.md` | Gemini CLI context file (only if Gemini targeted) |
 
 ### Bootstrap Skill (if bootstrap requested)
 
 | Template File | Target Path | Purpose |
 |---------------|-------------|---------|
-| `assets/root/bootstrap-skill.md` | `skills/using-<project-name>/SKILL.md` | Meta-skill: instruction priority, skill routing table |
+| `assets/root/using-skill.md` | `skills/using-<project-name>/SKILL.md` | Meta-skill: instruction priority, skill routing table |
 
 ### Optional Components (if specified in design)
 
@@ -53,6 +51,11 @@ Replace all placeholders before writing to the target project.
 
 Platform-specific manifest templates live in `assets/platforms/`. Use those when generating per-platform files (plugin.json, hooks.json, etc.). The Claude Code `hooks.json` template includes a top-level `description` (use `<Project Name>` placeholder) and per-handler `timeout: 10`.
 
+| Template File | Target Path | Purpose |
+|---------------|-------------|---------|
+| `assets/platforms/codex/AGENTS.md` | `AGENTS.md` | Codex pointer to CLAUDE.md (only if Codex targeted) |
+| `assets/platforms/gemini/GEMINI.md` | `GEMINI.md` | Gemini CLI context file (only if Gemini targeted) |
+
 ---
 
 ## Generation Notes
@@ -60,6 +63,4 @@ Platform-specific manifest templates live in `assets/platforms/`. Use those when
 - **Hooks:** platform templates should invoke `python` with `hooks/session-start.py` (see `assets/platforms/*/hooks*.json`)
 - **`.version-bump.json`:** only include entries for platforms that have version-bearing manifest files
 - **`package.json`:** omit the `main` field if OpenCode is not a target platform
-- **`GEMINI.md`:** only generate if Gemini CLI is a target platform
-- **`AGENTS.md`:** only generate if Codex is a target platform
 - **Bootstrap skill:** keep under 200 lines — extract heavy content to `references/`
