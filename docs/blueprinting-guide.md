@@ -27,6 +27,7 @@ Key things to know upfront:
 
 - **Needs come first.** The agent will ask what problem you're solving and who will use it *before* any technical questions. Even for simple projects, this takes only 2 questions.
 - **The agent recommends, you decide.** For key decisions (quick vs adaptive mode, skill decomposition, platform selection), the agent proposes 2-3 approaches with trade-offs and a recommendation.
+- **The agent pushes back when needed.** If your answers contradict each other or your requested scope seems disproportionate to the problem, the agent will name the issue and propose a simpler alternative. This is by design.
 - **Already have a project?** Blueprinting creates *new* projects. To add skills, restructure workflows, or improve an existing project, use `/bundles-optimize` instead — see Target 7 in the [optimizing guide](optimizing-guide.md).
 
 For details on each step, read on.
@@ -85,6 +86,7 @@ After collecting answers, the agent restates its understanding and asks you to c
 
 | # | Question | How It Works |
 |---|----------|-------------|
+| 0 | Assumptions declaration | Agent states key assumptions from Phase 1 — you confirm or correct before architecture begins |
 | 1 | Project complexity | Agent *recommends* quick vs adaptive mode based on Phase 1 — you confirm |
 | 2 | Project name | Kebab-case identifier used everywhere |
 | 3 | Target platforms | Agent recommends based on target users — you confirm or adjust |
@@ -92,7 +94,7 @@ After collecting answers, the agent restates its understanding and asks you to c
 | 4a | Skill visibility | Entry-point vs internal — affects commands and descriptions (adaptive only) |
 | 5 | Workflow chain | How skills connect (adaptive only) |
 | 6 | Bootstrap strategy | Whether to auto-inject skill awareness (adaptive only) |
-| 7 | Advanced components | MCP servers, LSP servers, bin/ executables, output styles (adaptive only, asked only if relevant) |
+| 7 | Advanced components | MCP servers, LSP servers, bin/ executables, output styles (adaptive only, only when you mention a matching need) |
 
 Questions 4a, 5, 6, and 7 are only asked in **adaptive mode**. Quick mode skips them.
 
@@ -110,7 +112,7 @@ Questions 4a, 5, 6, and 7 are only asked in **adaptive mode**. Quick mode skips 
 |---|---|---|
 | **Use when** | Bundling standalone skills for distribution | Building an orchestrated workflow |
 | **Needs exploration** | 2 questions (problem + users) | 5 questions (full needs exploration) |
-| **Architecture depth** | 3 questions (name, platforms, skills) | 7+ questions with conditional follow-ups |
+| **Architecture depth** | 3 questions (name, platforms, skills) | 8+ questions with conditional follow-ups |
 | **Default platform** | Claude Code only | User-selected |
 | **Bootstrap** | Skipped (not needed) | Recommended for 3+ skills |
 | **Commands** | Not generated | Entry-point skills get matching commands |
@@ -244,6 +246,8 @@ When the design document is approved, **blueprinting orchestrates** a four-phase
 | **Phase 2** | `bundles-forge:authoring` | Author **SKILL.md** and **agents/*.md** — **invoked by blueprinting** after scaffolding (not by scaffolding) |
 | **Phase 3** | Workflow design | Wire skills together (chains, bootstrap, commands) per the design |
 | **Phase 4** | `bundles-forge:auditing` | Validate quality and security before further iteration |
+
+Each phase includes a verification gate: the agent checks its work (e.g., inspector passes, frontmatter is valid, workflow links are symmetric, no critical audit findings) and loops back to fix issues before proceeding. If the final audit surfaces warnings, the agent presents them and asks whether to proceed.
 
 Later, use `bundles-forge:scaffolding` again if you need to add more platforms.
 

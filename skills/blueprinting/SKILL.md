@@ -53,26 +53,45 @@ At key decision points (skill decomposition, platform selection, architecture ch
 - Best-fit scenario
 - Explicit recommendation + reasoning
 
+### Challenge Over-Scoping
+
+When the requested scope appears disproportionate to the stated problem, push back:
+- Name the mismatch: "You described [simple problem], but the requested architecture implies [complex solution]."
+- Propose a simpler alternative with reasoning.
+- Only proceed with the complex approach if the user provides explicit justification.
+
+Examples:
+- User wants 5 platforms but only uses Claude Code → recommend starting with 1
+- User wants subagents for a 2-skill project → challenge the need
+
+### Immediate Contradiction Surfacing
+
+Do not wait for Periodic Confirmation to detect contradictions. When a current answer conflicts with a previous answer, immediately:
+1. Pause the current question
+2. Name both statements and the contradiction
+3. Resolve before continuing
+
+Example: "In Phase 1 you said target users are beginners, but now you're requesting a complex workflow chain with subagent dispatch. These seem in tension — which is it?"
+
 ### Periodic Confirmation
 
-After completing each phase, restate the collected information and confirm mutual understanding. If contradictions surface, call them out directly.
+After completing each phase, restate the collected information and confirm mutual understanding.
 
 ### Sufficiency Check
 
-The design document may only be generated when all the following are met:
+The design document may only be generated when all the following are met. Each condition has an explicit verification test — if you cannot demonstrate the test passes, the condition is not met.
 
 **Must satisfy** (missing any one blocks document generation):
-- Problem scenario is clear (can be stated in one sentence)
-- Target users are identified
-- Core skills are identified (at least know which skills to include)
-- Architecture mode is determined (quick / adaptive)
-- At least one target platform selected
+- Problem scenario: expressible as "[user] needs to [action] because [reason]" in one sentence
+- Target users: at least one concrete persona with platform + workflow identified
+- Core skills: each has a name + one-sentence purpose + type (rigid/flexible)
+- Architecture mode: quick or adaptive, with explicit reasoning documented
+- Target platform: at least one selected, with rationale tied to target users
 
 **Should satisfy** (mark unmet items as [TBD] in the design document):
-- Workflow chain mapping is complete
-- Bootstrap strategy is decided
-- Advanced component needs are clear
-- Success criteria are defined
+- Workflow chain: dependency graph is drawn (or explicitly marked "all independent")
+- Bootstrap strategy: yes/no decision with reasoning (or "deferred" with rationale)
+- Success criteria: at least one measurable outcome the user can verify post-creation
 
 ## Context Exploration
 
@@ -140,6 +159,19 @@ Wait for user confirmation before proceeding to Phase 2. If the user corrects an
 
 With a clear understanding of what and why, now decide how to build it. The agent should actively recommend answers based on Phase 1 context, rather than asking open-ended questions.
 
+### 0. Assumptions Declaration
+
+Before making any architecture recommendations, explicitly list the key assumptions derived from Phase 1:
+
+> "Based on our needs exploration, I'm operating on these assumptions:
+> 1. [Complexity assumption — e.g., 'This is a straightforward packaging project']
+> 2. [Platform assumption — e.g., 'Primary platform is Claude Code based on your workflow']
+> 3. [Independence assumption — e.g., 'Skills appear independent with no workflow chain']
+>
+> If any of these are wrong, correct me now — they will shape all architecture decisions."
+
+Wait for user confirmation before proceeding.
+
 ### 1. Project Complexity
 
 Based on Phase 1 answers, **recommend** quick or adaptive mode:
@@ -164,19 +196,9 @@ Kebab-case identifier (e.g., `my-dev-tools`). This becomes the directory name, p
 
 ### 3. Target Platforms
 
-Which platforms should the project support?
+Which platforms should the project support? See `references/platform-reference.md` for the full platform table and selection strategies.
 
-| Platform | Manifest | Discovery |
-|----------|----------|-----------|
-| Claude Code | `.claude-plugin/plugin.json` | Convention-based |
-| Cursor | `.cursor-plugin/plugin.json` | Explicit paths |
-| Codex | `.codex/INSTALL.md` | Symlink to `~/.agents/skills/` |
-| OpenCode | `.opencode/plugins/<name>.js` | Plugin config |
-| Gemini CLI | `gemini-extension.json` | Context file |
-
-Based on the target users identified in Phase 1, recommend a platform combination with reasoning. When the user is uncertain, present 2-3 platform strategies with trade-offs.
-
-Start with what the user actually uses. Others can be added later via `bundles-forge:scaffolding`.
+Based on the target users identified in Phase 1, recommend a platform combination with reasoning. Start with what the user actually uses — others can be added later via `bundles-forge:scaffolding`.
 
 ### 4. Skill Inventory
 
@@ -229,19 +251,11 @@ Does the user want an always-loaded meta-skill (`using-<project>`) that teaches 
 - Single bundle-plugin project
 - Skills are fully independent utilities
 
-### 7. Advanced Components (adaptive mode — ask only if relevant)
+### 7. Advanced Components (adaptive mode — respond only to explicit signals)
 
-Based on the answers so far, conditionally ask about:
+Do NOT proactively offer this menu. Only ask about advanced components when the user has explicitly mentioned a need that maps to one during earlier answers. If no signals emerged, skip this step entirely.
 
-| Component | Ask When | What It Provides |
-|-----------|----------|-----------------|
-| External integrations (`bin/` or `.mcp.json`) | Skills interact with external tools or services | CLI executables or MCP servers — consult `skills/scaffolding/references/external-integration.md` to decide CLI vs MCP |
-| `userConfig` | Skills need user-provided API keys, endpoints, or tokens | User prompts at enable time with optional sensitive storage (Claude Code only) |
-| `.lsp.json` servers | Skills involve language-specific code intelligence | Real-time diagnostics, go-to-definition |
-| `output-styles/` | Project needs custom output formatting | Output style definitions |
-| `settings.json` | Project should activate a default agent | Sets default agent when plugin is enabled |
-
-When external integrations are needed, prefer CLI (`bin/`) for stateless single-shot tools and MCP (`.mcp.json`) for stateful connections or authenticated services. Skip this step entirely if no signals emerged from earlier answers.
+Signal → Component mapping is documented in `references/advanced-components.md`.
 
 ## Phase 3: Design Document and Review
 
@@ -280,6 +294,9 @@ After the user approves the design, orchestrate the full project creation pipeli
 
 Invoke `bundles-forge:scaffolding` with the approved design. Wait for scaffolding to complete (including its inspector self-check) before proceeding.
 
+→ **verify:** inspector self-check passes with 0 critical findings
+→ **on fail:** fix structural issues inline, re-run inspector before proceeding
+
 ### Pipeline Phase 2: Author Content
 
 **"Structure generated. Invoking authoring to write skill and agent content."**
@@ -289,6 +306,9 @@ Invoke `bundles-forge:authoring` with the full skill inventory from the design d
 - All agent definitions (`agents/*.md`) if the design specifies subagents
 
 Pass the complete list in one invocation — authoring processes them in sequence.
+
+→ **verify:** every skill in the design has a SKILL.md with valid frontmatter (name, description)
+→ **on fail:** re-invoke authoring for missing or invalid skills
 
 ### Pipeline Phase 3: Workflow Design
 
@@ -302,27 +322,29 @@ This phase stays within blueprinting — workflow design is a blueprint-level ar
 2. Update the bootstrap skill's routing table to reflect all entry-point and internal skills
 3. If the design specifies agent dispatch, add dispatch instructions to the orchestrating skill and `Dispatched by:` to the agent file
 
+→ **verify:** all Calls/Called-by pairs are symmetric; bootstrap routes match skill inventory
+→ **on fail:** fix asymmetric links or missing routes before proceeding
+
 ### Pipeline Phase 4: Initial Quality Check
 
 **"Workflow wired. Running initial audit."**
 
-Invoke `bundles-forge:auditing` on the project root for a baseline quality check. Present findings to the user — critical issues should be addressed before considering the project ready for development iteration.
+Invoke `bundles-forge:auditing` on the project root for a baseline quality check.
+
+→ **verify:** 0 critical audit findings
+→ **on warn:** present to user, proceed if user approves
+→ **on critical:** must address before project is considered ready
 
 ## Common Mistakes
 
 | Mistake | Fix |
 |---------|-----|
 | Skipping needs exploration, jumping to architecture design | Understand "what and for whom" before deciding "how to build" |
-| Accepting vague answers without probing | "Whatever", "you decide", "I guess" are not answers — probe until specific |
-| Asking all questions at once | Agents optimize for efficiency and batch questions — but users give higher-quality answers with focused single questions, 1-2 at a time |
 | Only asking questions, never offering approaches | When users are stuck, proactively provide 2-3 options with trade-offs and a recommendation |
-| Asking all questions at once | Agents optimize for efficiency and batch questions — but users give higher-quality answers with focused single questions |
-| Over-scoping platforms | Agents see the full platform table and try to be thorough — but untested platform adapters create maintenance debt |
 | Forgetting workflow chain mapping | Chains determine bootstrap skill content — an unmapped chain produces a bootstrap that routes incorrectly |
 | Dumping skills into one folder without analyzing compatibility | Audit each skill first — naming conflicts and overlapping responsibilities cause confusion |
 | Copying third-party skills without security audit | Always run `bundles-forge:auditing` on imported content |
 | Treating all third-party skills as repackage-only | Ask integration intent — workflow integration requires adaptation |
-| Using adaptive mode for simple skill packaging | Quick mode exists for a reason — don't over-engineer |
 | Forgetting skill visibility classification | Entry-point vs internal determines commands/ and description style |
 | Using blueprinting to add skills to an existing project | Blueprinting creates new projects; use `bundles-forge:optimizing` (Target 7) for existing ones |
 

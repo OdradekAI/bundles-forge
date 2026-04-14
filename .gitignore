@@ -1,5 +1,6 @@
 .repos
 .claude/
+.vscode/
 .bundles-forge/
 node_modules/
 .worktrees/

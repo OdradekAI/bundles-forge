@@ -72,6 +72,24 @@ Select targets based on audit findings or user request — don't run all 8 seque
 | Component signals (userConfig, MCP, LSP needs) | Target 8 |
 | User behavioral feedback about skill quality | Feedback Iteration |
 
+### Optimization Action Classification
+
+After selecting a target, classify the optimization action before delegating. This determines the delegation strategy and guards against scope drift.
+
+**Action types:**
+
+| Type | When | Delegation strategy |
+|------|------|---------------------|
+| **FIX** | Skill has a defect — outdated instructions, broken references, ineffective steps | Repair in place. Provide the specific defect and the corrected content. The skill's core goal and scope must not change |
+| **DERIVED** | Skill works but needs enhancement or specialization for a new context | Create a variant or improved version. The original remains available. Clearly state what's being enhanced and why |
+| **CAPTURED** | A workflow gap exists — no skill covers a needed capability | Create a new skill from scratch. Define its responsibility boundary, triggering conditions, and workflow connections |
+
+**Before delegating, explicitly state:**
+
+1. **Classification with rationale:** "This is a FIX because the description anti-pattern causes false triggers" — not just "I'll fix the description"
+2. **Impact analysis:** When the change touches `## Outputs`, `## Integration`, or cross-references, map all downstream skills that consume those artifacts. Include downstream updates in the same delegation scope rather than discovering breakage in the verify step
+3. **Scope preservation check:** After drafting the change, verify: does the optimized skill still serve the same core goal? If the change shifts what the skill *is* (not just how well it does it), stop and reassess
+
 ### Script-Assisted Checks
 
 Run the quality linter to identify frontmatter issues, description anti-patterns, and broken references before manual optimization:
@@ -83,6 +101,28 @@ bundles-forge audit-skill --json <project-root>  # machine-readable
 
 The linter automates checks Q1-Q12 and X1-X2 from the skill quality ruleset. Focus manual effort on the subjective targets below.
 
+### Skill Health Assessment
+
+Beyond automated linter checks, assess each skill's health across four dimensions. These are qualitative judgments, not runtime metrics — form them from audit findings, user feedback, and manual review:
+
+| Dimension | Question to Answer | Signals |
+|-----------|--------------------|---------|
+| **Trigger confidence** | Can this skill be correctly triggered from realistic user prompts? | Create 3-5 test prompts and mentally simulate whether the description would match. Low confidence → Target 1 |
+| **Execution clarity** | Once triggered, can an agent follow the steps without ambiguity? | Look for vague instructions, missing preconditions, implicit assumptions. Low clarity → FIX action |
+| **End-to-end completeness** | Does the full flow from trigger to output have gaps? | Check for missing handoffs, undefined artifacts, steps that assume context not provided by upstream. Gaps → Target 4 or CAPTURED action |
+| **Degradation signals** | Has this skill stopped working in practice? | User reports of wrong output, audit findings that recur after previous fixes, broken references to changed APIs or tools. Present → urgent FIX action |
+
+### Workflow Gap Detection
+
+When audit findings or health assessment reveal structural gaps — not just broken connections but missing capabilities — consider whether a new skill should be created rather than patching existing ones:
+
+| Signal | Consider CAPTURED |
+|--------|-------------------|
+| W2 (unreachable skill) where the skill serves a real need but has no entry point | Create a new routing or orchestration skill |
+| Workflow graph has a "dead zone" between two skills with no handoff path | Create a bridging skill to connect them |
+| Users repeatedly perform multi-step manual work that no existing skill covers | Capture the pattern as a new skill |
+| A skill's `## Outputs` lists artifacts that no downstream skill consumes | Either remove the dead output or create a consumer skill |
+
 ### Target 1: Skill Description Triggering
 
 The highest-impact optimization. Descriptions are the primary mechanism for skill discovery.
@@ -91,7 +131,7 @@ The highest-impact optimization. Descriptions are the primary mechanism for skil
 
 **Decision** — draft the improved description and rationale. Use A/B eval (see below) to compare triggering accuracy before and after.
 
-**Delegation** — invoke `bundles-forge:authoring` with the specific rewrite instruction (old description, new description, rationale). Authoring applies the change following its description-writing conventions.
+**Delegation** — invoke `bundles-forge:authoring` with a precise change spec: the old description verbatim, the new description, the rationale tied to a specific diagnosis (audit finding, health assessment dimension, or user feedback), and the action classification (FIX/DERIVED). Do not ask authoring to "improve the description" — specify the exact change.
 
 **Guiding principle:** Use A/B eval when a change could produce regression effects — when improving one dimension might degrade another. Each eval scenario below defines its own skip conditions based on what kind of regression is possible.
 
@@ -130,7 +170,7 @@ When optimizing a description, never overwrite the original blindly. Use a copy-
 
 **Decision** — determine what to extract, merge, or cut. Map specific sections to their target location.
 
-**Delegation** — invoke `bundles-forge:authoring` with the restructuring plan (which sections to extract to references/, which content to cut, which cross-references to add).
+**Delegation** — invoke `bundles-forge:authoring` with a section-level restructuring spec: which sections to extract (source heading → target file in references/), which content to cut (quote the specific lines), and which cross-references to add. Authoring should modify only the named sections, not rewrite the entire SKILL.md.
 
 ### Target 3: Progressive Disclosure
 
@@ -138,7 +178,7 @@ When optimizing a description, never overwrite the original blindly. Use a copy-
 
 **Decision** — determine which sections to promote (to metadata) or demote (to references/).
 
-**Delegation** — invoke `bundles-forge:authoring` with the disclosure restructuring plan.
+**Delegation** — invoke `bundles-forge:authoring` with per-section move instructions: for each section being promoted or demoted, specify the source location, the target level, and the reason (e.g. "move lines 45-80 to references/platform-details.md because this content is only needed during platform adaptation, not on every skill load").
 
 ### Target 4: Workflow Chain Integrity
 
@@ -371,8 +411,9 @@ Follow the same dispatch and fallback pattern as Description A/B Eval (Target 1)
 | Splitting skills too aggressively | Only split when there's a genuine responsibility boundary |
 | Ignoring token budget for bootstrap | Bootstrap loads every session — every word counts |
 | Applying feedback without validation | Every item goes through the 3-question framework |
-| Expanding skill scope based on feedback | Feedback should improve what the skill does, not change what it is |
+| Expanding skill scope during any optimization | Optimization should improve how well a skill fulfills its goal, not shift what the goal is. Verify after every change: does this skill still do the same thing? |
 | Running all 8 targets on a single skill | Let scope auto-detection handle it — targets 5-8 don't fully apply |
+| Rewriting entire SKILL.md instead of surgical edits | Specify section-level changes in delegation. A FIX to one heading should not trigger a full rewrite — minimize diff surface to reduce regression risk |
 | Adding third-party skills without security audit | Always run `bundles-forge:auditing` — see `references/third-party-integration.md` |
 | Adding skills without updating Integration sections | Every new connection needs symmetric `Calls` / `Called by` declarations |
 
@@ -386,7 +427,11 @@ Follow the same dispatch and fallback pattern as Description A/B Eval (Target 1)
 ## Outputs
 
 - `optimized-skill` — improved SKILL.md content with better descriptions, reduced tokens, or fixed workflow references
-- `eval-report` (optional) — A/B evaluation results comparing original vs optimized versions, written to `.bundles-forge/`
+- `eval-report` (optional) — optimization record written to `.bundles-forge/`, structured as:
+  - **Action type:** FIX, DERIVED, or CAPTURED
+  - **Change summary:** one sentence describing what changed and why
+  - **Diagnosis basis:** which health dimension, audit finding, or user feedback triggered this optimization
+  - **Before/after comparison:** A/B eval results, or verification pass outcome if A/B was skipped
 
 ## Integration
 

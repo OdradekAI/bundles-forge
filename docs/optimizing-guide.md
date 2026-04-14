@@ -108,6 +108,31 @@ Select targets based on audit findings or user request — don't run all 8 seque
 | Component signals (userConfig, MCP, LSP needs) | Target 8 |
 | User behavioral feedback about skill quality | Feedback Iteration |
 
+### Optimization Action Classification
+
+After routing to a target, the agent classifies the optimization action. This determines whether to patch an existing skill or create something new:
+
+| Type | When | What Happens |
+|------|------|--------------|
+| **FIX** | Skill has a defect — outdated instructions, broken references, ineffective steps | Repair in place. The skill's core goal and scope do not change |
+| **DERIVED** | Skill works but needs enhancement or specialization for a new context | A variant or improved version is created. The original remains available |
+| **CAPTURED** | A workflow gap exists — no skill covers a needed capability | A new skill is created from scratch to fill the gap |
+
+The agent explicitly states its classification and rationale before making changes. When a change touches `## Outputs` or `## Integration`, the agent maps all downstream skills that consume those artifacts and includes their updates in the same pass — preventing breakage discovered only at verification time.
+
+### Skill Health Assessment
+
+Beyond automated linter checks (`bundles-forge audit-skill`), the agent assesses each skill across four qualitative dimensions:
+
+| Dimension | What It Tells You |
+|-----------|-------------------|
+| **Trigger confidence** | Can realistic user prompts correctly trigger this skill? Low confidence points to Target 1 |
+| **Execution clarity** | Once triggered, can an agent follow the steps without ambiguity? Vague instructions or implicit assumptions indicate a FIX is needed |
+| **End-to-end completeness** | Does the full flow from trigger to output have gaps? Missing handoffs or undefined artifacts point to Target 4 or a CAPTURED action |
+| **Degradation signals** | Has this skill stopped working in practice? Recurring audit findings or user reports of wrong output signal an urgent FIX |
+
+When assessment or audit findings reveal structural gaps — not just broken connections but missing capabilities — the agent considers whether a new skill should be created (CAPTURED) rather than patching existing ones. Common gap signals include W2 (unreachable skill), dead zones in the workflow graph, and repeated manual work that no existing skill covers.
+
 ---
 
 ## Core Targets (1-4)
@@ -414,8 +439,9 @@ Receive feedback
 | Rewriting descriptions as workflow summaries | Agent shortcuts the description instead of reading the full SKILL.md | State triggering *conditions* ("Use when reviewing..."), not *steps* ("Scans structure, checks manifests...") |
 | Ignoring the bootstrap skill's token budget | The bootstrap skill loads every session, so bloat costs context everywhere | Keep `using-*` under 200 lines — this is the highest-ROI token optimization |
 | Applying user feedback without validation | Style preferences masquerade as defect reports, leading to unnecessary churn | Run every feedback item through the 3-question validation framework before accepting |
-| Expanding a skill's scope based on feedback | A skill slowly drifts from its original responsibility | Feedback should improve *how* the skill works, not change *what* it is |
+| Expanding a skill's scope during any optimization | A skill slowly drifts from its original responsibility | Optimization should improve *how well* a skill fulfills its goal, not shift *what* the goal is. Verify after every change: does this skill still do the same thing? |
 | Running all 8 targets on a single skill | Targets 5-8 require project context and produce no useful results at skill scope | Let scope auto-detection handle it — single skills only get targets 1-4 |
+| Rewriting entire SKILL.md instead of surgical edits | Large diffs increase regression risk and make review harder | Specify section-level changes. A FIX to one heading should not trigger a full rewrite — minimize diff surface |
 | Adding third-party skills without security audit | Imported content may contain encoded prompts, excessive tool access, or network calls | Always run `bundles-forge:auditing` on imported skills — see `references/third-party-integration.md` |
 | Adding skills without updating Integration sections | The workflow graph becomes inconsistent, causing W10 (asymmetric integration) findings | Every new skill connection needs symmetric `**Calls:**` and `**Called by:**` declarations |
 | Skipping A/B eval for description rewrites | A description that improves one trigger may break another | Always A/B eval when modifying existing trigger phrases — additive-only changes can skip |
