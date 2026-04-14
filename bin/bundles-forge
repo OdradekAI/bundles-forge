@@ -1,0 +1,55 @@
+#!/usr/bin/env python3
+"""bundles-forge CLI - unified cross-skill script dispatcher.
+
+Routes subcommands to the correct script inside the plugin.
+Uses subprocess.call to preserve __file__ semantics, exit codes,
+and stdout/stderr pass-through.
+
+Usage:
+    bundles-forge <command> [args...]
+    bundles-forge -h | --help
+"""
+import subprocess
+import sys
+from pathlib import Path
+
+_ROOT = Path(__file__).resolve().parent.parent
+
+COMMANDS = {
+    "audit-skill":    _ROOT / "skills" / "auditing" / "scripts" / "audit_skill.py",
+    "audit-security": _ROOT / "skills" / "auditing" / "scripts" / "audit_security.py",
+    "audit-docs":     _ROOT / "skills" / "auditing" / "scripts" / "audit_docs.py",
+    "audit-plugin":   _ROOT / "skills" / "auditing" / "scripts" / "audit_plugin.py",
+    "audit-workflow": _ROOT / "skills" / "auditing" / "scripts" / "audit_workflow.py",
+    "checklists":     _ROOT / "skills" / "auditing" / "scripts" / "generate_checklists.py",
+    "bump-version":   _ROOT / "skills" / "releasing" / "scripts" / "bump_version.py",
+}
+
+
+def main():
+    if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help"):
+        print("Usage: bundles-forge <command> [args...]")
+        print()
+        print("Commands:")
+        for name in COMMANDS:
+            print(f"  {name}")
+        sys.exit(0)
+
+    cmd = sys.argv[1]
+    args = sys.argv[2:]
+
+    script = COMMANDS.get(cmd)
+    if script is None:
+        print(f"bundles-forge: unknown command '{cmd}'", file=sys.stderr)
+        print(f"Available: {', '.join(COMMANDS)}", file=sys.stderr)
+        sys.exit(1)
+
+    if not script.exists():
+        print(f"bundles-forge: script not found: {script}", file=sys.stderr)
+        sys.exit(1)
+
+    sys.exit(subprocess.call([sys.executable, str(script)] + args))
+
+
+if __name__ == "__main__":
+    main()

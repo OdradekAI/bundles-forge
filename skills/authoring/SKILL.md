@@ -1,7 +1,7 @@
 ---
 name: authoring
 description: "Use when writing, completing, improving, or adapting SKILL.md and agents/*.md in a bundle-plugin — integrating external skills, filling scaffolded stubs, or rewriting for better triggering and token efficiency"
-allowed-tools: Python(skills/auditing/scripts/audit_skill.py *)
+allowed-tools: Bash(bundles-forge audit-skill *)
 ---
 
 # Authoring Skill Content
@@ -108,7 +108,7 @@ Enhance existing in-project content based on user feedback or optimization specs
 
 After completing any path, validate the authored content:
 
-1. **Run lint** — `python skills/auditing/scripts/audit_skill.py <skill-directory>` on each authored/modified skill
+1. **Run lint** — `bundles-forge audit-skill <skill-directory>` on each authored/modified skill
    - **If audit script is unavailable:** review against `references/quality-checklist.md` manually
 2. **Act on findings** — fix Critical immediately, fix Warning if straightforward, report Info as suggestions
 3. **Report results** — tell the user/calling skill what was validated and any remaining warnings
@@ -127,7 +127,7 @@ After completing any path, validate the authored content:
 | Skipping project conventions | Always read existing skills first when working in an established project |
 | Not wiring Integration section | Every skill needs Called by / Calls / Pairs with to connect to the workflow graph |
 | No defensive instructions for rigid skills | For rigid/hybrid skills, add explicit loophole closers, rationalization tables, and red-flag lists — see Defensive Writing in `references/skill-writing-guide.md` |
-| Forgetting validation | Always run `audit_skill.py` after authoring — catches issues before they propagate |
+| Forgetting validation | Always run `bundles-forge audit-skill` after authoring — catches issues before they propagate |
 
 ## Inputs
 

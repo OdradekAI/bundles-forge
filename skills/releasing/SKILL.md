@@ -1,7 +1,7 @@
 ---
 name: releasing
 description: "Use when releasing a bundle-plugin, bumping versions, fixing version drift across manifests, setting up version sync infrastructure, updating CHANGELOG, publishing to marketplaces, or checking release readiness"
-allowed-tools: Python(skills/releasing/scripts/bump_version.py *) Python(skills/auditing/scripts/audit_plugin.py *) Python(skills/auditing/scripts/audit_docs.py *)
+allowed-tools: Bash(bundles-forge bump-version *) Bash(bundles-forge audit-plugin *) Bash(bundles-forge audit-docs *)
 ---
 
 # Releasing Bundle-Plugins
@@ -61,13 +61,13 @@ If the working tree is dirty, instruct the user to commit all development work f
 Run all automated checks. If any critical issues are found, resolve them before continuing.
 
 ```bash
-python skills/releasing/scripts/bump_version.py <project-root> --check
-python skills/auditing/scripts/audit_docs.py <project-root>
+bundles-forge bump-version <project-root> --check
+bundles-forge audit-docs <project-root>
 ```
 
 **Plugin validation (Claude Code only):** If running in a Claude Code environment, run `claude plugin validate` (or `/plugin validate` in a session) to verify `plugin.json` schema, skill/agent/command frontmatter, and `hooks/hooks.json` validity. Skip this step on other platforms — the inspector agent covers equivalent structural checks.
 
-**Full audit:** Invoke `bundles-forge:auditing` (preferred — includes qualitative assessment via auditor subagent with 10-category scoring). Fallback: `python skills/auditing/scripts/audit_plugin.py <project-root>` (automated checks only, no qualitative scoring).
+**Full audit:** Invoke `bundles-forge:auditing` (preferred — includes qualitative assessment via auditor subagent with 10-category scoring). Fallback: `bundles-forge audit-plugin <project-root>` (automated checks only, no qualitative scoring).
 
 If audit status is FAIL, resolve critical issues before releasing. If security findings are critical, block the release.
 
@@ -116,7 +116,7 @@ After resolving coherence issues, sync project documentation:
 3. **`AGENTS.md`** — Verify: Available Skills table matches `skills/` directory.
 4. **`README.md` and `README.zh.md`** — Verify: Skills table, Agents table, Commands table, code blocks, and file links are consistent between both files and with the project state.
 
-Use `audit_docs.py` output from Step 1 as a guide for what needs updating. After making fixes, re-run `audit_docs.py` to confirm all documentation is consistent.
+Use `bundles-forge audit-docs` output from Step 1 as a guide for what needs updating. After making fixes, re-run `bundles-forge audit-docs` to confirm all documentation is consistent.
 
 ### Step 4: Version Bump
 
@@ -132,7 +132,7 @@ Help the user choose the right version increment:
 Pre-release versions follow semver pre-release syntax. The bump script accepts any valid version string — pre-release versions work the same as stable ones across all manifests.
 
 ```bash
-python skills/releasing/scripts/bump_version.py <project-root> <new-version>
+bundles-forge bump-version <project-root> <new-version>
 ```
 
 This updates all declared files and runs an audit to catch any missed files. For the full command reference, read `references/version-infrastructure.md`.
@@ -168,9 +168,9 @@ This updates all declared files and runs an audit to catch any missed files. For
 After all changes, re-run verification to confirm nothing broke:
 
 ```bash
-python skills/releasing/scripts/bump_version.py <project-root> --check
-python skills/releasing/scripts/bump_version.py <project-root> --audit
-python skills/auditing/scripts/audit_docs.py <project-root>
+bundles-forge bump-version <project-root> --check
+bundles-forge bump-version <project-root> --audit
+bundles-forge audit-docs <project-root>
 ```
 
 ### Step 7: Publish
@@ -217,7 +217,7 @@ For urgent fixes between planned releases:
 |---------|-----|
 | Releasing with uncommitted changes | Always verify `git status` is clean before starting the pipeline |
 | Releasing without running audit | Always run full pipeline — "it's just a small change" is how drift happens |
-| Skipping documentation consistency check | `audit_docs.py` catches skill list drift, broken cross-refs, README desync |
+| Skipping documentation consistency check | `bundles-forge audit-docs` catches skill list drift, broken cross-refs, README desync |
 | Not reviewing changes for coherence | Read the full diff since last tag — contradictions and missing registrations are invisible to automated checks |
 | Forgetting to tag the release | Tags are how git-based platforms identify versions |
 | Only pushing a tag without creating a GitHub Release | Tags appear on `/tags` but not `/releases` — use `gh release create` to publish release notes and notify watchers |
@@ -225,7 +225,7 @@ For urgent fixes between planned releases:
 | Skipping CHANGELOG update | Users need to know what changed, especially for breaking changes |
 | Not re-verifying after fixes | Changes to fix issues can introduce new drift |
 | Forgetting marketplace.json entry | `plugins.0.version` field needs tracking too |
-| Manual editing without bump script | Always use the script — it runs audit after |
+| Manual editing without bump command | Always use `bundles-forge bump-version` — it runs audit after |
 | Releasing from non-main branch without awareness | Not blocked, but should be an explicit decision |
 
 ## Inputs

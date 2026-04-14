@@ -206,7 +206,7 @@ For the full agent authoring reference, see `skills/authoring/references/agent-a
 
 ## Validation
 
-After authoring, the skill always runs `python skills/auditing/scripts/audit_skill.py` to validate the result.
+After authoring, the skill always runs `bundles-forge audit-skill` to validate the result.
 
 ### What Gets Checked
 

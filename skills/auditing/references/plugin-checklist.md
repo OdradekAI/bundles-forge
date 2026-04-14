@@ -97,7 +97,7 @@ Run these checks only for platforms the project claims to support.
 
 **Quick drift check:**
 ```bash
-python skills/releasing/scripts/bump_version.py --check
+bundles-forge bump-version --check
 ```
 
 ---
@@ -152,9 +152,9 @@ Static link resolution — verifies that references within skill content point t
 2. Verify each `<name>` matches a directory under `skills/`
 3. Extract all relative file references and verify they exist
 4. Scan for prose references to subdirectories and verify they exist
-5. Run `python skills/auditing/scripts/audit_skill.py --json` — X1-X3 findings are in per-skill results
+5. Run `bundles-forge audit-skill --json` — X1-X3 findings are in per-skill results
 
-**Workflow graph checks** have been moved to a dedicated category. See `references/workflow-checklist.md` and run `python skills/auditing/scripts/audit_workflow.py` for workflow-specific analysis.
+**Workflow graph checks** have been moved to a dedicated category. See `references/workflow-checklist.md` and run `bundles-forge audit-workflow` for workflow-specific analysis.
 
 ---
 

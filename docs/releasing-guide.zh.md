@@ -74,15 +74,15 @@ git branch --show-current
 
 ```bash
 # 版本漂移检测
-python skills/releasing/scripts/bump_version.py <project-root> --check
+bundles-forge bump-version <project-root> --check
 
 # 文档一致性（9 项检查）
-python skills/auditing/scripts/audit_docs.py <project-root>
+bundles-forge audit-docs <project-root>
 ```
 
 **插件验证（仅 Claude Code）：** 在 Claude Code 环境中，运行 `claude plugin validate`（或会话内 `/plugin validate`）以验证 `plugin.json` schema、skill/agent/command frontmatter 和 `hooks.json` 有效性。其他平台通过 inspector agent 覆盖等效的结构检查。
 
-**完整审计：** 调用 `bundles-forge:auditing`（首选 — 通过 auditor 子代理提供 10 类定性评估与评分）。回退：`python skills/auditing/scripts/audit_plugin.py .`（仅自动化检查，无定性评分）。
+**完整审计：** 调用 `bundles-forge:auditing`（首选 — 通过 auditor 子代理提供 10 类定性评估与评分）。回退：`bundles-forge audit-plugin .`（仅自动化检查，无定性评分）。
 
 **`audit_docs.py` 检查项（D1–D9）：**
 
@@ -154,7 +154,7 @@ git diff $(git describe --tags --abbrev=0)..HEAD
 ### 步骤 4：版本升级
 
 ```bash
-python skills/releasing/scripts/bump_version.py <project-root> <new-version>
+bundles-forge bump-version <project-root> <new-version>
 ```
 
 这会更新 `.version-bump.json` 中声明的所有文件，并运行升级后审计以捕获遗漏。
@@ -186,9 +186,9 @@ python skills/releasing/scripts/bump_version.py <project-root> <new-version>
 ### 步骤 6：最终验证
 
 ```bash
-python skills/releasing/scripts/bump_version.py <project-root> --check   # 无版本漂移
-python skills/releasing/scripts/bump_version.py <project-root> --audit   # 无游离版本字符串
-python skills/auditing/scripts/audit_docs.py <project-root>             # 文档一致
+bundles-forge bump-version <project-root> --check   # 无版本漂移
+bundles-forge bump-version <project-root> --audit   # 无游离版本字符串
+bundles-forge audit-docs <project-root>             # 文档一致
 ```
 
 三者必须全部以退出码 0（干净）退出后才能发布。
@@ -263,8 +263,8 @@ Marketplace 分发需确保 `.claude-plugin/marketplace.json` 存在且包含插
 
 1. 创建 `.version-bump.json`，包含所有版本承载清单的条目
 2. 添加 `skills/releasing/scripts/bump_version.py`（从脚手架模板或 bundles-forge 复制）
-3. 验证：`python skills/releasing/scripts/bump_version.py --check`
-4. 审计：`python skills/releasing/scripts/bump_version.py --audit`
+3. 验证：`bundles-forge bump-version --check`
+4. 审计：`bundles-forge bump-version --audit`
 
 完整项目搭建（含版本基础设施）请参见 `bundles-forge:scaffolding`。
 
@@ -297,11 +297,11 @@ Marketplace 分发需确保 `.claude-plugin/marketplace.json` 存在且包含插
 ### 命令
 
 ```bash
-python skills/releasing/scripts/bump_version.py [project-root] --check     # 检测版本漂移
-python skills/releasing/scripts/bump_version.py [project-root] --audit     # 查找未声明的版本字符串
-python skills/releasing/scripts/bump_version.py [project-root] <version>   # 升级所有清单
-python skills/auditing/scripts/audit_docs.py <project-root>               # 文档一致性检查
-python skills/auditing/scripts/audit_plugin.py <project-root>             # 完整质量 + 安全审计
+bundles-forge bump-version [project-root] --check     # 检测版本漂移
+bundles-forge bump-version [project-root] --audit     # 查找未声明的版本字符串
+bundles-forge bump-version [project-root] <version>   # 升级所有清单
+bundles-forge audit-docs <project-root>               # 文档一致性检查
+bundles-forge audit-plugin <project-root>             # 完整质量 + 安全审计
 ```
 
 ### 退出码

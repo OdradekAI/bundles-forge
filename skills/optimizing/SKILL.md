@@ -1,7 +1,7 @@
 ---
 name: optimizing
 description: "Use when optimizing a bundle-plugin or single skill — improving descriptions, reducing tokens, fixing audit findings, restructuring workflows, adding skills to fill gaps, or iterating on user feedback"
-allowed-tools: Python(skills/auditing/scripts/*)
+allowed-tools: Bash(bundles-forge audit-skill *) Bash(bundles-forge audit-security *) Bash(bundles-forge audit-docs *) Bash(bundles-forge audit-plugin *) Bash(bundles-forge audit-workflow *) Bash(bundles-forge checklists *) Bash(bundles-forge bump-version *)
 ---
 
 # Optimizing Bundle-Plugins
@@ -77,8 +77,8 @@ Select targets based on audit findings or user request — don't run all 8 seque
 Run the quality linter to identify frontmatter issues, description anti-patterns, and broken references before manual optimization:
 
 ```bash
-python skills/auditing/scripts/audit_skill.py <project-root>        # markdown report
-python skills/auditing/scripts/audit_skill.py --json <project-root>  # machine-readable
+bundles-forge audit-skill <project-root>        # markdown report
+bundles-forge audit-skill --json <project-root>  # machine-readable
 ```
 
 The linter automates checks Q1-Q12 and X1-X2 from the skill quality ruleset. Focus manual effort on the subjective targets below.
@@ -145,8 +145,8 @@ When optimizing a description, never overwrite the original blindly. Use a copy-
 Consume the `workflow-report` from `bundles-forge:auditing` (Workflow mode) to identify and fix workflow issues. If no workflow report is available, run the workflow audit first:
 
 ```bash
-python skills/auditing/scripts/audit_workflow.py <project-root>                          # full workflow audit
-python skills/auditing/scripts/audit_workflow.py --focus-skills skill-a,skill-b <root>   # focused on specific skills
+bundles-forge audit-workflow <project-root>                          # full workflow audit
+bundles-forge audit-workflow --focus-skills skill-a,skill-b <root>   # focused on specific skills
 ```
 
 **Fix by W-check priority:**
@@ -189,7 +189,7 @@ Fix security findings from `bundles-forge:auditing` Category 10.
 **Process:** Run security scan first, then address findings by priority — critical before warnings, warnings before info:
 
 ```bash
-python skills/auditing/scripts/audit_security.py <project-root>
+bundles-forge audit-security <project-root>
 ```
 
 Alternatively, invoke `bundles-forge:auditing` for a full audit that includes security (Category 10).
@@ -306,7 +306,7 @@ When the target is a single skill, run only the targets that apply at skill scop
 ### Script Shortcuts
 
 ```bash
-python skills/auditing/scripts/audit_skill.py <skill-directory>     # quality checks on single skill
+bundles-forge audit-skill <skill-directory>     # quality checks on single skill
 ```
 
 ---

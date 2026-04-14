@@ -1,7 +1,7 @@
 ---
 name: scaffolding
 description: "Use when generating project structure for new bundle-plugins, adding or removing platform support (Claude Code, Cursor, Codex, OpenCode, Gemini CLI), updating platform manifests, or migrating hooks and configuration between platforms"
-allowed-tools: Python(skills/releasing/scripts/bump_version.py *)
+allowed-tools: Bash(bundles-forge bump-version *)
 ---
 
 # Scaffolding Bundle-Plugins
@@ -10,7 +10,7 @@ allowed-tools: Python(skills/releasing/scripts/bump_version.py *)
 
 Generate new bundle-plugin projects and manage platform support across their lifecycle. Handles initial project generation (greenfield) and ongoing platform adaptation (add, fix, migrate, remove).
 
-**Core principle:** Generate only what's needed. Every platform, every file has a reason to exist. This skill generates structure only — it does not run its own scripts. Validation is delegated to `bundles-forge:auditing`; version checks to `bump_version.py`.
+**Core principle:** Generate only what's needed. Every platform, every file has a reason to exist. This skill generates structure only — it does not run its own scripts. Validation is delegated to `bundles-forge:auditing`; version checks to `bundles-forge bump-version`.
 
 **Skill type:** Hybrid — follow the generation/adaptation process rigidly, but mode selection and component choices are flexible based on user context.
 
@@ -118,7 +118,7 @@ For platform-specific wiring details, read `references/platform-adapters.md`.
 10. **Generate optional components** — only what the design specifies. For MCP servers, use `assets/mcp-json.md` template and consult `references/external-integration.md` for transport selection and platform differences. When `userConfig` is specified, add the `userConfig` field to `plugin.json` with appropriate `sensitive` flags. When marketplace distribution is specified, generate `.claude-plugin/marketplace.json` with plugin metadata
 
 *Phase 3 — Finalize:*
-11. `git init` + initial commit; run `python skills/releasing/scripts/bump_version.py --check`
+11. `git init` + initial commit; run `bundles-forge bump-version --check`
 
 ## Platform Adaptation: Existing Projects
 
@@ -130,7 +130,7 @@ For platform-specific wiring details, read `references/platform-adapters.md`.
 4. **Update version sync** — add version-bearing manifests to `.version-bump.json`
 5. **Update hooks** — if platform uses session hooks, ensure `session-start.py` handles its JSON format
 6. **Update documentation** — add install section to README; create platform-specific docs if needed
-7. **Verify** — validate manifests, `python skills/releasing/scripts/bump_version.py --check`, test hooks
+7. **Verify** — validate manifests, `bundles-forge bump-version --check`, test hooks
 
 ### Removing a Platform
 
@@ -138,7 +138,7 @@ For platform-specific wiring details, read `references/platform-adapters.md`.
 2. **Update `.version-bump.json`** — remove entries for deleted manifests
 3. **Clean hooks** — delete platform-specific hook files; simplify `session-start.py` if branches removed
 4. **Update documentation** — remove install section from README and platform-specific docs
-5. **Verify** — `python skills/releasing/scripts/bump_version.py --check`; run inspector validation
+5. **Verify** — `bundles-forge bump-version --check`; run inspector validation
 
 ### Adding Optional Components
 
@@ -162,7 +162,7 @@ Remove MCP servers, CLI executables, or LSP servers from an existing project. Re
 
 ## Post-Action Validation
 
-**Step 1 — Deterministic checks (script):** Run `python skills/auditing/scripts/audit_skill.py <project-root>` to verify structure, manifests, version sync, and frontmatter. Review any critical or warning findings before proceeding.
+**Step 1 — Deterministic checks (script):** Run `bundles-forge audit-skill <project-root>` to verify structure, manifests, version sync, and frontmatter. Review any critical or warning findings before proceeding.
 
 **Step 2 — Semantic inspection (agent):** Dispatch the `inspector` agent (`agents/inspector.md`) for semantic validation that scripts cannot cover (template quality, hook logic coherence, design alignment). The inspector adjusts scope based on context:
 - **New project** → full inspection (template quality, optional components, hook semantics, design coherence)

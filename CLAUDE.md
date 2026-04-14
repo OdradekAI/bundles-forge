@@ -23,15 +23,15 @@ python -m pytest tests/test_scripts.py -v -k test_project_mode_runs_without_erro
 ### Quality & Security
 
 ```bash
-python skills/auditing/scripts/audit_skill.py [project-root]       # project-level skill quality audit (auto-detects mode)
-python skills/auditing/scripts/audit_skill.py [skill-dir]          # single skill audit (4 categories)
-python skills/auditing/scripts/audit_skill.py --all [project-root] # force project-level mode
-python skills/auditing/scripts/audit_security.py [project-root]     # 7-surface security scan
-python skills/auditing/scripts/audit_plugin.py [project-root]     # combined audit (calls audit_skill + audit_security + workflow)
-python skills/auditing/scripts/audit_workflow.py [project-root]    # workflow integration audit (W1-W11)
-python skills/auditing/scripts/audit_docs.py [project-root]        # documentation consistency (9 checks: D1-D9)
-python skills/auditing/scripts/generate_checklists.py [project-root]        # regenerate checklist tables from audit-checks.json registry
-python skills/auditing/scripts/generate_checklists.py --check [project-root] # detect checklist drift (exit 1 if stale)
+bundles-forge audit-skill [project-root]       # project-level skill quality audit (auto-detects mode)
+bundles-forge audit-skill [skill-dir]          # single skill audit (4 categories)
+bundles-forge audit-skill --all [project-root] # force project-level mode
+bundles-forge audit-security [project-root]     # 7-surface security scan
+bundles-forge audit-plugin [project-root]     # combined audit (calls audit_skill + audit_security + workflow)
+bundles-forge audit-workflow [project-root]    # workflow integration audit (W1-W11)
+bundles-forge audit-docs [project-root]        # documentation consistency (9 checks: D1-D9)
+bundles-forge checklists [project-root]        # regenerate checklist tables from audit-checks.json registry
+bundles-forge checklists --check [project-root] # detect checklist drift (exit 1 if stale)
 ```
 
 All scripts accept `--json` for machine-readable output. Exit codes: 0 = pass, 1 = warnings, 2 = critical.
@@ -39,9 +39,9 @@ All scripts accept `--json` for machine-readable output. Exit codes: 0 = pass, 1
 ### Version Management
 
 ```bash
-python skills/releasing/scripts/bump_version.py --check             # detect version drift across manifests
-python skills/releasing/scripts/bump_version.py --audit             # find undeclared version strings
-python skills/releasing/scripts/bump_version.py <new-version>       # bump all files declared in .version-bump.json
+bundles-forge bump-version --check             # detect version drift across manifests
+bundles-forge bump-version --audit             # find undeclared version strings
+bundles-forge bump-version <new-version>       # bump all files declared in .version-bump.json
 ```
 
 ## Architecture
@@ -106,10 +106,10 @@ Version is synchronized across these files (declared in `.version-bump.json`):
 - **Heavy reference content:** extract to `references/` subdirectory (threshold: 100+ lines)
 - **Cross-references:** use `bundles-forge:<skill-name>` format
 - **Version bumps:** never edit version numbers manually — use `bump_version.py`
-- **Pre-commit:** run `python skills/releasing/scripts/bump_version.py --check` to detect version drift
-- **Pre-commit:** run `python skills/auditing/scripts/generate_checklists.py --check` to detect checklist drift
+- **Pre-commit:** run `bundles-forge bump-version --check` to detect version drift
+- **Pre-commit:** run `bundles-forge checklists --check` to detect checklist drift
 - **Pre-release:** run `bundles-forge:auditing` for full quality + security check
-- **Pre-release:** run `python skills/auditing/scripts/audit_docs.py` to verify documentation consistency (9 checks: D1-D9)
+- **Pre-release:** run `bundles-forge audit-docs` to verify documentation consistency (9 checks: D1-D9)
 - **Source of truth:** Skills are first-class citizens — see `skills/auditing/references/source-of-truth-policy.md` for the full hierarchy and contradiction resolution protocol
 
 ## Security Rules

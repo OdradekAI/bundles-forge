@@ -1,7 +1,7 @@
 ---
 name: auditing
 description: "Use when reviewing a bundle-plugin for structural issues, version drift, skill quality, workflow integration, or security risks — before releasing, after changes, or after adding skills. Auto-detects scope (full project vs skill vs workflow)"
-allowed-tools: Bash(python skills/auditing/scripts/*)
+allowed-tools: Bash(bundles-forge audit-skill *) Bash(bundles-forge audit-security *) Bash(bundles-forge audit-docs *) Bash(bundles-forge audit-plugin *) Bash(bundles-forge audit-workflow *) Bash(bundles-forge checklists *) Bash(bundles-forge bump-version *)
 ---
 
 # Auditing Bundle-Plugins
@@ -56,15 +56,15 @@ After normalization, determine the audit scope from the resolved local path:
 ### Script Shortcut
 
 ```bash
-python skills/auditing/scripts/audit_plugin.py <project-root>        # full audit with status
-python skills/auditing/scripts/audit_plugin.py --json <project-root>  # machine-readable
+bundles-forge audit-plugin <project-root>        # full audit with status
+bundles-forge audit-plugin --json <project-root>  # machine-readable
 ```
 
-`audit_plugin.py` orchestrates `audit_security.py` (security), `audit_skill.py` (skill quality), `audit_workflow.py` (workflow integration), and `audit_docs.py` (documentation consistency D1-D9), then adds structure, manifest, version-sync, hook, and testing checks.
+`audit-plugin` orchestrates `audit-security` (security), `audit-skill` (skill quality), `audit-workflow` (workflow integration), and `audit-docs` (documentation consistency D1-D9), then adds structure, manifest, version-sync, hook, and testing checks.
 
 ### Run Script Baseline
 
-Run `python skills/auditing/scripts/audit_plugin.py --json <project-root>` to collect the deterministic baseline. This ensures script-checkable items (structure, manifests, version sync, skill quality, cross-references, hooks, documentation, security patterns) are verified with reproducible results regardless of agent behavior.
+Run `bundles-forge audit-plugin --json <project-root>` to collect the deterministic baseline. This ensures script-checkable items (structure, manifests, version sync, skill quality, cross-references, hooks, documentation, security patterns) are verified with reproducible results regardless of agent behavior.
 
 ### Dispatch Auditor
 
@@ -133,9 +133,9 @@ When the target is a single skill directory or SKILL.md file, run only the 4 cat
 ### Script Shortcut
 
 ```bash
-python skills/auditing/scripts/audit_skill.py <skill-directory>          # combined 4-category skill audit
-python skills/auditing/scripts/audit_skill.py <path>/SKILL.md            # also accepts SKILL.md path
-python skills/auditing/scripts/audit_skill.py --json <skill-directory>   # JSON output
+bundles-forge audit-skill <skill-directory>          # combined 4-category skill audit
+bundles-forge audit-skill <path>/SKILL.md            # also accepts SKILL.md path
+bundles-forge audit-skill --json <skill-directory>   # JSON output
 ```
 
 ### Process & Report
@@ -168,9 +168,9 @@ When the user explicitly requests a workflow audit, or when the Full audit's Cro
 ### Script Shortcut
 
 ```bash
-python skills/auditing/scripts/audit_workflow.py <project-root>                          # full workflow audit
-python skills/auditing/scripts/audit_workflow.py --focus-skills skill-a,skill-b <root>   # focused on specific skills
-python skills/auditing/scripts/audit_workflow.py --json <project-root>                   # machine-readable
+bundles-forge audit-workflow <project-root>                          # full workflow audit
+bundles-forge audit-workflow --focus-skills skill-a,skill-b <root>   # focused on specific skills
+bundles-forge audit-workflow --json <project-root>                   # machine-readable
 ```
 
 Dispatch the `auditor` agent (`agents/auditor.md`) in Workflow Audit Mode for automated assessment if subagents are available. The auditor handles W1-W9 (Static Structure + Semantic Interface) across three layers defined in `references/workflow-checklist.md`. Full workflow audit protocol, focus mode, and report format are in `agents/auditor.md` (Workflow Audit Mode section).
@@ -190,7 +190,7 @@ Present workflow findings grouped by severity. The `workflow-report` is consumed
 
 ## Security-Only Mode
 
-When invoked via `bundles-scan` or when the user explicitly requests a security-only scan, run only Category 10 (Security) and the `audit_security.py` script. Skip Categories 1-8. Report in the same format but with only the Security category scored. This provides a quick security check without the overhead of a full 10-category audit.
+When invoked via `bundles-scan` or when the user explicitly requests a security-only scan, run only Category 10 (Security) and `bundles-forge audit-security`. Skip Categories 1-8. Report in the same format but with only the Security category scored. This provides a quick security check without the overhead of a full 10-category audit.
 
 ---
 
@@ -198,7 +198,7 @@ When invoked via `bundles-scan` or when the user explicitly requests a security-
 
 | Mistake | Fix |
 |---------|-----|
-| Skipping version sync check | Always run `python skills/releasing/scripts/bump_version.py --check` (full audit) |
+| Skipping version sync check | Always run `bundles-forge bump-version --check` (full audit) |
 | Not checking description anti-patterns | Descriptions that summarize workflow cause agents to shortcut |
 | Ignoring cross-reference resolution | Broken `project:skill-name` refs = broken workflow chains |
 | Running full 10-category audit on a single skill | Let scope auto-detection handle it — 6 categories don't apply |

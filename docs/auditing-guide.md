@@ -84,8 +84,8 @@ The agent detects the project root (has `skills/` directory) and runs all 10 cat
 ### Via Script
 
 ```bash
-python skills/auditing/scripts/audit_plugin.py <project-root>        # markdown report
-python skills/auditing/scripts/audit_plugin.py --json <project-root>  # JSON output
+bundles-forge audit-plugin <project-root>        # markdown report
+bundles-forge audit-plugin --json <project-root>  # JSON output
 ```
 
 `audit_plugin.py` orchestrates four sub-scripts:
@@ -140,9 +140,9 @@ The agent detects a single skill directory (contains `SKILL.md`, no `skills/` su
 ### Via Script
 
 ```bash
-python skills/auditing/scripts/audit_skill.py <skill-directory>           # markdown report
-python skills/auditing/scripts/audit_skill.py <skill-directory>/SKILL.md   # also works
-python skills/auditing/scripts/audit_skill.py --json <skill-directory>     # JSON output
+bundles-forge audit-skill <skill-directory>           # markdown report
+bundles-forge audit-skill <skill-directory>/SKILL.md   # also works
+bundles-forge audit-skill --json <skill-directory>     # JSON output
 ```
 
 `audit_skill.py` orchestrates:
@@ -152,8 +152,8 @@ python skills/auditing/scripts/audit_skill.py --json <skill-directory>     # JSO
 You can also run the sub-scripts individually:
 
 ```bash
-python skills/auditing/scripts/audit_skill.py <skill-directory>     # quality + cross-refs + security
-python skills/auditing/scripts/audit_security.py <skill-directory>   # security scan only
+bundles-forge audit-skill <skill-directory>     # quality + cross-refs + security
+bundles-forge audit-security <skill-directory>   # security scan only
 ```
 
 ### 4 Categories
@@ -172,7 +172,7 @@ Total weight = 10. Categories not applicable at skill scope: Platform Manifests,
 When evaluating skills from external sources:
 
 1. **Download without executing** — clone/download without running hooks or scripts
-2. **Run skill audit** — `python skills/auditing/scripts/audit_skill.py <downloaded-skill-dir>`
+2. **Run skill audit** — `bundles-forge audit-skill <downloaded-skill-dir>`
 3. **Review critical findings** with the user before installation
 4. **Never auto-install** a skill with unresolved critical security findings
 
@@ -204,9 +204,9 @@ Or the agent suggests it when the Full audit's Workflow category shows findings.
 ### Via Script
 
 ```bash
-python skills/auditing/scripts/audit_workflow.py <project-root>                          # full workflow audit
-python skills/auditing/scripts/audit_workflow.py --focus-skills skill-a,skill-b <root>   # focused mode
-python skills/auditing/scripts/audit_workflow.py --json <project-root>                   # JSON output
+bundles-forge audit-workflow <project-root>                          # full workflow audit
+bundles-forge audit-workflow --focus-skills skill-a,skill-b <root>   # focused mode
+bundles-forge audit-workflow --json <project-root>                   # JSON output
 ```
 
 ### 3 Layers (W1-W11)
@@ -234,7 +234,7 @@ This enables incremental validation after adding new skills without missing casc
 ```
 1. User or orchestrating skill decides preparation and next steps (e.g. workflow restructuring).
 2. Add skills to the project
-3. Run: python skills/auditing/scripts/audit_workflow.py --focus-skills new-skill-a,new-skill-b .
+3. Run: bundles-forge audit-workflow --focus-skills new-skill-a,new-skill-b .
 4. Fix focus area findings
 5. Review context findings for unexpected impacts
 ```
@@ -264,9 +264,9 @@ Maps to the `bundles-forge:auditing` skill in security-only mode — runs only C
 ### Via Script
 
 ```bash
-python skills/auditing/scripts/audit_security.py <project-root>           # project-wide scan
-python skills/auditing/scripts/audit_security.py <skill-directory>         # single skill scan
-python skills/auditing/scripts/audit_security.py --json <project-root>     # JSON output
+bundles-forge audit-security <project-root>           # project-wide scan
+bundles-forge audit-security <skill-directory>         # single skill scan
+bundles-forge audit-security --json <project-root>     # JSON output
 ```
 
 ### 7 Attack Surfaces
@@ -311,25 +311,25 @@ Auditing is a **pure diagnostic** scope: it records findings, scores, and go/no-
 
 ```bash
 # Full pipeline: lint → security → docs → full audit (audit_plugin orchestrates all)
-python skills/auditing/scripts/audit_skill.py --json . > lint.json
-python skills/auditing/scripts/audit_security.py --json . > security.json
-python skills/auditing/scripts/audit_docs.py --json . > docs.json
-python skills/auditing/scripts/audit_plugin.py --json . > audit.json   # orchestrates lint + security + docs + workflow
+bundles-forge audit-skill --json . > lint.json
+bundles-forge audit-security --json . > security.json
+bundles-forge audit-docs --json . > docs.json
+bundles-forge audit-plugin --json . > audit.json   # orchestrates lint + security + docs + workflow
 
 # Single skill in CI
-python skills/auditing/scripts/audit_skill.py --json skills/my-skill > skill-audit.json
+bundles-forge audit-skill --json skills/my-skill > skill-audit.json
 
 # Workflow check after PR that modifies skills
-python skills/auditing/scripts/audit_workflow.py --json --focus-skills changed-skill . > workflow.json
+bundles-forge audit-workflow --json --focus-skills changed-skill . > workflow.json
 ```
 
 ### Exit Code Usage
 
 ```bash
-python skills/auditing/scripts/audit_plugin.py . || echo "Audit found issues (exit $?)"
+bundles-forge audit-plugin . || echo "Audit found issues (exit $?)"
 
 # Fail CI only on critical
-python skills/auditing/scripts/audit_plugin.py . ; [ $? -ne 2 ] || exit 1
+bundles-forge audit-plugin . ; [ $? -ne 2 ] || exit 1
 ```
 
 ### JSON Output

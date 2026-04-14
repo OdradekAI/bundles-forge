@@ -206,7 +206,7 @@ Agent 按可预测的顺序阅读技能：description 匹配 → Overview 扫描
 
 ## 验证
 
-编写完成后，技能始终运行 `python skills/auditing/scripts/audit_skill.py` 来验证结果。
+编写完成后，技能始终运行 `bundles-forge audit-skill` 来验证结果。
 
 ### 检查内容
 

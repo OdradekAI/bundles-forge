@@ -278,9 +278,9 @@ Markdown files that define slash commands for platforms that support them (Curso
 ### `bump_version.py`
 
 Version synchronization tool. Reads `.version-bump.json` and provides:
-- `python skills/releasing/scripts/bump_version.py <version>` — update all declared files
-- `python skills/releasing/scripts/bump_version.py --check` — detect drift between files
-- `python skills/releasing/scripts/bump_version.py --audit` — check + scan repo for undeclared version strings
+- `bundles-forge bump-version <version>` — update all declared files
+- `bundles-forge bump-version --check` — detect drift between files
+- `bundles-forge bump-version --audit` — check + scan repo for undeclared version strings
 
 Requires Python 3.
 

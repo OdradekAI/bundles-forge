@@ -74,15 +74,15 @@ Run all automated checks before proceeding:
 
 ```bash
 # Version drift detection
-python skills/releasing/scripts/bump_version.py <project-root> --check
+bundles-forge bump-version <project-root> --check
 
 # Documentation consistency (9 checks)
-python skills/auditing/scripts/audit_docs.py <project-root>
+bundles-forge audit-docs <project-root>
 ```
 
 **Plugin validation (Claude Code only):** If running in a Claude Code environment, run `claude plugin validate` (or `/plugin validate` in a session) to verify `plugin.json` schema, skill/agent/command frontmatter, and `hooks.json` validity. On other platforms, the inspector agent covers equivalent structural checks.
 
-**Full audit:** Invoke `bundles-forge:auditing` (preferred — includes qualitative assessment via auditor subagent with 10-category scoring). Fallback: `python skills/auditing/scripts/audit_plugin.py .` (automated checks only, no qualitative scoring).
+**Full audit:** Invoke `bundles-forge:auditing` (preferred — includes qualitative assessment via auditor subagent with 10-category scoring). Fallback: `bundles-forge audit-plugin .` (automated checks only, no qualitative scoring).
 
 **`audit_docs.py` checks (D1–D9):**
 
@@ -154,7 +154,7 @@ Re-run `audit_docs.py` after making changes to confirm consistency.
 ### Step 4: Version Bump
 
 ```bash
-python skills/releasing/scripts/bump_version.py <project-root> <new-version>
+bundles-forge bump-version <project-root> <new-version>
 ```
 
 This updates all files declared in `.version-bump.json` and runs a post-bump audit to catch any missed files.
@@ -186,9 +186,9 @@ This updates all files declared in `.version-bump.json` and runs a post-bump aud
 ### Step 6: Final Verification
 
 ```bash
-python skills/releasing/scripts/bump_version.py <project-root> --check   # No version drift
-python skills/releasing/scripts/bump_version.py <project-root> --audit   # No stray version strings
-python skills/auditing/scripts/audit_docs.py <project-root>             # Documentation consistent
+bundles-forge bump-version <project-root> --check   # No version drift
+bundles-forge bump-version <project-root> --audit   # No stray version strings
+bundles-forge audit-docs <project-root>             # Documentation consistent
 ```
 
 All three must exit with code 0 (clean) before publishing.
@@ -263,8 +263,8 @@ For new projects that don't have version management yet:
 
 1. Create `.version-bump.json` with entries for all version-bearing manifests
 2. Add `skills/releasing/scripts/bump_version.py` (from scaffold templates or copy from bundles-forge)
-3. Verify: `python skills/releasing/scripts/bump_version.py --check`
-4. Audit: `python skills/releasing/scripts/bump_version.py --audit`
+3. Verify: `bundles-forge bump-version --check`
+4. Audit: `bundles-forge bump-version --audit`
 
 See `bundles-forge:scaffolding` for full project setup including version infrastructure.
 
@@ -297,11 +297,11 @@ See `bundles-forge:scaffolding` for full project setup including version infrast
 ### Commands
 
 ```bash
-python skills/releasing/scripts/bump_version.py [project-root] --check     # Detect version drift
-python skills/releasing/scripts/bump_version.py [project-root] --audit     # Find undeclared version strings
-python skills/releasing/scripts/bump_version.py [project-root] <version>   # Bump all manifests
-python skills/auditing/scripts/audit_docs.py <project-root>               # Documentation consistency check
-python skills/auditing/scripts/audit_plugin.py <project-root>             # Full quality + security audit
+bundles-forge bump-version [project-root] --check     # Detect version drift
+bundles-forge bump-version [project-root] --audit     # Find undeclared version strings
+bundles-forge bump-version [project-root] <version>   # Bump all manifests
+bundles-forge audit-docs <project-root>               # Documentation consistency check
+bundles-forge audit-plugin <project-root>             # Full quality + security audit
 ```
 
 ### Exit Codes

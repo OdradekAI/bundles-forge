@@ -1,6 +1,6 @@
 # Authoring Quality Checklist
 
-Definitive quality specification for SKILL.md files. `skills/auditing/scripts/audit_skill.py` automates these checks. Use during authoring to catch issues before running the linter, or to investigate specific lint findings.
+Definitive quality specification for SKILL.md files. `bundles-forge audit-skill` automates these checks. Use during authoring to catch issues before running the linter, or to investigate specific lint findings.
 
 ## Frontmatter Checks
 
@@ -44,9 +44,9 @@ Definitive quality specification for SKILL.md files. `skills/auditing/scripts/au
 ## Quick Validation Command
 
 ```bash
-python skills/auditing/scripts/audit_skill.py <skill-directory>          # single skill
-python skills/auditing/scripts/audit_skill.py <project-root>             # all skills
-python skills/auditing/scripts/audit_skill.py --json <project-root>      # machine-readable
+bundles-forge audit-skill <skill-directory>          # single skill
+bundles-forge audit-skill <project-root>             # all skills
+bundles-forge audit-skill --json <project-root>      # machine-readable
 ```
 
 ## Interpreting Results

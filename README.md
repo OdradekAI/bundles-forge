@@ -151,11 +151,11 @@ Four audit scopes for different levels of granularity — the agent auto-detects
 ### Quick Start (Scripts)
 
 ```bash
-python skills/auditing/scripts/audit_plugin.py .                                      # full project audit
-python skills/auditing/scripts/audit_skill.py skills/authoring                         # single skill audit
-python skills/auditing/scripts/audit_workflow.py .                                     # workflow audit
-python skills/auditing/scripts/audit_workflow.py --focus-skills new-skill .            # focused workflow audit
-python skills/auditing/scripts/audit_security.py .                                      # security-only scan
+bundles-forge audit-plugin .                                      # full project audit
+bundles-forge audit-skill skills/authoring                         # single skill audit
+bundles-forge audit-workflow .                                     # workflow audit
+bundles-forge audit-workflow --focus-skills new-skill .            # focused workflow audit
+bundles-forge audit-security .                                      # security-only scan
 ```
 
 Via the agent, you can also audit remote projects:
@@ -335,7 +335,7 @@ Skills, audit reports, and script output accumulate in the conversation context 
 
 - **Start a fresh session** for each major lifecycle phase (blueprinting, authoring, auditing)
 - **Use slash commands** (`/bundles-audit`, `/bundles-optimize`) to re-anchor the agent on the current task
-- **Prefer script output over inline checks** — `python skills/auditing/scripts/audit_plugin.py .` produces a compact summary instead of the agent reasoning through each check
+- **Prefer script output over inline checks** — `bundles-forge audit-plugin .` produces a compact summary instead of the agent reasoning through each check
 
 ## Prerequisites
 
@@ -343,7 +343,7 @@ Skills, audit reports, and script output accumulate in the conversation context 
 
 ## Contributing
 
-Contributions welcome. Please follow the existing code style and ensure all platform manifests stay in sync using `python skills/releasing/scripts/bump_version.py --check`.
+Contributions welcome. Please follow the existing code style and ensure all platform manifests stay in sync using `bundles-forge bump-version --check`.
 
 ## License
 

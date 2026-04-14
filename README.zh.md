@@ -151,11 +151,11 @@ flowchart LR
 ### 快速开始（脚本）
 
 ```bash
-python skills/auditing/scripts/audit_plugin.py .                                      # 完整项目审计
-python skills/auditing/scripts/audit_skill.py skills/authoring                         # 单技能审计
-python skills/auditing/scripts/audit_workflow.py .                                     # 工作流审计
-python skills/auditing/scripts/audit_workflow.py --focus-skills new-skill .            # 聚焦式工作流审计
-python skills/auditing/scripts/audit_security.py .                                      # 仅安全扫描
+bundles-forge audit-plugin .                                      # 完整项目审计
+bundles-forge audit-skill skills/authoring                         # 单技能审计
+bundles-forge audit-workflow .                                     # 工作流审计
+bundles-forge audit-workflow --focus-skills new-skill .            # 聚焦式工作流审计
+bundles-forge audit-security .                                      # 仅安全扫描
 ```
 
 通过 Agent 还可以审计远程项目：
@@ -334,7 +334,7 @@ gemini extensions install https://github.com/odradekai/bundles-forge.git
 
 - **为每个主要生命周期阶段开启新会话**（blueprinting、authoring、auditing）
 - **使用斜杠命令**（`/bundles-audit`、`/bundles-optimize`）将 Agent 重新锚定到当前任务
-- **优先使用脚本输出而非内联检查** — `python skills/auditing/scripts/audit_plugin.py .` 产出紧凑摘要，避免 Agent 逐项推理占用上下文
+- **优先使用脚本输出而非内联检查** — `bundles-forge audit-plugin .` 产出紧凑摘要，避免 Agent 逐项推理占用上下文
 
 ## 前置要求
 
@@ -342,7 +342,7 @@ gemini extensions install https://github.com/odradekai/bundles-forge.git
 
 ## 贡献
 
-欢迎贡献。请遵循现有代码风格，并通过 `python skills/releasing/scripts/bump_version.py --check` 确保所有平台清单版本同步。
+欢迎贡献。请遵循现有代码风格，并通过 `bundles-forge bump-version --check` 确保所有平台清单版本同步。
 
 ## 许可证
 

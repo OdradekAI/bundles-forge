@@ -137,7 +137,7 @@ optimizing 诊断 → 将内容编辑委派给 authoring → 通过 auditing 验
 运行 linter 捕获机械性问题：
 
 ```bash
-python skills/auditing/scripts/audit_skill.py <project-root>
+bundles-forge audit-skill <project-root>
 ```
 
 描述相关检查为 **Q3-Q7**：缺失描述（Q3）、"Use when..." 前缀（Q5）、工作流摘要反模式（Q6）、长度 >250 字符（Q7）。完整 lint 套件覆盖 Q1-Q15 和 X1-X3 — 详见快速参考。
@@ -159,7 +159,7 @@ python skills/auditing/scripts/audit_skill.py <project-root>
 |------|------|
 | 交叉引用代替重复 | `See bundles-forge:authoring` 代替复制规则 |
 | 一个优秀示例胜过三个平庸示例 | 删除教授相同概念的冗余示例 |
-| 将标志文档指向 --help | 引用 `python skills/auditing/scripts/audit_skill.py --help` 代替列出所有标志 |
+| 将标志文档指向 --help | 引用 `bundles-forge audit-skill --help` 代替列出所有标志 |
 | 消除项目内冗余 | 不要重复其他技能 `references/` 中已有的内容 |
 
 ### 目标 3：渐进式加载
@@ -181,14 +181,14 @@ python skills/auditing/scripts/audit_skill.py <project-root>
 
 消费工作流审计发现以识别和修复工作流问题。工作流审计分两层：
 
-- **脚本自动化（W1-W9）：** 静态图分析和语义检查 — 通过 `python skills/auditing/scripts/audit_workflow.py` 运行
+- **脚本自动化（W1-W9）：** 静态图分析和语义检查 — 通过 `bundles-forge audit-workflow` 运行
 - **仅 Evaluator（W10-W11）：** 链式评估和行为验证 — 需要 `evaluator` agent 派遣
 
 如果没有工作流报告：
 
 ```bash
-python skills/auditing/scripts/audit_workflow.py <project-root>
-python skills/auditing/scripts/audit_workflow.py --focus-skills skill-a,skill-b <root>
+bundles-forge audit-workflow <project-root>
+bundles-forge audit-workflow --focus-skills skill-a,skill-b <root>
 ```
 
 **修复优先级指南：**
@@ -455,11 +455,11 @@ Agent 会将剩余问题呈现给你做手动决定 — 不会自动循环。你
 ### 脚本
 
 ```bash
-python skills/auditing/scripts/audit_skill.py <path>                        # 质量 lint（Q1-Q15、X1-X3）
-python skills/auditing/scripts/audit_skill.py <skill-dir>                   # 单技能审计（4 类）
-python skills/auditing/scripts/audit_workflow.py <path>                      # 工作流审计（W1-W9，脚本自动化）
-python skills/auditing/scripts/audit_workflow.py --focus-skills a,b <path>   # 聚焦式工作流审计
-python skills/auditing/scripts/audit_security.py <path>                       # 安全扫描（7 个攻击面）
+bundles-forge audit-skill <path>                        # 质量 lint（Q1-Q15、X1-X3）
+bundles-forge audit-skill <skill-dir>                   # 单技能审计（4 类）
+bundles-forge audit-workflow <path>                      # 工作流审计（W1-W9，脚本自动化）
+bundles-forge audit-workflow --focus-skills a,b <path>   # 聚焦式工作流审计
+bundles-forge audit-security <path>                       # 安全扫描（7 个攻击面）
 ```
 
 W10-W11（链式评估和行为验证）需要 `evaluator` agent 派遣，脚本不会生成。
