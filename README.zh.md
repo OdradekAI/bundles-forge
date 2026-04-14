@@ -143,10 +143,10 @@ flowchart LR
 
 | 范围 | 命令 / 脚本 | 检查内容 |
 |------|------------|---------|
-| 完整项目 | `/bundles-audit` 或 `audit_plugin.py` | 10 大类（结构、清单、版本同步、技能质量、交叉引用、工作流、钩子、测试、文档、安全） |
-| 单个技能 | `/bundles-audit skills/authoring` 或 `audit_skill.py` | 4 类（结构、技能质量、交叉引用、安全） |
-| 工作流 | 显式请求 或 `audit_workflow.py` | 3 层：静态结构、语义接口、行为验证（W1-W11） |
-| 仅安全扫描 | `/bundles-scan` 或 `audit_security.py` | 基于模式的检测，覆盖 7 类文件（技能内容、Hook 脚本、HTTP hooks、OpenCode 插件、Agent 提示词、打包脚本、MCP 配置） |
+| 完整项目 | `/bundles-audit` 或 `bundles-forge audit-plugin` | 10 大类（结构、清单、版本同步、技能质量、交叉引用、工作流、钩子、测试、文档、安全） |
+| 单个技能 | `/bundles-audit skills/authoring` 或 `bundles-forge audit-skill` | 4 类（结构、技能质量、交叉引用、安全） |
+| 工作流 | 显式请求 或 `bundles-forge audit-workflow` | 3 层：静态结构、语义接口、行为验证（W1-W11） |
+| 仅安全扫描 | `/bundles-scan` 或 `bundles-forge audit-security` | 基于模式的检测，覆盖 7 类文件（技能内容、Hook 脚本、HTTP hooks、OpenCode 插件、Agent 提示词、打包脚本、MCP 配置） |
 
 ### 快速开始（脚本）
 
@@ -255,7 +255,7 @@ flowchart LR
   → 完整项目：10 大类检查（结构、清单、版本同步、
     质量、交叉引用、工作流、钩子、测试、文档、安全）
     → auditor agent 运行检查清单（如子代理可用）
-    → 脚本：audit_plugin.py, audit_workflow.py, audit_security.py, audit_skill.py
+    → 脚本：bundles-forge audit-plugin, audit-workflow, audit-security, audit-skill
   → 单个技能：4 类检查（结构、质量、交叉引用、安全）
   → 工作流：3 层检查（静态结构、语义接口、行为验证）
   → 评分 + 报告（严重 / 警告 / 信息）
@@ -295,14 +295,14 @@ flowchart LR
 用户执行 /bundles-release
   → releasing：验证前置条件（工作树干净、分支检查）
   → 预检
-    → bump_version.py --check（版本漂移检查）
+    → bundles-forge bump-version --check（版本漂移检查）
     → auditing（完整质量 + 安全审计）
-    → audit_docs.py（文档一致性检查）
+    → bundles-forge audit-docs（文档一致性检查）
   → 处理严重发现（解决前阻止发布）
   → 文档同步（变更一致性审查 + 文档更新）
-  → bump_version.py <new-version>（更新所有清单）
+  → bundles-forge bump-version <new-version>（更新所有清单）
   → 更新 CHANGELOG.md 和 README.md
-  → 最终验证（--check + --audit + audit_docs.py）
+  → 最终验证（--check + --audit + bundles-forge audit-docs）
   → 提交、打标签、推送、gh release create
 ```
 

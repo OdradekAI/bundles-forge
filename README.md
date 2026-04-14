@@ -143,10 +143,10 @@ Four audit scopes for different levels of granularity — the agent auto-detects
 
 | Scope | Command / Script | What It Checks |
 |-------|-----------------|----------------|
-| Full Project | `/bundles-audit` or `audit_plugin.py` | 10 categories (structure, manifests, version sync, skill quality, cross-refs, workflow, hooks, testing, docs, security) |
-| Single Skill | `/bundles-audit skills/authoring` or `audit_skill.py` | 4 categories (structure, skill quality, cross-refs, security) |
-| Workflow | Explicit request or `audit_workflow.py` | 3 layers: static structure, semantic interface, behavioral verification (W1-W11) |
-| Security Only | `/bundles-scan` or `audit_security.py` | Pattern-based detection across 7 file categories (skill content, hook scripts, HTTP hooks, OpenCode plugins, agent prompts, bundled scripts, MCP configs) |
+| Full Project | `/bundles-audit` or `bundles-forge audit-plugin` | 10 categories (structure, manifests, version sync, skill quality, cross-refs, workflow, hooks, testing, docs, security) |
+| Single Skill | `/bundles-audit skills/authoring` or `bundles-forge audit-skill` | 4 categories (structure, skill quality, cross-refs, security) |
+| Workflow | Explicit request or `bundles-forge audit-workflow` | 3 layers: static structure, semantic interface, behavioral verification (W1-W11) |
+| Security Only | `/bundles-scan` or `bundles-forge audit-security` | Pattern-based detection across 7 file categories (skill content, hook scripts, HTTP hooks, OpenCode plugins, agent prompts, bundled scripts, MCP configs) |
 
 ### Quick Start (Scripts)
 
@@ -255,7 +255,7 @@ User runs /bundles-audit
   → Full project: 10 categories (structure, manifests, version sync,
     quality, cross-refs, workflow, hooks, testing, docs, security)
     → auditor agent runs checklist (if subagents available)
-    → Scripts: audit_plugin.py, audit_workflow.py, audit_security.py, audit_skill.py
+    → Scripts: bundles-forge audit-plugin, audit-workflow, audit-security, audit-skill
   → Single skill: 4 categories (structure, quality, cross-refs, security)
   → Workflow: 3 layers (static structure, semantic interface, behavioral)
   → Score + report with Critical / Warning / Info findings
@@ -296,14 +296,14 @@ User runs /bundles-optimize
 User runs /bundles-release
   → releasing: verify prerequisites (clean working tree, branch check)
   → Pre-flight checks
-    → bump_version.py --check (version drift)
+    → bundles-forge bump-version --check (version drift)
     → auditing (full quality + security)
-    → audit_docs.py (documentation consistency)
+    → bundles-forge audit-docs (documentation consistency)
   → Address critical findings (block release until resolved)
   → Documentation sync (change coherence review + doc updates)
-  → bump_version.py <new-version> (update all manifests)
+  → bundles-forge bump-version <new-version> (update all manifests)
   → Update CHANGELOG.md and README.md
-  → Final verification (--check + --audit + audit_docs.py)
+  → Final verification (--check + --audit + bundles-forge audit-docs)
   → Commit, tag, push, gh release create
 ```
 
