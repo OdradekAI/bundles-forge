@@ -1,5 +1,7 @@
 # Skill Audit Checklist
 
+> Tables in this file are auto-generated from `audit-checks.json` by `generate_checklists.py`. Do not edit table rows directly.
+
 Structured criteria for evaluating a single skill. Subset of the full project checklist (`plugin-checklist.md`) — 4 categories applicable at skill scope. Use this when running a skill audit on a standalone skill directory or SKILL.md file.
 
 For full project audits (10 categories), see `plugin-checklist.md`. For workflow integration checks, see `workflow-checklist.md`.

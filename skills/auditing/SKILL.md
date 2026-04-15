@@ -78,7 +78,7 @@ When auditing a project created by `bundles-forge:blueprinting`, the auditor may
 | Documentation | Low |
 | Security | High |
 
-**Security Scan (Category 10):** Scans 7 attack surfaces. See `references/security-checklist.md` for the full pattern list.
+**Security Scan (Category 10):** Scans 7 attack surfaces. See `references/security-checklist.md` for the full pattern list. `security-checklist.md` is the canonical source; the table below is a quick-reference summary.
 
 | Target | Risk Level |
 |--------|-----------|

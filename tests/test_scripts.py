@@ -473,5 +473,53 @@ class TestSecurityScannerRefinements(unittest.TestCase):
             os.unlink(tmp_path)
 
 
+class TestBumpVersion(unittest.TestCase):
+    """Tests for skills/releasing/scripts/bump_version.py modes."""
+
+    BUMP_SCRIPT = REPO_ROOT / "skills" / "releasing" / "scripts" / "bump_version.py"
+
+    def _run_bump(self, *args):
+        return subprocess.run(
+            [sys.executable, str(self.BUMP_SCRIPT), *args, str(REPO_ROOT)],
+            capture_output=True, text=True
+        )
+
+    def test_check_mode_exits_zero_when_synced(self):
+        result = self._run_bump("--check")
+        self.assertEqual(result.returncode, 0,
+                         f"--check should exit 0 when versions are in sync:\n"
+                         f"{result.stdout}\n{result.stderr}")
+
+    def test_audit_mode_runs(self):
+        result = self._run_bump("--audit")
+        self.assertIn(result.returncode, (0, 1),
+                      f"--audit should exit 0 or 1:\n{result.stderr}")
+        self.assertIn("version", result.stdout.lower(),
+                      "--audit output should mention version")
+
+    def test_dry_run_does_not_modify_files(self):
+        import json
+        pkg = REPO_ROOT / "package.json"
+        before = json.loads(pkg.read_text(encoding="utf-8"))["version"]
+        result = subprocess.run(
+            [sys.executable, str(self.BUMP_SCRIPT), str(REPO_ROOT),
+             "99.99.99", "--dry-run"],
+            capture_output=True, text=True
+        )
+        after = json.loads(pkg.read_text(encoding="utf-8"))["version"]
+        self.assertEqual(before, after,
+                         "--dry-run should not modify package.json")
+        self.assertIn("dry run", result.stdout.lower(),
+                      "--dry-run output should mention dry run")
+
+    def test_invalid_version_rejected(self):
+        result = subprocess.run(
+            [sys.executable, str(self.BUMP_SCRIPT), str(REPO_ROOT), "not-a-version"],
+            capture_output=True, text=True
+        )
+        self.assertNotEqual(result.returncode, 0,
+                            "Invalid version format should cause non-zero exit")
+
+
 if __name__ == "__main__":
     unittest.main()

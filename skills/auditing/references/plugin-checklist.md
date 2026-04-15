@@ -1,5 +1,7 @@
 # Audit Checklist
 
+> Tables in this file are auto-generated from `audit-checks.json` by `generate_checklists.py`. Do not edit table rows directly.
+
 Structured criteria for evaluating a bundle-plugin. Each category has specific checks with severity levels and automation status. Use this when running an audit — work through each category, note findings, and compile the report.
 
 ## Scoring

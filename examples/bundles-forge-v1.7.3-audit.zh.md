@@ -518,9 +518,10 @@ README 和旧审计报告提及"8 optimization targets"，但 v1.7.3 版本的 `
 
 ## 7. 优化执行记录
 
-> 执行日期：2026-04-15 | 执行范围：P0 + P1 + O1/O2（共 9 项）
+> 第一轮执行日期：2026-04-15 | 执行范围：P0 + P1 + O1/O2（共 9 项）
+> 第二轮执行日期：2026-04-15 | 执行范围：P2 选定项（#10 R2、#11 R3、#12 测试补充，共 3 项）
 
-### 已完成
+### 已完成（第一轮 + 第二轮，共 12 项）
 
 | # | 问题 | 类型 | 实际做法 |
 |---|------|------|----------|
@@ -533,24 +534,42 @@ README 和旧审计报告提及"8 optimization targets"，但 v1.7.3 版本的 `
 | 7 | Doc2: CLI 参考文档 | P1 文档 | 新建 `docs/cli-reference.md` + `.zh.md`。覆盖全部 7 个子命令的用法、参数、退出码。更新文档索引 |
 | 8 | O1: blueprinting 精简 | Token 效率 | 386→336 行。对话策略（~46 行）和 Quick mode 摘要表提取至 `references/dialogue-strategies.md`，正文保留 2 行总括+链接。Agent Reasoning 表（5 行）保留在正文 |
 | 9 | O2: optimizing 精简 | Token 效率 | 452→382 行。Target routing、Action classification、Skill Health Assessment、Workflow Gap Detection、W-check Fix、Component Signals 共 5 张表提取至 `references/optimization-decision-trees.md`，正文各处替换为 1-2 行总括+链接 |
+| 10 | R2: 质量清单信源归属 | P2 单一信源 | `quality-checklist.md` 添加 canonical source 声明指向 `audit-checks.json`；`skill-checklist.md` 和 `plugin-checklist.md` 添加 auto-generated 声明 |
+| 11 | R3: 安全模式描述 | P2 单一信源 | `auditing/SKILL.md` 安全摘要表保留，补充 canonical source 声明指向 `security-checklist.md` |
+| 12 | 补充单元测试 | P2 测试 | 新建 `tests/test_unit.py`（41 测试）覆盖 `_parsing.py`/`_scoring.py`/`bump_version` 边界用例；`test_graph_fixtures.py` 添加 W5 fixture 测试（3 测试）；`test_scripts.py` 添加 `TestBumpVersion`（4 测试）；更新 `run_all.py`。总测试数 80→121（+51%） |
 
-### 延后（P2/P3）
+### 延后（P3）
 
 | # | 问题 | 优先级 | 延后原因 |
 |---|------|--------|----------|
-| 10 | R2: 质量清单信源归属 | P2 | 涉及跨 3 个 checklist 文件的结构性调整，需要配合 `generate_checklists.py` 逻辑验证 |
-| 11 | R3: 安全模式三处描述 | P2 | SKILL.md 摘要表与 guide 中的攻击面表有信息层级差异，需确认哪些可安全删除 |
-| 12 | 补充单元测试 | P2 | `_parsing.py`、`_scoring.py` 边界用例和 W5-W11 单元测试，工作量中等 |
-| 13 | 迁移指南 | P2 | `docs/migration-guide.md` 需回顾跨版本 breaking changes 历史 |
-| 14 | Guide 交叉引用 | P2 | 各 guide 末尾 "Next Steps" 段落，工作量小但需覆盖全部 guide |
 | 15 | 跨 skill 冗余检测脚本 | P3 | 段落哈希去重脚本，开发工作量大 |
 | 16 | references/ 孤儿检测 | P3 | 未被 SKILL.md 引用的 references 文件检测 |
 | 17 | Mermaid 依赖图生成 | P3 | 工作流可视化工具 |
 | 18 | 统一错误处理模式 | P3 | 子模块抛异常 vs sys.exit 统一，跨多个脚本重构 |
 
+### 用户决策跳过
+
+| # | 问题 | 优先级 | 跳过原因 |
+|---|------|--------|----------|
+| 13 | 迁移指南 | P2 | 用户评估后认为当前 CHANGELOG 已足够，暂不需要独立迁移指南 |
+| 14 | Guide 交叉引用 | P2 | 用户评估后认为 `auditing-guide` 已有 Related Skills 段落，其余 guide 暂不补充 |
+
 ### 执行说明
 
+**第一轮（P0 + P1 + O1/O2，共 9 项）：**
 - O1 目标 <300 行未完全达成（实际 336 行），因剩余内容均为三阶段流程和编排管线的执行关键部分，不适合进一步外置
 - O2 目标 <350 行未完全达成（实际 382 行），因 A/B eval 协议和 Feedback Iteration 流程是执行关键路径
 - 两处精简均满足 500 行硬限和 300 行软阈值提醒范围内的显著改善
 - 新增文档已同步更新 `docs/index.md` 和 `docs/index.zh.md`
+
+**第二轮（P2 选定项，共 3 项）：**
+- 执行日期：2026-04-15
+- 执行范围：#10 R2、#11 R3、#12 测试补充（`_parsing.py` + `_scoring.py` + `bump_version.py` + W5 fixture）
+
+| # | 问题 | 类型 | 实际做法 |
+|---|------|------|----------|
+| 10 | R2: 质量清单信源归属 | P2 单一信源 | `quality-checklist.md` 添加 `> Canonical source for check IDs and severity: audit-checks.json` 声明；`skill-checklist.md` 和 `plugin-checklist.md` 添加 `> Tables auto-generated from audit-checks.json` 声明。不改变现有信源链路 |
+| 11 | R3: 安全模式三处描述 | P2 单一信源 | `auditing/SKILL.md` 安全摘要表保留（7 行，提供快速统览），补充 `security-checklist.md is the canonical source; the table below is a quick-reference summary` 声明 |
+| 12 | 补充单元测试 | P2 测试 | 新建 `tests/test_unit.py`（41 个测试）：`_parsing.py` 边界用例 11 个（空 frontmatter、畸形 YAML、block scalar、引号值、缺少闭合符等）、`_scoring.py` 极端情况 15 个（空输入、全 info、全 critical、cap_per_id 开关、risk 字段回退等）、`bump_version._resolve_field_path` 路径遍历 10 个（嵌套 dict、数组索引、越界、类型不匹配）、`estimate_tokens` 5 个。在 `test_graph_fixtures.py` 添加 `TestW5ArtifactMismatch` 类（3 个测试，使用新建 `tests/fixtures/artifact-mismatch/` fixture）。在 `test_scripts.py` 添加 `TestBumpVersion` 类（4 个测试：`--check`/`--audit`/`--dry-run`/invalid version）。更新 `run_all.py` 注册 `test_unit.py`。总测试数从 80 增至 121（+51%） |
+
+**测试过程中的发现：** `_parsing.py` 的 frontmatter 正则 `r"^---\s*\n(.*?)\n---\s*\n"` 不处理相邻 `---` 标记（无中间内容），需要至少一个空行才能解析空 frontmatter。这是已知边界行为，已在测试中记录（`test_empty_frontmatter_no_blank_line`）。

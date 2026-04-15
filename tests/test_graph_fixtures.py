@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for W1-W4 graph analysis detection logic using isolated fixtures.
+"""Tests for W1-W5 graph analysis detection logic using isolated fixtures.
 
 Unlike TestGraphRules in test_scripts.py (which validates the live repo has
 no problems), these tests verify the detection logic itself using synthetic
@@ -106,6 +106,35 @@ class TestW4IncomingWithoutInputs(unittest.TestCase):
         self.assertGreater(len(w4_for_b), 0,
                            "skill-b is referenced by skill-a but has no "
                            "Inputs section — expected W4 finding")
+
+
+class TestW5ArtifactMismatch(unittest.TestCase):
+    """W5: Mismatched artifact IDs between connected skills should be detected."""
+
+    def setUp(self):
+        self.parsed = parse_all_skills(FIXTURES_DIR / "artifact-mismatch")
+
+    def test_mismatched_artifacts_detected(self):
+        findings = _graph.run_graph_analysis(self.parsed)
+        w5 = [f for f in findings if f["check"] == "W5"]
+        self.assertGreater(len(w5), 0,
+                           "Expected W5 finding when producer outputs "
+                           "don't match consumer inputs")
+
+    def test_w5_is_info_severity(self):
+        findings = _graph.run_graph_analysis(self.parsed)
+        w5 = [f for f in findings if f["check"] == "W5"]
+        for f in w5:
+            self.assertEqual(f["severity"], "info",
+                             f"W5 should be info-level: {f['message']}")
+
+    def test_w5_message_contains_artifact_names(self):
+        findings = _graph.run_graph_analysis(self.parsed)
+        w5 = [f for f in findings if f["check"] == "W5"]
+        self.assertGreater(len(w5), 0)
+        msg = w5[0]["message"]
+        self.assertIn("design-document", msg)
+        self.assertIn("optimization-spec", msg)
 
 
 if __name__ == "__main__":
