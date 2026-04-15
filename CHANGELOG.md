@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [1.7.5] - 2026-04-16
+
+### Changed
+
+- **CLI command references standardized** — all 30 files updated from internal script paths (`audit_plugin.py`, `bump_version.py`, etc.) to `bundles-forge <subcommand>` CLI format across English and Chinese documentation
+- **Version tooling decoupled** — `bump_version.py` removed dependency on `_cli.py`/`BundlesForgeError`, uses direct `sys.exit(1)` for self-contained operation; V4 and V8 audit checks removed (no longer needed since scripts aren't bundled per-project)
+- **Scaffolding simplified** — `bump_version.py` moved from required core files to optional component; `session-start.py` template now uses `<project-name>` placeholder instead of hardcoded project name
+
+### Fixed
+
+- **Smarter path resolution** — `audit_skill.py` X2 check now resolves relative paths via cross-references before reporting missing paths
+- **Generic bootstrap detection** — `audit_docs.py` D1 skill list sync uses `using-*` pattern matching instead of hardcoded `using-bundles-forge`
+
 ## [1.7.4] - 2026-04-15
 
 ### Added
