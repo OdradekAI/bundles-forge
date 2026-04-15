@@ -28,7 +28,7 @@ Key things to know upfront:
 - **Needs come first.** The agent will ask what problem you're solving and who will use it *before* any technical questions. Even for simple projects, this takes only 2 questions.
 - **The agent recommends, you decide.** For key decisions (quick vs adaptive mode, skill decomposition, platform selection), the agent proposes 2-3 approaches with trade-offs and a recommendation.
 - **The agent pushes back when needed.** If your answers contradict each other or your requested scope seems disproportionate to the problem, the agent will name the issue and propose a simpler alternative. This is by design.
-- **Already have a project?** Blueprinting creates *new* projects. To add skills, restructure workflows, or improve an existing project, use `/bundles-optimize` instead — see Target 7 in the [optimizing guide](optimizing-guide.md).
+- **Already have a project?** Blueprinting creates *new* projects. To add skills, restructure workflows, or improve an existing project, use `/bundles-optimize` instead — see Skill & Workflow Restructuring in the [optimizing guide](optimizing-guide.md).
 
 For details on each step, read on.
 
@@ -44,7 +44,7 @@ Blueprinting has three entry points. Pick the one that matches your situation:
 | **B: Decomposition** | One large skill | Your SKILL.md has grown too complex | Decomposition plan → design document |
 | **C: Composition** | Multiple existing skills | You want to combine independent skills into a workflow | Composition plan → design document |
 
-> **Want to add skills to an existing project?** That's optimization, not blueprinting. Use `/bundles-optimize` — see Target 7 (Skill & Workflow Restructuring) in the [optimizing guide](optimizing-guide.md).
+> **Want to add skills to an existing project?** That's optimization, not blueprinting. Use `/bundles-optimize` — see Skill & Workflow Restructuring in the [optimizing guide](optimizing-guide.md).
 
 ### Decision Flowchart
 
@@ -136,7 +136,7 @@ Most users follow the standard interview (Scenario A). These two scenarios handl
 
 ### Scenario B: Decomposition (Splitting a Large Skill)
 
-**You have a SKILL.md that has grown too complex** — too many responsibilities, branching logic, or approaching the 500-line limit. Splitting produces a **new** project. To refactor skills within an existing project, use `/bundles-optimize` (Target 7).
+**You have a SKILL.md that has grown too complex** — too many responsibilities, branching logic, or approaching the 500-line limit. Splitting produces a **new** project. To refactor skills within an existing project, use `/bundles-optimize` (Skill & Workflow Restructuring target).
 
 **Signs you need decomposition:**
 
@@ -287,7 +287,7 @@ Follow the decision flowchart in the "Choosing a Scenario" section. When in doub
 
 **Q: I want to add skills to an existing project, not create a new one.**
 
-Use `/bundles-optimize` instead — Target 7 (Skill & Workflow Restructuring) handles adding, replacing, and reorganizing skills in existing projects. Blueprinting is only for creating new projects.
+Use `/bundles-optimize` instead — the Skill & Workflow Restructuring target handles adding, replacing, and reorganizing skills in existing projects. Blueprinting is only for creating new projects.
 
 **Q: What's the difference between blueprinting and scaffolding?**
 

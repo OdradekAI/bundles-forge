@@ -1,6 +1,6 @@
 # Third-Party Skill Integration
 
-Shared reference for handling third-party skills across the bundle-plugin lifecycle. Referenced by `bundles-forge:blueprinting` (Scenario C) and `bundles-forge:optimizing` (Target 7).
+Shared reference for handling third-party skills across the bundle-plugin lifecycle. Referenced by `bundles-forge:blueprinting` (Scenario C) and `bundles-forge:optimizing` (Skill & Workflow Restructuring target).
 
 ## Inventory Checklist
 

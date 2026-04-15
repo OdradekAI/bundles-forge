@@ -277,10 +277,9 @@ User runs /bundles-audit
 ```
 User runs /bundles-optimize
   → optimizing: detect scope (project vs single skill)
-  → Project scope: 8 optimization targets
-    (descriptions, tokens, progressive disclosure, workflow chain,
-     platform coverage, security remediation, skill & workflow restructuring,
-     optional component management)
+  → Project scope: 6 optimization targets
+    (descriptions, tokens, workflow chains,
+     security, restructuring, optional components)
   → Skill scope: targeted optimization + feedback iteration
   → Description A/B test:
     → 2x evaluator agents in parallel (if subagents available)

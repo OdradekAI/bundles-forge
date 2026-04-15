@@ -1,7 +1,7 @@
 ---
 name: optimizing
 description: "Use when optimizing a bundle-plugin or single skill — improving descriptions, reducing tokens, fixing audit findings, restructuring workflows, adding skills to fill gaps, or iterating on user feedback"
-allowed-tools: Bash(bundles-forge audit-skill *) Bash(bundles-forge audit-security *) Bash(bundles-forge audit-docs *) Bash(bundles-forge audit-plugin *) Bash(bundles-forge audit-workflow *) Bash(bundles-forge checklists *) Bash(bundles-forge bump-version *)
+allowed-tools: Bash(bundles-forge audit-skill *) Bash(bundles-forge audit-security *) Bash(bundles-forge audit-docs *) Bash(bundles-forge audit-plugin *) Bash(bundles-forge audit-workflow *) Bash(bundles-forge checklists *)
 ---
 
 # Optimizing Bundle-Plugins
@@ -41,9 +41,9 @@ After normalization, determine the scope from the resolved local path:
 
 | Target | How to Detect | Mode |
 |--------|--------------|------|
-| Project root | Has `skills/` directory and `package.json` | **Project optimization** — all 8 targets |
-| Single skill directory | Contains `SKILL.md` but no `skills/` subdirectory | **Skill optimization** — 4 targets + feedback iteration |
-| Single SKILL.md file | Path ends in `SKILL.md` | **Skill optimization** — 4 targets + feedback iteration |
+| Project root | Has `skills/` directory and `package.json` | **Project optimization** — all 6 targets |
+| Single skill directory | Contains `SKILL.md` but no `skills/` subdirectory | **Skill optimization** — 3 targets + feedback iteration |
+| Single SKILL.md file | Path ends in `SKILL.md` | **Skill optimization** — 3 targets + feedback iteration |
 
 **If the target is a single skill, skip to the Skill Optimization section below.**
 
@@ -53,26 +53,63 @@ After normalization, determine the scope from the resolved local path:
 
 ### Process
 
-1. **Identify target** — what specifically needs improvement?
-2. **Measure current state** — run Script-Assisted Checks, consume audit findings
-3. **Apply improvement** — delegate changes to the appropriate target below
-4. **Verify** — did it actually improve? For descriptions: create test prompts, verify triggering before and after
+1. **Diagnose** — run audit scripts, assess skill health, detect workflow gaps
+2. **Classify & Route** — classify action type, select applicable targets
+3. **Apply** — execute selected targets, delegate content changes to authoring
+4. **Verify** — re-audit to confirm improvement
 
-### Target Routing
+### Diagnostic Tools
 
-Select targets based on audit findings or user request — don't run all 8 sequentially:
+#### Audit Script Baseline
+
+Run the quality linter to identify frontmatter issues, description anti-patterns, and broken references before manual optimization:
+
+```bash
+bundles-forge audit-skill <project-root>        # markdown report
+bundles-forge audit-skill --json <project-root>  # machine-readable
+```
+
+The linter automates checks Q1-Q15 and X1-X3 from the skill quality ruleset. Focus manual effort on the subjective targets below.
+
+#### Skill Health Assessment
+
+Beyond automated linter checks, assess each skill's health across four dimensions. These are qualitative judgments, not runtime metrics — form them from audit findings, user feedback, and manual review:
+
+| Dimension | Question to Answer | Signals |
+|-----------|--------------------|---------|
+| **Trigger confidence** | Can this skill be correctly triggered from realistic user prompts? | Create 3-5 test prompts and mentally simulate whether the description would match. Low confidence → Target 1 |
+| **Execution clarity** | Once triggered, can an agent follow the steps without ambiguity? | Look for vague instructions, missing preconditions, implicit assumptions. Low clarity → FIX action |
+| **End-to-end completeness** | Does the full flow from trigger to output have gaps? | Check for missing handoffs, undefined artifacts, steps that assume context not provided by upstream. Gaps → Target 3 or CAPTURED action |
+| **Degradation signals** | Has this skill stopped working in practice? | User reports of wrong output, audit findings that recur after previous fixes, broken references to changed APIs or tools. Present → urgent FIX action |
+
+#### Workflow Gap Detection
+
+When audit findings or health assessment reveal structural gaps — not just broken connections but missing capabilities — consider whether a new skill should be created rather than patching existing ones:
+
+| Signal | Consider CAPTURED |
+|--------|-------------------|
+| W2 (unreachable skill) where the skill serves a real need but has no entry point | Create a new routing or orchestration skill |
+| Workflow graph has a "dead zone" between two skills with no handoff path | Create a bridging skill to connect them |
+| Users repeatedly perform multi-step manual work that no existing skill covers | Capture the pattern as a new skill |
+| A skill's `## Outputs` lists artifacts that no downstream skill consumes | Either remove the dead output or create a consumer skill |
+
+### Routing & Classification
+
+#### Target Routing
+
+Select targets based on audit findings or user request — don't run all 6 sequentially:
 
 | Finding / Signal | Target |
 |------------------|--------|
-| Q-findings (description anti-patterns, frontmatter issues) | Target 1, 2, 3 |
-| W-findings (workflow integrity issues) | Target 4 |
-| Platform gaps identified | Target 5 |
-| Security findings (SC/AG checks) | Target 6 |
-| User requests adding/replacing/reorganizing skills | Target 7 |
-| Component signals (userConfig, MCP, LSP needs) | Target 8 |
+| Q-findings (description anti-patterns, frontmatter issues) | Target 1, 2 |
+| W-findings (workflow integrity issues) | Target 3 |
+| Platform gaps identified | Invoke `bundles-forge:scaffolding` directly |
+| Security findings (SC/AG checks) | Target 4 |
+| User requests adding/replacing/reorganizing skills | Target 5 |
+| Component signals (userConfig, MCP, LSP needs) | Target 6 |
 | User behavioral feedback about skill quality | Feedback Iteration |
 
-### Optimization Action Classification
+#### Optimization Action Classification
 
 After selecting a target, classify the optimization action before delegating. This determines the delegation strategy and guards against scope drift.
 
@@ -90,39 +127,6 @@ After selecting a target, classify the optimization action before delegating. Th
 2. **Impact analysis:** When the change touches `## Outputs`, `## Integration`, or cross-references, map all downstream skills that consume those artifacts. Include downstream updates in the same delegation scope rather than discovering breakage in the verify step
 3. **Scope preservation check:** After drafting the change, verify: does the optimized skill still serve the same core goal? If the change shifts what the skill *is* (not just how well it does it), stop and reassess
 
-### Script-Assisted Checks
-
-Run the quality linter to identify frontmatter issues, description anti-patterns, and broken references before manual optimization:
-
-```bash
-bundles-forge audit-skill <project-root>        # markdown report
-bundles-forge audit-skill --json <project-root>  # machine-readable
-```
-
-The linter automates checks Q1-Q15 and X1-X3 from the skill quality ruleset. Focus manual effort on the subjective targets below.
-
-### Skill Health Assessment
-
-Beyond automated linter checks, assess each skill's health across four dimensions. These are qualitative judgments, not runtime metrics — form them from audit findings, user feedback, and manual review:
-
-| Dimension | Question to Answer | Signals |
-|-----------|--------------------|---------|
-| **Trigger confidence** | Can this skill be correctly triggered from realistic user prompts? | Create 3-5 test prompts and mentally simulate whether the description would match. Low confidence → Target 1 |
-| **Execution clarity** | Once triggered, can an agent follow the steps without ambiguity? | Look for vague instructions, missing preconditions, implicit assumptions. Low clarity → FIX action |
-| **End-to-end completeness** | Does the full flow from trigger to output have gaps? | Check for missing handoffs, undefined artifacts, steps that assume context not provided by upstream. Gaps → Target 4 or CAPTURED action |
-| **Degradation signals** | Has this skill stopped working in practice? | User reports of wrong output, audit findings that recur after previous fixes, broken references to changed APIs or tools. Present → urgent FIX action |
-
-### Workflow Gap Detection
-
-When audit findings or health assessment reveal structural gaps — not just broken connections but missing capabilities — consider whether a new skill should be created rather than patching existing ones:
-
-| Signal | Consider CAPTURED |
-|--------|-------------------|
-| W2 (unreachable skill) where the skill serves a real need but has no entry point | Create a new routing or orchestration skill |
-| Workflow graph has a "dead zone" between two skills with no handoff path | Create a bridging skill to connect them |
-| Users repeatedly perform multi-step manual work that no existing skill covers | Capture the pattern as a new skill |
-| A skill's `## Outputs` lists artifacts that no downstream skill consumes | Either remove the dead output or create a consumer skill |
-
 ### Target 1: Skill Description Triggering
 
 The highest-impact optimization. Descriptions are the primary mechanism for skill discovery.
@@ -135,7 +139,7 @@ The highest-impact optimization. Descriptions are the primary mechanism for skil
 
 **Guiding principle:** Use A/B eval when a change could produce regression effects — when improving one dimension might degrade another. Each eval scenario below defines its own skip conditions based on what kind of regression is possible.
 
-### A/B Eval for Description Changes
+#### A/B Eval for Description Changes
 
 When optimizing a description, never overwrite the original blindly. Use a copy-and-compare approach:
 
@@ -162,7 +166,9 @@ When optimizing a description, never overwrite the original blindly. Use a copy-
 
 **When to skip A/B eval:** If the change is purely additive (adding triggering conditions that were previously missing) and doesn't modify existing trigger phrases, a simple verification pass is sufficient.
 
-### Target 2: Token Efficiency
+### Target 2: Content Optimization
+
+#### Token Budget
 
 > **Canonical source:** Token budgets are defined in `bundles-forge:authoring` (Token Efficiency section).
 
@@ -172,7 +178,7 @@ When optimizing a description, never overwrite the original blindly. Use a copy-
 
 **Delegation** — invoke `bundles-forge:authoring` with a section-level restructuring spec: which sections to extract (source heading → target file in references/), which content to cut (quote the specific lines), and which cross-references to add. Authoring should modify only the named sections, not rewrite the entire SKILL.md.
 
-### Target 3: Progressive Disclosure
+#### Layer Assignment
 
 **Diagnosis** — verify the three-level loading structure (metadata / SKILL.md body / references) is properly layered. Identify skills where the body contains content that belongs at a different level.
 
@@ -180,7 +186,7 @@ When optimizing a description, never overwrite the original blindly. Use a copy-
 
 **Delegation** — invoke `bundles-forge:authoring` with per-section move instructions: for each section being promoted or demoted, specify the source location, the target level, and the reason (e.g. "move lines 45-80 to references/platform-details.md because this content is only needed during platform adaptation, not on every skill load").
 
-### Target 4: Workflow Chain Integrity
+### Target 3: Workflow Chain Integrity
 
 Consume the `workflow-report` from `bundles-forge:auditing` (Workflow mode) to identify and fix workflow issues. If no workflow report is available, run the workflow audit first:
 
@@ -211,11 +217,7 @@ Use chain evaluation to verify end-to-end handoff quality after workflow changes
 
 **When to use:** After modifying Inputs/Outputs sections, adding new skills to a workflow chain, or when audit findings indicate workflow integrity issues (W1-W4). Chain eval is sequential by nature (traces a pipeline), so ordering bias is not a concern.
 
-### Target 5: Platform Coverage (project only)
-
-Identify platforms the project doesn't yet support. For adding new platforms, invoke `bundles-forge:scaffolding`.
-
-### Target 6: Security Remediation (project only)
+### Target 4: Security Remediation (project only)
 
 Fix security findings from `bundles-forge:auditing` Category 10.
 
@@ -234,11 +236,11 @@ bundles-forge audit-security <project-root>
 
 Alternatively, invoke `bundles-forge:auditing` for a full audit that includes security (Category 10).
 
-### Target 7: Skill & Workflow Restructuring (project only)
+### Target 5: Skill & Workflow Restructuring (project only)
 
 Structural changes to achieve user goals: adding skills, replacing skills, reorganizing workflow chains, or converting skills to subagents.
 
-#### 7a. Adding Skills
+#### 5a. Adding Skills
 
 When the project has a workflow gap or the user needs new capability:
 
@@ -252,16 +254,16 @@ When the project has a workflow gap or the user needs new capability:
 
 For Intent B (integrate into workflow) third-party skills, invoke `bundles-forge:authoring` after adaptation for content quality validation.
 
-#### 7b. Replacing Skills
+#### 5b. Replacing Skills
 
 When a better alternative exists for an existing skill:
 
-1. Analyze the replacement skill's compatibility (same checks as 7a)
+1. Analyze the replacement skill's compatibility (same checks as 5a)
 2. Map all references to the old skill across the project (cross-references, Integration sections, routing table)
 3. Replace and update all references
 4. Verify with workflow audit
 
-#### 7c. Reorganizing Workflows
+#### 5c. Reorganizing Workflows
 
 When the execution chain needs restructuring:
 
@@ -270,9 +272,9 @@ When the execution chain needs restructuring:
 3. Propose new chain — present to user for approval
 4. Update `## Integration` sections across affected skills
 5. Update bootstrap routing table
-6. Verify with Chain A/B Eval (Target 4)
+6. Verify with Chain A/B Eval (Target 3)
 
-#### 7d. Skill-to-Agent Conversion
+#### 5d. Skill-to-Agent Conversion
 
 When a skill would work better as a read-only subagent:
 
@@ -292,7 +294,7 @@ Post-conversion verification:
 1. Dispatch `evaluator` (label "original") with test prompts to confirm the new agent correctly executes the former skill's responsibilities
 2. Run `bundles-forge:auditing` to verify dispatch/fallback logic in the orchestrating skill
 
-### Target 8: Optional Component Management (project only)
+### Target 6: Optional Component Management (project only)
 
 Add, adjust, or migrate optional plugin components based on evolving project needs. This target handles the gap between initial scaffolding and the components a project needs as it matures.
 
@@ -316,7 +318,7 @@ Add, adjust, or migrate optional plugin components based on evolving project nee
 
 ---
 
-## Skill Optimization (Lightweight Mode)
+## Single-Skill Optimization
 
 When the target is a single skill, run only the targets that apply at skill scope. This is auto-detected — no special flags needed.
 
@@ -325,20 +327,18 @@ When the target is a single skill, run only the targets that apply at skill scop
 | Target | Applicable | What to Do |
 |--------|-----------|------------|
 | 1. Description Triggering | **Full** | Evaluate and improve the description's triggering accuracy |
-| 2. Token Efficiency | **Full** | Check SKILL.md line count, references extraction |
-| 3. Progressive Disclosure | **Full** | Verify the 3-level loading structure |
-| 4. Workflow Chain Integrity | **Partial** | Fix this skill's W9/W10 findings (Inputs/Outputs clarity, integration symmetry) |
-| 5. Platform Coverage | **Skip** | Project-level concern |
-| 6. Security Remediation | **Partial** | Fix security issues within this skill's content |
-| 7. Skill & Workflow Restructuring | **Skip** | Project-level concern |
-| 8. Optional Component Management | **Skip** | Project-level concern |
+| 2. Content Optimization | **Full** | Check token budget, references extraction, layer assignment |
+| 3. Workflow Chain Integrity | **Partial** | Fix this skill's W9/W10 findings (Inputs/Outputs clarity, integration symmetry) |
+| 4. Security Remediation | **Partial** | Fix security issues within this skill's content |
+| 5. Skill & Workflow Restructuring | **Skip** | Project-level concern |
+| 6. Optional Component Management | **Skip** | Project-level concern |
 | Feedback Iteration | **Full** | Process user feedback with 3-question validation |
 
 ### Skill Process
 
 1. **Read target skill** — consume `skill-report` if available (or extract per-skill findings from `audit-report`)
 2. **Determine goal** — engineering optimization or feedback iteration?
-3. **Engineering path:** diagnose applicable targets (1-4, partial 6)
+3. **Engineering path:** diagnose applicable targets (1-3, partial 4)
 4. **Feedback path:** run the Feedback Iteration process (below)
 5. **Delegate** content changes to `bundles-forge:authoring`
 6. **Verify** — run `bundles-forge:auditing` (skill mode) for post-change verification
@@ -361,8 +361,8 @@ Process user feedback about a specific skill's behavior or output quality. This 
 |--------|--------|
 | "This skill triggered but produced wrong results" | Feedback iteration (below) |
 | "The steps in this skill are in the wrong order" | Feedback iteration (below) |
-| "Description format doesn't follow conventions" | Use optimization targets 1-3 |
-| "Token budget exceeded across the project" | Use optimization targets 2-3 (project mode) |
+| "Description format doesn't follow conventions" | Use optimization targets 1-2 |
+| "Token budget exceeded across the project" | Use optimization target 2 (project mode) |
 
 ### The Feedback Process
 
@@ -412,7 +412,7 @@ Follow the same dispatch and fallback pattern as Description A/B Eval (Target 1)
 | Ignoring token budget for bootstrap | Bootstrap loads every session — every word counts |
 | Applying feedback without validation | Every item goes through the 3-question framework |
 | Expanding skill scope during any optimization | Optimization should improve how well a skill fulfills its goal, not shift what the goal is. Verify after every change: does this skill still do the same thing? |
-| Running all 8 targets on a single skill | Let scope auto-detection handle it — targets 5-8 don't fully apply |
+| Running all 6 targets on a single skill | Let scope auto-detection handle it — targets 4-6 don't fully apply |
 | Rewriting entire SKILL.md instead of surgical edits | Specify section-level changes in delegation. A FIX to one heading should not trigger a full rewrite — minimize diff surface to reduce regression risk |
 | Adding third-party skills without security audit | Always run `bundles-forge:auditing` — see `references/third-party-integration.md` |
 | Adding skills without updating Integration sections | Every new connection needs symmetric `Calls` / `Called by` declarations |
@@ -421,7 +421,7 @@ Follow the same dispatch and fallback pattern as Description A/B Eval (Target 1)
 
 - `audit-report` (optional) — findings from `bundles-forge:auditing` (full project mode). Contains per-skill breakdowns — when optimizing a single skill from a full audit, extract the relevant skill's findings from the Per-Skill Breakdown section
 - `skill-report` (optional) — findings from `bundles-forge:auditing` (skill mode). More precise input for Skill Optimization — 4-category scored report targeting a single skill
-- `workflow-report` (optional) — workflow-specific findings (W1-W11) from `bundles-forge:auditing` (workflow mode), consumed by Target 4
+- `workflow-report` (optional) — workflow-specific findings (W1-W11) from `bundles-forge:auditing` (workflow mode), consumed by Target 3
 - `user-feedback` (optional) — behavioral feedback about skill quality, triggering issues, or wrong output
 
 ## Outputs
@@ -442,7 +442,7 @@ Follow the same dispatch and fallback pattern as Description A/B Eval (Target 1)
 **Calls:**
 - **bundles-forge:authoring** — all content changes (descriptions, token optimization, restructuring, third-party adaptation)
   - Artifact: `optimized-skill` → `optimization-spec` (indirect — optimizing formulates the spec, authoring receives it as targeted change instructions)
-- **bundles-forge:scaffolding** — Target 5 (platform coverage) for adding new platforms; Target 8 (optional components) for adding MCP/LSP/userConfig/output-styles
+- **bundles-forge:scaffolding** — Platform Coverage routing for adding new platforms; Optional Component Management target for adding MCP/LSP/userConfig/output-styles
   - Artifact: `optimized-skill` → `project-directory` (indirect — scaffolding operates on the project directory, not the optimization output)
 - **bundles-forge:auditing** — post-change verification (one pass, no loops)
   - Artifact: `optimized-skill` → `project-directory` (indirect — auditing targets the project containing the optimized skill)

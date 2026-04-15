@@ -96,7 +96,7 @@ When explicitly requested for a workflow audit (or when `--focus-skills` is spec
 
 **Report:** Use `skills/auditing/references/workflow-report-template.md`. Save to `.bundles-forge/<project-name>-v<version>-workflow-audit.YYYY-MM-DD[.<lang>].md` (read name and version from `package.json`; append `.<lang>` when not English).
 
-End the report with: "**Next step:** The user can run `/bundles-optimize` for workflow fixes (Target 4: Workflow Chain Integrity)."
+End the report with: "**Next step:** The user can run `/bundles-optimize` for workflow fixes (Workflow Chain Integrity target)."
 
 ### Contradiction Resolution
 

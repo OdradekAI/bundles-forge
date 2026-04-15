@@ -201,7 +201,7 @@ Remove MCP servers, CLI executables, or LSP servers from an existing project. Re
 
 **Called by:**
 - **bundles-forge:blueprinting** — Phase 1 of the new-project pipeline
-- **bundles-forge:optimizing** — Target 5 (platform coverage) for adding new platforms
+- **bundles-forge:optimizing** — Platform Coverage routing for adding new platforms
 - User directly — for platform adaptation or ad-hoc project generation
 
 **Pairs with:**

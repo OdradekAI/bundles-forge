@@ -2,7 +2,7 @@
 
 [中文](optimizing-guide.zh.md)
 
-A user-oriented guide to optimizing bundle-plugins and individual skills with Bundles Forge. Covers quick start, scope detection, the diagnose → delegate → verify pipeline, 8 optimization targets, A/B evaluation, and feedback iteration.
+A user-oriented guide to optimizing bundle-plugins and individual skills with Bundles Forge. Covers quick start, scope detection, the diagnose → delegate → verify pipeline, 6 optimization targets, A/B evaluation, and feedback iteration.
 
 ## Overview
 
@@ -36,19 +36,19 @@ Optimizing auto-detects your scope from the path you provide:
 
 | Scope | Detection | Mode | Applicable Targets |
 |-------|----------|------|--------------------|
-| Project root | Has `skills/` + `package.json` | **Project optimization** | All 8 targets + feedback |
-| Single skill directory | Has `SKILL.md`, no `skills/` subdirectory | **Skill optimization** | Core targets (1-4) + feedback |
+| Project root | Has `skills/` + `package.json` | **Project optimization** | All 6 targets + feedback |
+| Single skill directory | Has `SKILL.md`, no `skills/` subdirectory | **Skill optimization** | Core targets (1-3) + feedback |
 
 ### Decision Flowchart
 
 ```
 Are you optimizing an entire project or a single skill?
-  ├─ Entire project → Project optimization (all 8 targets)
+  ├─ Entire project → Project optimization (all 6 targets)
   │    ├─ Have an audit report? → Feed it as input for prioritized optimization
   │    └─ No audit report? → Optimizing runs its own diagnosis
-  └─ Single skill → Skill optimization (targets 1-4 + feedback)
+  └─ Single skill → Skill optimization (targets 1-3 + feedback)
        ├─ Skill triggered but produced wrong results? → Feedback iteration
-       └─ Skill needs engineering improvement? → Targets 1-4
+       └─ Skill needs engineering improvement? → Targets 1-3
 ```
 
 ### Supported Inputs
@@ -70,9 +70,9 @@ Optimizing can consume reports from prior audits. A common pattern is **audit fi
 
 | Input | Source | Use |
 |-------|--------|-----|
-| `audit-report` | `bundles-forge:auditing` (full project) | Per-skill breakdowns for all 8 targets |
+| `audit-report` | `bundles-forge:auditing` (full project) | Per-skill breakdowns for all 6 targets |
 | `skill-report` | `bundles-forge:auditing` (skill mode) | Focused 4-category report for skill optimization |
-| `workflow-report` | `bundles-forge:auditing` (workflow mode) | W1-W9 findings for Target 4 |
+| `workflow-report` | `bundles-forge:auditing` (workflow mode) | W1-W9 findings for Target 3 |
 | `user-feedback` | Direct from user | Behavioral feedback for the iteration process |
 
 ---
@@ -96,16 +96,16 @@ optimizing diagnoses → delegates content edits to authoring → verifies via a
 
 ### Target Routing
 
-Select targets based on audit findings or user request — don't run all 8 sequentially:
+Select targets based on audit findings or user request — don't run all 6 sequentially:
 
 | Finding / Signal | Target |
 |------------------|--------|
-| Q-findings (description anti-patterns, frontmatter issues) | Target 1, 2, 3 |
-| W-findings (workflow integrity issues) | Target 4 |
-| Platform gaps identified | Target 5 |
-| Security findings (SC/AG checks) | Target 6 |
-| User requests adding/replacing/reorganizing skills | Target 7 |
-| Component signals (userConfig, MCP, LSP needs) | Target 8 |
+| Q-findings (description anti-patterns, frontmatter issues) | Target 1, 2 |
+| W-findings (workflow integrity issues) | Target 3 |
+| Platform gaps identified | Invoke `bundles-forge:scaffolding` directly |
+| Security findings (SC/AG checks) | Target 4 |
+| User requests adding/replacing/reorganizing skills | Target 5 |
+| Component signals (userConfig, MCP, LSP needs) | Target 6 |
 | User behavioral feedback about skill quality | Feedback Iteration |
 
 ### Optimization Action Classification
@@ -128,14 +128,14 @@ Beyond automated linter checks (`bundles-forge audit-skill`), the agent assesses
 |-----------|-------------------|
 | **Trigger confidence** | Can realistic user prompts correctly trigger this skill? Low confidence points to Target 1 |
 | **Execution clarity** | Once triggered, can an agent follow the steps without ambiguity? Vague instructions or implicit assumptions indicate a FIX is needed |
-| **End-to-end completeness** | Does the full flow from trigger to output have gaps? Missing handoffs or undefined artifacts point to Target 4 or a CAPTURED action |
+| **End-to-end completeness** | Does the full flow from trigger to output have gaps? Missing handoffs or undefined artifacts point to Target 3 or a CAPTURED action |
 | **Degradation signals** | Has this skill stopped working in practice? Recurring audit findings or user reports of wrong output signal an urgent FIX |
 
 When assessment or audit findings reveal structural gaps — not just broken connections but missing capabilities — the agent considers whether a new skill should be created (CAPTURED) rather than patching existing ones. Common gap signals include W2 (unreachable skill), dead zones in the workflow graph, and repeated manual work that no existing skill covers.
 
 ---
 
-## Core Targets (1-4)
+## Core Targets (1-3)
 
 These targets apply to both project optimization and single-skill optimization.
 
@@ -169,7 +169,11 @@ Description-specific checks are **Q3-Q7**: missing description (Q3), "Use when..
 
 For *behavioral* quality (does the right prompt trigger the right skill?), use A/B eval.
 
-### Target 2: Token Efficiency
+### Target 2: Content Optimization
+
+Covers both token efficiency and layer assignment — reducing what agents load and ensuring content lives at the right level.
+
+#### Token Budget
 
 Every token in a frequently-loaded skill costs context budget across every session. This matters most for the bootstrap skill (loaded every session) and commonly-triggered skills.
 
@@ -187,7 +191,7 @@ Every token in a frequently-loaded skill costs context budget across every sessi
 | Move flag docs to --help | Reference `bundles-forge audit-skill --help` instead of listing all flags |
 | Eliminate intra-project redundancy | Don't repeat what's in another skill's `references/` |
 
-### Target 3: Progressive Disclosure
+#### Layer Assignment
 
 The three-level loading system ensures minimal context usage:
 
@@ -202,7 +206,7 @@ The three-level loading system ensures minimal context usage:
 - Tables or checklists that are only needed during execution (not for understanding the skill's purpose)
 - Template content that the agent copies verbatim
 
-### Target 4: Workflow Chain Integrity
+### Target 3: Workflow Chain Integrity
 
 Consumes workflow audit findings to identify and fix workflow issues. The workflow audit has two layers:
 
@@ -231,15 +235,11 @@ In single-skill mode, only W9 (placeholder sections) and W10 (asymmetric integra
 
 ---
 
-## Project-Only Targets (5-8)
+## Project-Only Targets (4-6)
 
 These targets are skipped in single-skill mode. They require project-wide context.
 
-### Target 5: Platform Coverage
-
-Identify platforms the project doesn't yet support. For adding new platforms, invoke `bundles-forge:scaffolding` — optimizing doesn't generate platform adapters itself.
-
-### Target 6: Security Remediation
+### Target 4: Security Remediation
 
 Fix security findings from `bundles-forge:auditing` Category 10. Common fixes:
 
@@ -250,7 +250,7 @@ Fix security findings from `bundles-forge:auditing` Category 10. Common fixes:
 | Agent prompt lacks scope constraints | Add explicit boundaries |
 | SKILL.md contains encoded/obfuscated content | Strip or replace with plain text |
 
-### Target 7: Skill & Workflow Restructuring
+### Target 5: Skill & Workflow Restructuring
 
 Structural changes to the project: adding skills, replacing skills, reorganizing workflow chains, or converting skills to subagents. This was previously part of blueprinting (Scenario D) but belongs in optimizing because it operates on existing projects without producing a design document.
 
@@ -258,13 +258,13 @@ Structural changes to the project: adding skills, replacing skills, reorganizing
 
 | User Says | Action |
 |-----------|--------|
-| "Add a new skill to my project" | Target 7a — add skill, wire into workflow |
-| "Replace this skill with a better one" | Target 7b — replace and update references |
-| "The workflow chain needs reorganizing" | Target 7c — restructure execution paths |
-| "This skill should be a subagent instead" | Target 7d — convert to read-only agent |
-| "My project needs better X capability" | Feedback process → may lead to Target 7a |
+| "Add a new skill to my project" | Target 5a — add skill, wire into workflow |
+| "Replace this skill with a better one" | Target 5b — replace and update references |
+| "The workflow chain needs reorganizing" | Target 5c — restructure execution paths |
+| "This skill should be a subagent instead" | Target 5d — convert to read-only agent |
+| "My project needs better X capability" | Feedback process → may lead to Target 5a |
 
-#### Adding Skills (7a)
+#### Adding Skills (5a)
 
 The most common restructuring operation. The process:
 
@@ -276,14 +276,14 @@ The most common restructuring operation. The process:
 6. Apply — copy, adapt, update Integration sections
 7. Verify — focused workflow audit with `--focus-skills`
 
-#### Replacing Skills (7b)
+#### Replacing Skills (5b)
 
 Same compatibility analysis as adding, plus:
 - Map all references to the old skill
 - Update cross-references, Integration sections, and routing table
 - Verify with workflow audit
 
-#### Reorganizing Workflows (7c)
+#### Reorganizing Workflows (5c)
 
 When the execution chain has inefficiencies:
 - Map the current graph and identify bottlenecks or unnecessary handoffs
@@ -291,7 +291,7 @@ When the execution chain has inefficiencies:
 - Update Integration sections and routing
 - Verify with Chain A/B Eval
 
-#### Skill-to-Agent Conversion (7d)
+#### Skill-to-Agent Conversion (5d)
 
 Candidates for conversion:
 - Execution produces verbose temporary context (search results, file contents, logs) that subsequent steps don't need
@@ -301,7 +301,7 @@ Candidates for conversion:
 
 Conversion extracts the execution protocol into `agents/<role>.md` with fallback logic for when subagents are unavailable. After conversion, dispatch the `evaluator` agent with test prompts to confirm the new agent correctly executes the former skill's responsibilities, then run `bundles-forge:auditing` to verify dispatch/fallback logic.
 
-### Target 8: Optional Component Management
+### Target 6: Optional Component Management
 
 Add, adjust, or migrate optional plugin components based on evolving project needs. This target handles the gap between initial scaffolding and the components a project needs as it matures.
 
@@ -395,8 +395,8 @@ A cross-cutting concern available in both project and skill optimization modes. 
 |-----------|--------|
 | "This skill triggered but produced wrong results" | Feedback iteration |
 | "The steps are in the wrong order" | Feedback iteration |
-| "Description format doesn't follow conventions" | Optimization targets 1-3 |
-| "Token budget exceeded across the project" | Optimization targets 2-3 (project mode) |
+| "Description format doesn't follow conventions" | Optimization targets 1-2 |
+| "Token budget exceeded across the project" | Optimization target 2 (project mode) |
 
 ### The 3-Question Validation Framework
 
@@ -440,7 +440,7 @@ Receive feedback
 | Ignoring the bootstrap skill's token budget | The bootstrap skill loads every session, so bloat costs context everywhere | Keep `using-*` under 200 lines — this is the highest-ROI token optimization |
 | Applying user feedback without validation | Style preferences masquerade as defect reports, leading to unnecessary churn | Run every feedback item through the 3-question validation framework before accepting |
 | Expanding a skill's scope during any optimization | A skill slowly drifts from its original responsibility | Optimization should improve *how well* a skill fulfills its goal, not shift *what* the goal is. Verify after every change: does this skill still do the same thing? |
-| Running all 8 targets on a single skill | Targets 5-8 require project context and produce no useful results at skill scope | Let scope auto-detection handle it — single skills only get targets 1-4 |
+| Running all 6 targets on a single skill | Targets 4-6 require project context and produce no useful results at skill scope | Let scope auto-detection handle it — single skills only get targets 1-3 |
 | Rewriting entire SKILL.md instead of surgical edits | Large diffs increase regression risk and make review harder | Specify section-level changes. A FIX to one heading should not trigger a full rewrite — minimize diff surface |
 | Adding third-party skills without security audit | Imported content may contain encoded prompts, excessive tool access, or network calls | Always run `bundles-forge:auditing` on imported skills — see `references/third-party-integration.md` |
 | Adding skills without updating Integration sections | The workflow graph becomes inconsistent, causing W10 (asymmetric integration) findings | Every new skill connection needs symmetric `**Calls:**` and `**Called by:**` declarations |
@@ -464,7 +464,7 @@ No, but it's recommended. Optimizing can run its own diagnosis, but feeding it a
 
 **Q: Which targets apply when optimizing a single skill?**
 
-Targets 1-4 (description triggering, token efficiency, progressive disclosure, workflow chain integrity) plus feedback iteration. Targets 5-8 are skipped because they require project-wide context. Within Target 4, only W9 (placeholder sections) and W10 (asymmetric integration) apply at skill scope.
+Targets 1-3 (description triggering, content optimization, workflow chain integrity) plus feedback iteration. Targets 4-6 are skipped because they require project-wide context. Within Target 3, only W9 (placeholder sections) and W10 (asymmetric integration) apply at skill scope.
 
 **Q: What if the verification audit still shows issues after optimization?**
 
@@ -495,11 +495,9 @@ W10-W11 (chain evaluation and behavioral verification) require `evaluator` agent
 | Target | Project | Skill |
 |--------|:---:|:---:|
 | 1. Description Triggering | Full | Full |
-| 2. Token Efficiency | Full | Full |
-| 3. Progressive Disclosure | Full | Full |
-| 4. Workflow Chain Integrity | Full | Partial (W9/W10 only) |
-| 5. Platform Coverage | Full | Skip |
-| 6. Security Remediation | Full | Partial |
-| 7. Skill & Workflow Restructuring | Full | Skip |
-| 8. Optional Component Management | Full | Skip |
+| 2. Content Optimization | Full | Full |
+| 3. Workflow Chain Integrity | Full | Partial (W9/W10 only) |
+| 4. Security Remediation | Full | Partial |
+| 5. Skill & Workflow Restructuring | Full | Skip |
+| 6. Optional Component Management | Full | Skip |
 | Feedback Iteration | Full | Full |
