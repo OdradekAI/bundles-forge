@@ -17,6 +17,9 @@ import unittest
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO_ROOT / "skills" / "auditing" / "scripts"))
+from _parsing import parse_frontmatter as _parse_frontmatter_full
+
 HOOKS_DIR = REPO_ROOT / "hooks"
 HOOK_PATH = HOOKS_DIR / "session-start.py"
 SKILLS_DIR = REPO_ROOT / "skills"
@@ -76,27 +79,8 @@ def _simulate_hook(platform=None):
 
 
 def _parse_frontmatter(content):
-    """Minimal frontmatter parser — extract key: value pairs between --- fences."""
-    lines = content.splitlines()
-    if not lines or lines[0].strip() != "---":
-        return None
-    fm = {}
-    current_key = None
-    for line in lines[1:]:
-        if line.strip() == "---":
-            break
-        if line.startswith("  ") and current_key:
-            fm[current_key] += " " + line.strip()
-            continue
-        idx = line.find(":")
-        if idx > 0:
-            key = line[:idx].strip()
-            val = line[idx + 1:].strip()
-            if (val.startswith('"') and val.endswith('"')) or \
-               (val.startswith("'") and val.endswith("'")):
-                val = val[1:-1]
-            fm[key] = val
-            current_key = key
+    """Adapter: reuses the canonical parser from _parsing.py, returns dict-only."""
+    fm, _ = _parse_frontmatter_full(content)
     return fm
 
 

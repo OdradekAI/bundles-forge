@@ -27,6 +27,8 @@ This directory contains guides for every aspect of bundle-plugin development wit
 | [Auditing Guide](auditing-guide.md) | Validate | 10-category checklists, report templates, CI integration |
 | [Optimizing Guide](optimizing-guide.md) | Improve | Description tuning, token reduction, workflow restructuring |
 | [Releasing Guide](releasing-guide.md) | Publish | Version management, CHANGELOG format, publishing workflow |
+| [CLI Reference](cli-reference.md) | Reference | All subcommands, options, exit codes |
+| [Troubleshooting Guide](troubleshooting-guide.md) | Reference | Common issues, platform-specific problems, error resolution |
 
 ## Lifecycle Flow
 

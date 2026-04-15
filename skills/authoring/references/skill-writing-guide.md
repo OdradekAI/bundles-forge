@@ -349,6 +349,15 @@ Every token in a frequently-loaded skill costs context budget across every sessi
 
 Use whichever metric is easier to check — the core principle is that the body's first ~5,000 tokens must contain all critical instructions (the compaction survival threshold).
 
+**Two-tier body length thresholds** (enforced by `audit_skill.py`):
+
+| Threshold | Lines | Audit Check | Meaning |
+|-----------|-------|-------------|---------|
+| Soft | 300 | Q12 | Body approaching density limit — extract heavy sections to `references/` |
+| Hard | 500 | Q9 | Maximum body length — audit warning triggered |
+
+The soft threshold is a design signal: if the body exceeds 300 lines, the skill likely contains reference material (decision tables, checklists, platform details) that should live in `references/` files. The hard threshold is a quality gate: bodies over 500 lines degrade compaction survivability and increase token cost.
+
 **Techniques for staying lean:**
 - Cross-reference other skills (`project:skill-name`) instead of repeating content
 - One excellent example beats three mediocre ones

@@ -27,6 +27,8 @@
 | [审计指南](auditing-guide.zh.md) | 验证 | 10 大类检查清单、报告模板、CI 集成 |
 | [优化指南](optimizing-guide.zh.md) | 改进 | 描述调优、token 压缩、工作流重构 |
 | [发布指南](releasing-guide.zh.md) | 发布 | 版本管理、CHANGELOG 格式、发布流程 |
+| [CLI 参考](cli-reference.zh.md) | 参考 | 所有子命令、选项、退出码 |
+| [故障排除指南](troubleshooting-guide.zh.md) | 参考 | 常见问题、平台特有问题、错误解决 |
 
 ## 生命周期流程
 
