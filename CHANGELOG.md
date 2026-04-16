@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+## [1.7.6] - 2026-04-16
+
+### Added
+
+- **OpenClaw platform support** — 6th platform added; includes `.clawhubignore`, `hooks/openclaw-bootstrap/` hook-pack (HOOK.md + handler.js), scaffolding templates (`assets/platforms/openclaw/`), and `using-bundles-forge/references/openclaw-tools.md` tool mapping
+- **OpenClaw installation docs** — `README.md` and `README.zh.md` both include OpenClaw install/verify instructions via `openclaw bundles install`
+- **Audit checks H10/H11** — new checklist entries for OpenClaw hook-pack HOOK.md metadata and handler.js ESM conventions
+
+### Changed
+
+- **Platform count updated to 6** — all project files (`AGENTS.md`, `CLAUDE.md`, `README.md`, `README.zh.md`, `concepts-guide.md/.zh.md`, `scaffolding/SKILL.md`, `skill-writing-guide.md`, `platform-adapters.md`) now reference 6 platforms including OpenClaw
+- **Platform differences table expanded** — `platform-adapters.md` includes OpenClaw column with discovery, hook format, and skills path info
+- **OpenClaw limitation documented** — hook-pack wiring in Claude bundles noted as forward-compatible pending OpenClaw support extension
+
 ## [1.7.5] - 2026-04-16
 
 ### Changed
