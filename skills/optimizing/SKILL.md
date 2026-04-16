@@ -247,6 +247,51 @@ Add, adjust, or migrate optional plugin components based on evolving project nee
 
 **Verification** — after scaffolding completes, run `bundles-forge:auditing` to confirm structural integrity and security compliance (especially for new MCP servers and userConfig sensitive values).
 
+### Target 7: Deprecation and Migration (project only)
+
+Coordinate the deprecation, renaming, splitting, or merging of skills. This target ensures all references remain consistent across the project during structural changes.
+
+For the full step-by-step process, see `references/deprecation-guide.md`.
+
+**Deprecation** — mark a skill as deprecated without removing it:
+
+1. Add `deprecated: true` and `superseded-by: <project>:<replacement>` to the skill's frontmatter
+2. Prepend the description with a deprecation notice: `"Use when... (deprecated — use <replacement> instead)"`
+3. Update the bootstrap routing table to note the deprecation
+4. Update cross-references in other skills' `## Integration` sections
+
+**Renaming** — change a skill's name while preserving all connections:
+
+1. Rename the directory: `skills/old-name/` → `skills/new-name/`
+2. Update frontmatter `name` field
+3. Update all cross-references (`<project>:old-name` → `<project>:new-name`) across all SKILL.md, Integration sections, command stubs, and documentation
+4. Update command stubs in `commands/`
+5. Update bootstrap routing table
+6. Run `bundles-forge audit-docs` to catch any missed references
+
+**Splitting** — divide a skill into multiple focused skills:
+
+1. Design the new skill boundaries (reuse `bundles-forge:blueprinting` scenario B)
+2. Invoke `bundles-forge:scaffolding` for new skill directories
+3. Invoke `bundles-forge:authoring` to write each new skill's content
+4. Update all references to the original skill
+5. Deprecate the original (or remove if all functionality is covered)
+6. Run `bundles-forge:auditing` in workflow mode to verify chain integrity
+
+**Merging** — combine multiple skills into one:
+
+1. Design the merged skill (reuse `bundles-forge:blueprinting` scenario C)
+2. Invoke `bundles-forge:authoring` to write the merged content
+3. Deprecate the source skills
+4. Update all cross-references and routing
+5. Run `bundles-forge:auditing` in workflow mode
+
+**Platform cleanup** — after any structural change:
+
+1. Remove deprecated skill references from platform manifests (Cursor plugin.json paths)
+2. Update version-bump.json if manifest paths changed
+3. Run `bundles-forge:testing` to verify component discovery
+
 ---
 
 ## Single-Skill Optimization
@@ -263,6 +308,7 @@ When the target is a single skill, run only the targets that apply at skill scop
 | 4. Security Remediation | **Partial** | Fix security issues within this skill's content |
 | 5. Skill & Workflow Restructuring | **Skip** | Project-level concern |
 | 6. Optional Component Management | **Skip** | Project-level concern |
+| 7. Deprecation and Migration | **Skip** | Project-level concern |
 | Feedback Iteration | **Full** | Process user feedback with 3-question validation |
 
 ### Skill Process
@@ -343,7 +389,7 @@ Follow the same dispatch and fallback pattern as Description A/B Eval (Target 1)
 | Ignoring token budget for bootstrap | Bootstrap loads every session — every word counts |
 | Applying feedback without validation | Every item goes through the 3-question framework |
 | Expanding skill scope during any optimization | Optimization should improve how well a skill fulfills its goal, not shift what the goal is. Verify after every change: does this skill still do the same thing? |
-| Running all 6 targets on a single skill | Let scope auto-detection handle it — targets 4-6 don't fully apply |
+| Running all 7 targets on a single skill | Let scope auto-detection handle it — targets 4-7 don't fully apply |
 | Rewriting entire SKILL.md instead of surgical edits | Specify section-level changes in delegation. A FIX to one heading should not trigger a full rewrite — minimize diff surface to reduce regression risk |
 | Adding third-party skills without security audit | Always run `bundles-forge:auditing` — see `references/third-party-integration.md` |
 | Adding skills without updating Integration sections | Every new connection needs symmetric `Calls` / `Called by` declarations |

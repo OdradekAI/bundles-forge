@@ -46,6 +46,7 @@ Replace all placeholders before writing to the target project.
 |---------------|-------------|---------|
 | `assets/scripts/bump_version.py` | `scripts/bump_version.py` | Standalone version sync tool for CI (not needed if using `bundles-forge` CLI) |
 | `assets/mcp-json.md` | `.mcp.json` | MCP server definitions (choose transport from template variants) |
+| `assets/.github/workflows/validate-plugin.yml` | `.github/workflows/validate-plugin.yml` | CI validation workflow (JSON manifests, version drift, skill quality, security) |
 
 ### Platform Adapters
 

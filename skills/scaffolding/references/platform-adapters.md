@@ -22,7 +22,7 @@ Claude Code discovers `skills/`, `commands/`, `agents/`, and `hooks/hooks.json` 
 
 **Plugin agent restrictions:** Plugin-shipped agents do not support `hooks`, `mcpServers`, or `permissionMode` frontmatter fields.
 
-**Install method:** Marketplace `claude plugin install` or `/plugin install`. For development: `claude --plugin-dir .`
+**Install method:** `/plugin marketplace add <owner>/<repo>` then `/plugin install <project-name>@<marketplace-name>`. For development: `/plugin marketplace add ./` then `/plugin install <project-name>@<marketplace-name>`
 
 **Version bump entry:**
 ```json

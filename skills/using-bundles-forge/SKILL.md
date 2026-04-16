@@ -1,6 +1,6 @@
 ---
 name: using-bundles-forge
-description: "Use when starting any conversation involving bundle-plugins — blueprinting, scaffolding, authoring, auditing, optimizing, or releasing. Also use when unsure which bundles-forge skill applies"
+description: "Use when starting any conversation involving bundle-plugins — blueprinting, scaffolding, authoring, auditing, testing, optimizing, or releasing. Also use when unsure which bundles-forge skill applies"
 ---
 
 <SUBAGENT-STOP>
@@ -56,7 +56,7 @@ These skills diagnose, decide, and delegate. They orchestrate other skills to ac
 |-------|------|-------------|
 | `bundles-forge:blueprinting` | New-project orchestrator | Planning new bundle-plugins, splitting complex skills, or composing skills into bundles. Orchestrates the full creation pipeline: scaffolding → authoring → workflow design → auditing |
 | `bundles-forge:optimizing` | Improvement orchestrator | Engineering optimization, feedback iteration, descriptions, tokens, adding skills, restructuring workflows. Delegates content changes to authoring |
-| `bundles-forge:releasing` | Release pipeline orchestrator | Version management, release pipeline: audit, version bump, publish |
+| `bundles-forge:releasing` | Release pipeline orchestrator | Version management, release pipeline: audit, test, version bump, publish |
 
 ## Executors (single-responsibility workers)
 
@@ -67,6 +67,7 @@ These skills do one thing well. They can be invoked directly by users or dispatc
 | `bundles-forge:scaffolding` | Structure generator | Generating project structure, adding or removing platform support |
 | `bundles-forge:authoring` | Content writer | Writing or improving SKILL.md content and agent definitions (agents/*.md) |
 | `bundles-forge:auditing` | Diagnostic reporter | Reviewing a project for quality issues, security risks — outputs reports, does not orchestrate fixes |
+| `bundles-forge:testing` | Dynamic verifier | Testing a plugin locally — dev-marketplace setup, hook smoke tests, component discovery, cross-platform readiness |
 
 ## Meta-skill
 
@@ -80,10 +81,11 @@ When multiple skills could apply, prefer orchestrators over executors:
 
 1. **New project** → `bundles-forge:blueprinting` (orchestrates scaffolding, authoring, auditing)
 2. **Improve existing project** → `bundles-forge:optimizing` (orchestrates authoring, scaffolding, auditing)
-3. **Release** → `bundles-forge:releasing` (orchestrates auditing, optimizing)
+3. **Release** → `bundles-forge:releasing` (orchestrates auditing, testing, optimizing)
 4. **Standalone content writing** → `bundles-forge:authoring` (when you just need to write/improve a SKILL.md)
 5. **Standalone structure** → `bundles-forge:scaffolding` (when you just need to add/remove a platform)
 6. **Standalone audit** → `bundles-forge:auditing` (when you just need a diagnostic report)
+7. **Standalone testing** → `bundles-forge:testing` (when you just need to verify a plugin works locally)
 
 ## Naming Conventions
 
@@ -101,23 +103,9 @@ When multiple skills could apply, prefer orchestrators over executors:
 
 The skill itself declares which type it is.
 
-## Red Flags
-
-These thoughts mean STOP — you're skipping a skill you should use:
-
-| Thought | Reality |
-|---------|---------|
-| "I know how to scaffold a project" | Skills encode best practices you'll miss. |
-| "Just a quick audit" | The audit checklist has 50+ checks including security. Use the skill. |
-| "I'll just add the manifest" | Platform adaptation involves version sync, hooks, docs. Use scaffolding. |
-| "Version bump is simple" | Drift detection and audit catch what you'd miss. |
-| "This project is too small for all this" | Small projects grow. Set up right from the start. |
-| "This skill is from a trusted source" | Trust but verify. Auditing includes security scanning. |
-| "I'll just apply the feedback directly" | Unvalidated changes may harm the skill. Use the optimizing skill. |
-
 ## Inputs
 
-- (none — bootstrap skill, auto-loaded on session start)
+- (none — bootstrap skill, loaded on demand via Skill tool)
 
 ## Outputs
 

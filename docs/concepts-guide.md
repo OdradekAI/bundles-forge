@@ -72,7 +72,7 @@ allowed-tools: Read Grep Glob Bash
 ---
 ```
 
-> **In bundles-forge:** 7 skills are organized in a hub-and-spoke model — 3 orchestrators (`blueprinting`, `optimizing`, `releasing`) dispatch 3 executors (`scaffolding`, `authoring`, `auditing`) plus 1 bootstrap meta-skill. Orchestrators use the `bundles-forge:<name>` convention to dispatch executors via prose. See [How They Work Together](#how-they-work-together-in-bundles-forge).
+> **In bundles-forge:** 8 skills are organized in a hub-and-spoke model — 3 orchestrators (`blueprinting`, `optimizing`, `releasing`) dispatch 4 executors (`scaffolding`, `authoring`, `auditing`, `testing`) plus 1 bootstrap meta-skill. Orchestrators use the `bundles-forge:<name>` convention to dispatch executors via prose. See [How They Work Together](#how-they-work-together-in-bundles-forge).
 
 ### Plugin
 
@@ -118,22 +118,21 @@ Four handler types are available: `command` (shell), `http` (POST to URL), `prom
 
 ```json
 {
-  "description": "Bootstrap: injects skill routing context on session start",
+  "description": "Bootstrap: emits lightweight skill list on session start",
   "hooks": {
     "SessionStart": [{
       "matcher": "startup|clear|compact",
       "hooks": [{
         "type": "command",
         "command": "python \"${CLAUDE_PLUGIN_ROOT}/hooks/session-start.py\"",
-        "timeout": 10,
-        "async": false
+        "timeout": 10
       }]
     }]
   }
 }
 ```
 
-> **In bundles-forge:** The `session-start.py` hook reads the bootstrap skill and injects it into the agent's context, giving it awareness of all available skills at the start of every session. Written in Python for cross-platform compatibility.
+> **In bundles-forge:** The `session-start.py` hook emits a lightweight prompt listing all available skills. The full routing context (`using-bundles-forge/SKILL.md`) is loaded on demand via the platform's Skill tool. Written in Python for cross-platform compatibility.
 
 ### MCP (Model Context Protocol)
 
@@ -155,7 +154,7 @@ Not every external integration needs MCP — stateless, single-shot tools are be
 
 Commands have been merged into the skill system — a file at `.claude/commands/deploy.md` and a skill at `.claude/skills/deploy/SKILL.md` create the same `/deploy` command. Plugin `commands/` directories are still supported.
 
-> **In bundles-forge:** 7 `/bundles-*` commands serve as thin entry points that redirect to the corresponding skill.
+> **In bundles-forge:** 8 `/bundles-*` commands serve as thin entry points that redirect to the corresponding skill.
 
 ### Marketplace
 
@@ -163,7 +162,7 @@ Commands have been merged into the skill system — a file at `.claude/commands/
 
 Supports GitHub repos, Git URLs, local paths, and remote URLs. The official Anthropic marketplace is available by default; teams can create private marketplaces.
 
-> **In bundles-forge:** Distributed through the official Anthropic marketplace (`claude plugin install bundles-forge`).
+> **In bundles-forge:** Distributed through the official Anthropic marketplace (`/plugin install bundles-forge@bundles-forge-dev`).
 
 ### LSP Server
 
@@ -223,7 +222,7 @@ Concepts in the plugin ecosystem can be confusing at first. This section clarifi
 | **Can edit files?** | Depends on `allowed-tools` | Depends on subagent config |
 | **Use when** | The skill needs conversation context or user interaction | The task is self-contained and benefits from isolation |
 
-**In bundles-forge:** All 7 skills run inline (they need to interact with the user and dispatch or be dispatched by other skills). The 3 agents run in forked contexts (they perform isolated diagnostic tasks and return reports).
+**In bundles-forge:** All 8 skills run inline (they need to interact with the user and dispatch or be dispatched by other skills). The 3 agents run in forked contexts (they perform isolated diagnostic tasks and return reports).
 
 ### Hook vs Subagent
 
@@ -244,7 +243,7 @@ Concepts in the plugin ecosystem can be confusing at first. This section clarifi
 | **Skills** | 1 or more, possibly independent | 3+ skills that form a workflow |
 | **Integration** | Skills don't reference each other | Skills explicitly dispatch via `project:skill-name` |
 | **Lifecycle** | No defined order | Hub-and-spoke: orchestrators dispatch executors (e.g., blueprinting dispatches scaffolding, authoring, auditing) |
-| **Example** | A single code-review skill | bundles-forge (7 skills in a hub-and-spoke model) |
+| **Example** | A single code-review skill | bundles-forge (8 skills in a hub-and-spoke model) |
 
 **The distinction matters because** bundle-plugins need engineering infrastructure that single-skill plugins don't: cross-reference validation, workflow integrity checks, version synchronization across manifests, and coordinated quality gates. That's what bundles-forge provides.
 
@@ -282,17 +281,17 @@ Subagents can't spawn other subagents. If users invoked agents directly:
 - There would be no pre-processing (scope detection, target path resolution)
 - There would be no post-processing (report merging, re-audit offers, workflow routing)
 
-Skills handle the interaction lifecycle: detect what the user wants → dispatch the right agent → collect results → present findings → offer next steps. Within skills, **orchestrators** (`blueprinting`, `optimizing`, `releasing`) manage multi-step pipelines, while **executors** (`scaffolding`, `authoring`, `auditing`) perform focused tasks. Subagents are **diagnostic tools** — they do one non-editing job (writing reports to `.bundles-forge/`, never modifying existing files) and return a summary.
+Skills handle the interaction lifecycle: detect what the user wants → dispatch the right agent → collect results → present findings → offer next steps. Within skills, **orchestrators** (`blueprinting`, `optimizing`, `releasing`) manage multi-step pipelines, while **executors** (`scaffolding`, `authoring`, `auditing`, `testing`) perform focused tasks. Subagents are **diagnostic tools** — they do one non-editing job (writing reports to `.bundles-forge/`, never modifying existing files) and return a summary.
 
 **Concrete example — two-phase workflow audit:** The `auditing` skill needs both the `auditor` (static checks W1-W9) and the `evaluator` (behavioral verification W10-W11). Since subagents cannot spawn other subagents, the `auditing` skill dispatches them sequentially from the main conversation: Phase 1 sends the `auditor`, waits for its report, then Phase 2 sends the `evaluator` with context from Phase 1. This two-phase orchestration is only possible because a skill — not a subagent — owns the workflow.
 
-### Why does session-start.py inject the full skill inventory?
+### Why does session-start.py emit a lightweight prompt instead of injecting the full skill context?
 
-The `session-start.py` hook reads `using-bundles-forge/SKILL.md` and injects it into the agent's context at the start of every session. An alternative would be lazy loading — only load skills when needed. But:
+The `session-start.py` hook emits a one-line prompt (~120 bytes) listing available skill names, rather than injecting the full `using-bundles-forge/SKILL.md` (~6KB). The full routing context is loaded on demand when a skill is first invoked. This design was chosen for three reasons:
 
-- **Routing accuracy** — the agent needs to know *all* available skills to match user intent correctly. Without the full inventory, it couldn't route to the appropriate orchestrator or executor.
-- **Cost is low** — the bootstrap skill is compact (~6KB of context). The per-skill SKILL.md files are only loaded when actually invoked.
-- **Fail-safe** — if the hook fails, the agent still works (users can invoke skills manually). If lazy loading failed, the agent would be blind to all skills.
+- **Context window economy** — ~120 bytes vs ~6KB per session. The lightweight prompt reserves context budget for user work while still providing enough information for routing.
+- **Routing accuracy** — the prompt lists all skill names, so the agent can match user intent to the correct orchestrator or executor. Detailed routing tables are loaded only when needed.
+- **Fail-safe** — if the hook fails, the agent still works (users can invoke skills manually via `bundles-forge:<skill-name>`).
 
 ---
 
@@ -304,20 +303,20 @@ flowchart LR
 
     subgraph BF ["bundles-forge Plugin"]
         HK["session-start.py Hook"]
-        CMD["7 /bundles-* Commands"]
-        SK["7 Skills: 3 Orchestrators + 3 Executors + 1 Meta"]
+        CMD["8 /bundles-* Commands"]
+        SK["8 Skills: 3 Orchestrators + 4 Executors + 1 Meta"]
         AG["3 Subagents"]
     end
 
-    HK -->|"injects bootstrap context"| SK
+    HK -->|"emits lightweight skill list"| SK
     CMD -->|"invokes via bundles-forge:name"| SK
     SK -->|"dispatches read-only tasks"| AG
     AG -->|"writes reports to .bundles-forge/"| SK
     SK -->|"orchestrators dispatch executors via prose"| SK
 ```
 
-1. **Marketplace** distributes the plugin — users install with `claude plugin install bundles-forge`
-2. **Hook** fires at session start — injects the skill inventory so the agent knows what's available
+1. **Marketplace** distributes the plugin — users install with `/plugin install bundles-forge@bundles-forge-dev`
+2. **Hook** fires at session start — emits a lightweight skill list so the agent knows what's available
 3. **Commands** provide explicit entry points — `/bundles-audit` routes to the `auditing` skill
 4. **Skills** do the work — orchestrators manage pipelines and dispatch executors; executors perform focused tasks
 5. **Subagents** handle isolated tasks — auditing, inspection, A/B evaluation — and write reports to `.bundles-forge/`

@@ -23,16 +23,27 @@ bundles-forge itself is a bundle-plugin — `blueprinting` produces a design, `s
 
 ### Install (Claude Code)
 
-```bash
-claude plugin install bundles-forge
-```
+1. **Add the marketplace**:
+   ```bash
+   /plugin marketplace add OdradekAI/bundles-forge
+   ```
 
-For development (any platform):
+2. **Install the plugin**:
+   ```bash
+   /plugin install bundles-forge@bundles-forge-dev
+   ```
+
+Or clone locally for development:
 
 ```bash
-git clone https://github.com/odradekai/bundles-forge.git
+git clone https://github.com/OdradekAI/bundles-forge.git
 cd bundles-forge
-claude plugin link .
+
+# Add your local marketplace
+/plugin marketplace add ./
+
+# Install the plugin
+/plugin install bundles-forge@bundles-forge-dev
 ```
 
 > Other platforms: see [Platform Support](#platform-support) below.
@@ -69,10 +80,10 @@ Runs a 10-category quality assessment with pattern-based security checks across 
 
 ## Skills
 
-The 7 skills cover the full lifecycle of a bundle-plugin project, organized into two layers:
+The 8 skills cover the full lifecycle of a bundle-plugin project, organized into two layers:
 
 - **Orchestrators** (`blueprinting`, `optimizing`, `releasing`) — diagnose, decide, and delegate. They chain multiple skills together to accomplish multi-step goals.
-- **Executors** (`scaffolding`, `authoring`, `auditing`) — single-responsibility workers. They can be invoked directly by users or dispatched by orchestrators.
+- **Executors** (`scaffolding`, `authoring`, `auditing`, `testing`) — single-responsibility workers. They can be invoked directly by users or dispatched by orchestrators.
 
 ```mermaid
 flowchart LR
@@ -82,7 +93,8 @@ flowchart LR
     Audit -->|issues| Optimize["optimizing"]
     Optimize -->|"delegate changes"| Write
     Optimize --> Audit
-    Audit -->|pass| Release["releasing"]
+    Audit -->|pass| Test["testing"]
+    Test -->|pass| Release["releasing"]
 ```
 
 | Phase | Skill | What It Does |
@@ -91,10 +103,11 @@ flowchart LR
 | Scaffold | `scaffolding` | Generates project structure from design, adds or removes platform support — manifests, hooks, scripts, bootstrap skill, and per-platform files. |
 | Write | `authoring` | Guides SKILL.md and agents/*.md authoring — frontmatter, descriptions, instructions, content integration, and progressive disclosure via `references/`. |
 | Audit | `auditing` | 10-category quality assessment including pattern-based security checks across 7 file categories. |
+| Test | `testing` | Dynamic verification — local dev-marketplace install, hook smoke tests, component discovery, and cross-platform readiness checks. |
 | Optimize | `optimizing` | Engineering improvements — description triggering, token efficiency, workflow restructuring, adding skills to fill gaps, and feedback iteration. |
-| Release | `releasing` | Orchestrates the pre-release pipeline: version drift check, audit, documentation consistency, change coherence review, version bump, CHANGELOG update, and publish guidance. |
+| Release | `releasing` | Orchestrates the pre-release pipeline: version drift check, audit, testing, documentation consistency, change coherence review, version bump, CHANGELOG update, and publish guidance. |
 
-The bootstrap meta-skill `using-bundles-forge` is injected at session start via hooks — it gives the agent awareness of all available skills and routes tasks automatically.
+The bootstrap meta-skill `using-bundles-forge` provides a lightweight session prompt via hooks and full routing context on demand via the Skill tool.
 
 **Standalone use:** `authoring`, `auditing`, and `optimizing` can be invoked independently on any existing project without going through the full lifecycle.
 
@@ -130,6 +143,7 @@ Each skill has a companion guide in [`docs/`](docs/) with detailed usage, exampl
 | `/bundles-audit` | `auditing` |
 | `/bundles-optimize` | `optimizing` |
 | `/bundles-release` | `releasing` |
+| `/bundles-test` | `testing` |
 | `/bundles-scan` | `auditing` |
 
 Skills without a slash command are invoked **automatically** (the agent matches user intent to the skill's `description` field) or **explicitly** when another skill chains to them via `bundles-forge:<skill-name>` references.
@@ -327,7 +341,7 @@ See [`.opencode/INSTALL.md`](.opencode/INSTALL.md)
 ### Gemini CLI
 
 ```bash
-gemini extensions install https://github.com/odradekai/bundles-forge.git
+gemini extensions install https://github.com/OdradekAI/bundles-forge.git
 ```
 
 ### OpenClaw

@@ -9,6 +9,7 @@ Run: python tests/test_integration.py -v
 Or:  python -m pytest tests/test_integration.py -v
 """
 
+import importlib
 import json
 import os
 import subprocess
@@ -19,6 +20,9 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "skills" / "auditing" / "scripts"))
 from _parsing import parse_frontmatter as _parse_frontmatter_full
+
+sys.path.insert(0, str(REPO_ROOT / "hooks"))
+_session_start = importlib.import_module("session-start")
 
 HOOKS_DIR = REPO_ROOT / "hooks"
 HOOK_PATH = HOOKS_DIR / "session-start.py"
@@ -33,6 +37,7 @@ EXPECTED_SKILLS = [
     "optimizing",
     "releasing",
     "scaffolding",
+    "testing",
     "using-bundles-forge",
 ]
 
@@ -54,28 +59,16 @@ def _run_hook(env_overrides=None):
 
 
 def _simulate_hook(platform=None):
-    """Pure-Python simulation of hooks/session-start logic (no bash required)."""
-    skill_path = REPO_ROOT / "skills" / "using-bundles-forge" / "SKILL.md"
-    content = skill_path.read_text(encoding="utf-8")
-    escaped = (content.replace("\\", "\\\\")
-                      .replace('"', '\\"')
-                      .replace("\n", "\\n")
-                      .replace("\r", "\\r")
-                      .replace("\t", "\\t"))
-    session_ctx = (
-        "<EXTREMELY_IMPORTANT>\\nYou have bundles-forge skills loaded."
-        "\\n\\n**Below is the full content of your "
-        "'bundles-forge:using-bundles-forge' skill. For all other skills, "
-        "use the 'Skill' tool:**\\n\\n"
-        f"{escaped}\\n</EXTREMELY_IMPORTANT>")
+    """Pure-Python simulation of hooks/session-start logic (lightweight mode)."""
+    prompt = _session_start.PROMPT
     if platform == "cursor":
-        return json.dumps({"additional_context": session_ctx})
+        return json.dumps({"additional_context": prompt})
     elif platform == "claude":
         return json.dumps({"hookSpecificOutput": {
             "hookEventName": "SessionStart",
-            "additionalContext": session_ctx}})
+            "additionalContext": prompt}})
     else:
-        return session_ctx
+        return prompt
 
 
 def _parse_frontmatter(content):
@@ -91,9 +84,9 @@ class TestBootstrapInjection(unittest.TestCase):
     def test_hook_script_exists(self):
         self.assertTrue(HOOK_PATH.exists(), "hooks/session-start missing")
 
-    def test_hook_references_bootstrap_skill(self):
+    def test_hook_emits_lightweight_prompt(self):
         content = HOOK_PATH.read_text(encoding="utf-8")
-        self.assertIn("using-bundles-forge/SKILL.md", content)
+        self.assertIn("bundles-forge loaded", content)
 
     def test_hook_detects_cursor_platform(self):
         content = HOOK_PATH.read_text(encoding="utf-8")
@@ -121,7 +114,7 @@ class TestBootstrapInjection(unittest.TestCase):
 
     def test_sim_fallback_is_plain_text(self):
         output = _simulate_hook()
-        self.assertIn("EXTREMELY_IMPORTANT", output)
+        self.assertIn("bundles-forge loaded", output)
         self.assertNotIn("hookSpecificOutput", output)
         self.assertNotIn("additional_context", output)
 
@@ -152,14 +145,21 @@ class TestBootstrapInjection(unittest.TestCase):
     def test_subprocess_fallback_is_plain_text(self):
         stdout, _, rc = _run_hook()
         self.assertEqual(rc, 0, f"Hook exited {rc}")
-        self.assertIn("EXTREMELY_IMPORTANT", stdout)
+        self.assertIn("bundles-forge loaded", stdout)
         self.assertNotIn("hookSpecificOutput", stdout)
         self.assertNotIn("additional_context", stdout)
 
-    def test_subprocess_output_contains_bootstrap_markers(self):
+    def test_subprocess_output_contains_skill_list(self):
         stdout, _, _ = _run_hook({"CLAUDE_PLUGIN_ROOT": str(REPO_ROOT)})
-        self.assertIn("EXTREMELY_IMPORTANT", stdout)
-        self.assertIn("bundles-forge", stdout)
+        self.assertIn("bundles-forge loaded", stdout)
+        self.assertIn("testing", stdout)
+
+    def test_prompt_contains_all_expected_skills(self):
+        for skill in EXPECTED_SKILLS:
+            if skill == "using-bundles-forge":
+                continue
+            self.assertIn(skill, _session_start.PROMPT,
+                          f"PROMPT missing skill: {skill}")
 
 
 class TestHooksJsonSchema(unittest.TestCase):
@@ -308,6 +308,28 @@ class TestSkillDiscovery(unittest.TestCase):
                     fm["name"], skill,
                     f"Directory '{skill}' != frontmatter name '{fm['name']}'"
                 )
+
+
+
+class TestReferenceFiles(unittest.TestCase):
+    """Verify key reference files exist and contain expected sections."""
+
+    SCAFFOLDING_REFS = REPO_ROOT / "skills" / "scaffolding" / "references"
+    AUTHORING_REFS = REPO_ROOT / "skills" / "authoring" / "references"
+
+    def test_hooks_configuration_exists(self):
+        self.assertTrue(
+            (self.SCAFFOLDING_REFS / "hooks-configuration.md").exists(),
+            "hooks-configuration.md missing")
+
+
+class TestCIWorkflow(unittest.TestCase):
+    """Verify CI/CD workflow exists."""
+
+    def test_github_workflow_exists(self):
+        workflow = REPO_ROOT / ".github" / "workflows" / "validate-plugin.yml"
+        self.assertTrue(workflow.exists(),
+                        ".github/workflows/validate-plugin.yml missing")
 
 
 if __name__ == "__main__":

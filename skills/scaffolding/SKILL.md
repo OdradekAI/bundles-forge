@@ -114,7 +114,7 @@ For platform-specific wiring details, read `references/platform-adapters.md`.
 7. **Generate skill stubs** — one directory per skill
 8. **Generate commands** — one command per entry-point skill
 9. **Generate bootstrap** — if requested, create meta-skill with routing table
-10. **Generate optional components** — only what the design specifies. For MCP servers, use `assets/mcp-json.md` template and consult `references/external-integration.md` for transport selection and platform differences. When `userConfig` is specified, add the `userConfig` field to `plugin.json` with appropriate `sensitive` flags. When marketplace distribution is specified, generate `.claude-plugin/marketplace.json` with plugin metadata
+10. **Generate optional components** — only what the design specifies. For MCP servers, use `assets/mcp-json.md` template and consult `references/external-integration.md` for transport selection and platform differences. When `userConfig` is specified, add the `userConfig` field to `plugin.json` with appropriate `sensitive` flags. When marketplace distribution is specified, generate `.claude-plugin/marketplace.json` with plugin metadata. When CI validation is specified, generate `.github/workflows/validate-plugin.yml` from template
 
 *Phase 3 — Finalize:*
 11. `git init` + initial commit; run `bundles-forge bump-version --check`
@@ -127,7 +127,7 @@ For platform-specific wiring details, read `references/platform-adapters.md`.
 2. **Identify target** — read `references/platform-adapters.md` for wiring details
 3. **Generate adapter files** — from `assets/platforms/<platform>/`, replace `<project-name>` placeholders
 4. **Update version sync** — add version-bearing manifests to `.version-bump.json`
-5. **Update hooks** — if platform uses session hooks, ensure `session-start.py` handles its JSON format
+5. **Update hooks** — if platform uses session hooks, ensure `session-start.py` handles its JSON format. For custom hooks beyond SessionStart, read `references/hooks-configuration.md`
 6. **Update documentation** — add install section to README; create platform-specific docs if needed
 7. **Verify** — validate manifests, `bundles-forge bump-version --check`, test hooks
 

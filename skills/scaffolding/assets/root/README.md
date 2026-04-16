@@ -5,10 +5,20 @@
 ## Installation
 
 ### Claude Code
-<!-- marketplace install instructions -->
+
+1. **Add the marketplace**:
+   ```bash
+   /plugin marketplace add <owner>/<repo>
+   ```
+
+2. **Install the plugin**:
+   ```bash
+   /plugin install <project-name>@<marketplace-name>
+   ```
 
 ### Cursor
-<!-- /add-plugin instructions -->
+
+Search for `<project-name>` in the Cursor plugin marketplace, or use `/add-plugin <project-name>`.
 
 ### Codex
 See [`.codex/INSTALL.md`](.codex/INSTALL.md)
@@ -19,6 +29,11 @@ See [`.opencode/INSTALL.md`](.opencode/INSTALL.md)
 ### Gemini CLI
 ```bash
 gemini extensions install <repo-url>
+```
+
+### OpenClaw
+```bash
+openclaw bundles install clawhub:<project-name>
 ```
 
 ## Skills

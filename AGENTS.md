@@ -4,7 +4,7 @@ For full contributor guidelines, see [CLAUDE.md](CLAUDE.md).
 
 ## Quick Reference
 
-This is a bundle-plugin engineering toolkit supporting 6 platforms. It contains 7 skills covering the full lifecycle of bundle-plugin development.
+This is a bundle-plugin engineering toolkit supporting 6 platforms. It contains 8 skills covering the full lifecycle of bundle-plugin development.
 
 **Key rules:**
 - Skill naming: lowercase with hyphens, directory name must match frontmatter `name` field
@@ -25,4 +25,5 @@ This is a bundle-plugin engineering toolkit supporting 6 platforms. It contains 
 | `scaffolding` | Executor | Generate project structure, add or remove platform support |
 | `authoring` | Executor | Write/improve SKILL.md and agents/*.md content |
 | `auditing` | Executor | Pure diagnostics: quality assessment, security scanning, reporting |
+| `testing` | Executor | Dynamic verification: local install, hook smoke tests, component discovery |
 | `using-bundles-forge` | Meta-skill | Bootstrap: skill discovery and routing |

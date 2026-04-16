@@ -1,5 +1,5 @@
 {
-  "description": "Bundles Forge bootstrap: injects skill routing context on session start",
+  "description": "Bundles Forge: session bootstrap",
   "hooks": {
     "SessionStart": [
       {
@@ -8,8 +8,7 @@
           {
             "type": "command",
             "command": "python \"${CLAUDE_PLUGIN_ROOT}/hooks/session-start.py\"",
-            "timeout": 10,
-            "async": false
+            "timeout": 10
           }
         ]
       }

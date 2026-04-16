@@ -8,7 +8,7 @@ allowed-tools: Bash(bundles-forge bump-version *) Bash(bundles-forge audit-plugi
 
 ## Overview
 
-Orchestrate the complete release workflow for a bundle-plugin: verify quality, scan for security risks, check documentation consistency, review change coherence, bump versions, update documentation, and publish to target platforms.
+Orchestrate the complete release workflow for a bundle-plugin: verify quality, scan for security risks, check documentation consistency, review change coherence, test locally, bump versions, update documentation, and publish to target platforms.
 
 **Core principle:** Release is a checkpoint, not a formality. Every release deserves the full pipeline — even "minor" version bumps can introduce drift or break platform installs. Users should complete all agent, skill, and workflow development before invoking this skill.
 
@@ -30,8 +30,9 @@ For version management infrastructure details (`.version-bump.json` schema, scri
 
 ```
 0. Prerequisites  →  1. Pre-flight Checks  →  2. Address Findings
-→  3. Change Review & Doc Sync  →  4. Version Bump
-→  5. Release Notes  →  6. Final Verification  →  7. Publish
+→  3. Change Review & Doc Sync  →  4. Local Testing
+→  5. Version Bump  →  6. Release Notes
+→  7. Final Verification  →  8. Publish
 ```
 
 ### Step 0: Prerequisites
@@ -118,7 +119,20 @@ After resolving coherence issues, sync project documentation:
 
 Use `bundles-forge audit-docs` output from Step 1 as a guide for what needs updating. After making fixes, re-run `bundles-forge audit-docs` to confirm all documentation is consistent.
 
-### Step 4: Version Bump
+### Step 4: Local Testing
+
+Before bumping the version, invoke `bundles-forge:testing` to verify the plugin works correctly in a real installation scenario:
+
+1. Generate a dev-marketplace and install the plugin locally
+2. Verify hook smoke tests pass (SessionStart + any custom hooks)
+3. Confirm all components (skills, commands, agents) are discoverable
+4. Run cross-platform readiness checks for all target platforms
+
+If testing reveals critical issues, resolve them before proceeding to version bump.
+
+For abbreviated hotfix releases, this step may be reduced to hook smoke tests only.
+
+### Step 5: Version Bump
 
 Help the user choose the right version increment:
 
@@ -137,7 +151,7 @@ bundles-forge bump-version <project-root> <new-version>
 
 This updates all declared files and runs an audit to catch any missed files. For the full command reference, read `references/version-infrastructure.md`.
 
-### Step 5: Release Notes
+### Step 6: Release Notes
 
 **CHANGELOG.md** — Add an entry for the new version using [Keep a Changelog](https://keepachangelog.com/) format:
 
@@ -163,7 +177,7 @@ This updates all declared files and runs an audit to catch any missed files. For
 
 **README.md** — Update if the release adds/removes skills, changes the workflow, or adds platform support.
 
-### Step 6: Final Verification
+### Step 7: Final Verification
 
 After all changes, re-run verification to confirm nothing broke:
 
@@ -173,7 +187,7 @@ bundles-forge bump-version <project-root> --audit
 bundles-forge audit-docs <project-root>
 ```
 
-### Step 7: Publish
+### Step 8: Publish
 
 **Git + GitHub Release:**
 ```bash
@@ -189,7 +203,7 @@ After pushing the tag, create a GitHub Release so the `/releases` page has relea
 gh release create v<version> --title "v<version>" --notes-file CHANGELOG-EXCERPT.md
 ```
 
-Generate `CHANGELOG-EXCERPT.md` from the current version's CHANGELOG.md section (the `## [X.Y.Z]` block written in Step 5). Delete the excerpt file after `gh release create` succeeds. If `gh` CLI is unavailable, instruct the user to create the release manually from the GitHub web UI at `https://github.com/<owner>/<repo>/releases/new?tag=v<version>`.
+Generate `CHANGELOG-EXCERPT.md` from the current version's CHANGELOG.md section (the `## [X.Y.Z]` block written in Step 6). Delete the excerpt file after `gh release create` succeeds. If `gh` CLI is unavailable, instruct the user to create the release manually from the GitHub web UI at `https://github.com/<owner>/<repo>/releases/new?tag=v<version>`.
 
 **Platform-specific publishing:**
 
@@ -243,6 +257,8 @@ For urgent fixes between planned releases:
 **Calls:**
 - **bundles-forge:auditing** — pre-release quality and security diagnostics
   - Artifact: `project-directory` → `project-directory` (direct match — releasing passes the project root for audit)
+- **bundles-forge:testing** — pre-release dynamic verification (after audit, before version bump)
+  - Artifact: `project-directory` → `project-directory` (direct match)
 - **bundles-forge:optimizing** — orchestrate fixes for quality findings
   - Artifact: `project-directory` → `audit-report` (indirect — releasing passes audit findings, optimizing consumes them as `audit-report`)
 

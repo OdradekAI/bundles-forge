@@ -1,0 +1,74 @@
+name: Validate Bundle-Plugin
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.12']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Add bin/ to PATH
+        run: echo "${{ github.workspace }}/bin" >> $GITHUB_PATH
+
+      - name: Validate JSON manifests
+        run: |
+          python -c "
+          import json, sys, pathlib
+          errors = []
+          for p in [
+              'package.json',
+              '.claude-plugin/plugin.json',
+              '.claude-plugin/marketplace.json',
+              '.cursor-plugin/plugin.json',
+              'gemini-extension.json',
+              'hooks/hooks.json',
+              'hooks/hooks-cursor.json',
+              '.version-bump.json',
+          ]:
+              path = pathlib.Path(p)
+              if path.is_file():
+                  try:
+                      json.loads(path.read_text())
+                  except json.JSONDecodeError as e:
+                      errors.append(f'{p}: {e}')
+          if errors:
+              for e in errors:
+                  print(f'::error::{e}')
+              sys.exit(1)
+          print('All JSON manifests valid')
+          "
+
+      - name: Check version drift
+        run: python bin/bundles-forge bump-version --check .
+
+      - name: Check checklist drift
+        run: python bin/bundles-forge checklists --check .
+
+      - name: Audit skill quality
+        run: python bin/bundles-forge audit-skill .
+
+      - name: Audit security
+        run: python bin/bundles-forge audit-security .
+
+      - name: Audit documentation consistency
+        run: python bin/bundles-forge audit-docs .
+
+      - name: Run tests
+        run: python tests/run_all.py
