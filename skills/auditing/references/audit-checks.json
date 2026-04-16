@@ -50,7 +50,7 @@
   {"id": "H1",  "category": "hooks", "severity": "warning", "criteria": "`hooks/` directory exists", "automation": "`audit_plugin.py`", "scopes": ["plugin"]},
   {"id": "H2",  "category": "hooks", "severity": "warning", "criteria": "`hooks/session-start.py` exists", "automation": "`audit_plugin.py`", "scopes": ["plugin"]},
   {"id": "H3",  "category": "hooks", "severity": "warning", "criteria": "`session-start.py` references SKILL.md", "automation": "`audit_plugin.py`", "scopes": ["plugin"]},
-  {"id": "H6",  "category": "hooks", "severity": "warning", "criteria": "`session-start.py` handles all target platforms (four-way: CURSOR_PLUGIN_ROOT, CLAUDE_PLUGIN_ROOT, OPENCLAW_PLUGIN_ROOT, fallback)", "automation": "`agent-only`", "scopes": ["plugin"]},
+  {"id": "H6",  "category": "hooks", "severity": "warning", "criteria": "`session-start.py` handles all target platforms (three-way: CURSOR_PLUGIN_ROOT, CLAUDE_PLUGIN_ROOT, fallback)", "automation": "`agent-only`", "scopes": ["plugin"]},
   {"id": "H7",  "category": "hooks", "severity": "warning", "criteria": "JSON escaping is correct (backslashes, quotes, newlines, tabs)", "automation": "`agent-only`", "scopes": ["plugin"]},
   {"id": "H8",  "category": "hooks", "severity": "info",    "criteria": "Hook configs invoke `python` with `hooks/session-start.py` (cross-platform; no Git Bash or `.cmd` shim)", "automation": "`agent-only`", "scopes": ["plugin"]},
   {"id": "H9",  "category": "hooks", "severity": "info",    "criteria": "`hooks.json` includes top-level `description` field and per-handler `timeout`", "automation": "`audit_plugin.py`", "scopes": ["plugin"]},

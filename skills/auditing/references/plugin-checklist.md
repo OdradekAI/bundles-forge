@@ -175,7 +175,7 @@ Functional correctness checks for session bootstrap hooks. Security-related hook
 | H1 | Warning | `hooks/` directory exists | `audit_plugin.py` |
 | H2 | Warning | `hooks/session-start.py` exists | `audit_plugin.py` |
 | H3 | Warning | `session-start.py` references SKILL.md | `audit_plugin.py` |
-| H6 | Warning | `session-start.py` handles all target platforms (four-way: CURSOR_PLUGIN_ROOT, CLAUDE_PLUGIN_ROOT, OPENCLAW_PLUGIN_ROOT, fallback) | `agent-only` |
+| H6 | Warning | `session-start.py` handles all target platforms (three-way: CURSOR_PLUGIN_ROOT, CLAUDE_PLUGIN_ROOT, fallback) | `agent-only` |
 | H7 | Warning | JSON escaping is correct (backslashes, quotes, newlines, tabs) | `agent-only` |
 | H8 | Info | Hook configs invoke `python` with `hooks/session-start.py` (cross-platform; no Git Bash or `.cmd` shim) | `agent-only` |
 | H9 | Info | `hooks.json` includes top-level `description` field and per-handler `timeout` | `audit_plugin.py` |

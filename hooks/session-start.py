@@ -7,8 +7,6 @@ platform-appropriate JSON context for the host IDE.
 Platform detection:
   CURSOR_PLUGIN_ROOT   → Cursor format (additional_context)
   CLAUDE_PLUGIN_ROOT   → Claude Code format (hookSpecificOutput)
-  OPENCLAW_PLUGIN_ROOT → OpenClaw format (plain text, used as fallback
-                         when the native hook-pack is unavailable)
   neither              → plain text fallback
 """
 
@@ -61,8 +59,6 @@ def main():
                 "additionalContext": session_ctx,
             }
         })
-    elif os.environ.get("OPENCLAW_PLUGIN_ROOT"):
-        output = session_ctx
     else:
         output = session_ctx
 

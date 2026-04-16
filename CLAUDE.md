@@ -74,7 +74,7 @@ Pipeline stages: `blueprinting` → `optimizing` → `releasing`. Each orchestra
 
 ### Session Bootstrap
 
-The `hooks/session-start.py` script runs on SessionStart (matcher: `startup|clear|compact`, excluding `resume` since resumed sessions retain context). It reads the `using-bundles-forge` meta-skill and emits JSON context. Platform detection is four-way: `CURSOR_PLUGIN_ROOT` → Cursor format (`additional_context`), `CLAUDE_PLUGIN_ROOT` → Claude Code format (`hookSpecificOutput`), `OPENCLAW_PLUGIN_ROOT` → OpenClaw format (plain text), neither → plain text fallback. On read failure, the script warns to stderr and exits 0 (no-op). Written in Python for cross-platform compatibility (Windows/Mac/Linux).
+The `hooks/session-start.py` script runs on SessionStart (matcher: `startup|clear|compact`, excluding `resume` since resumed sessions retain context). It reads the `using-bundles-forge` meta-skill and emits JSON context. Platform detection is three-way: `CURSOR_PLUGIN_ROOT` → Cursor format (`additional_context`), `CLAUDE_PLUGIN_ROOT` → Claude Code format (`hookSpecificOutput`), neither → plain text fallback. On read failure, the script warns to stderr and exits 0 (no-op). Written in Python for cross-platform compatibility (Windows/Mac/Linux).
 
 The `hooks/hooks.json` includes a top-level `description` (shown in Claude Code's `/hooks` menu) and per-handler `timeout: 10` to prevent slow hooks from blocking session start. The `hooks/hooks-cursor.json` provides the Cursor-specific hook configuration (same `session-start.py` script, Cursor's simpler schema without timeout/description fields). The `hooks/openclaw-bootstrap/` directory is an OpenClaw hook-pack (`HOOK.md` + `handler.js`) that fires on `command:new` and `command:reset` events.
 
