@@ -55,7 +55,7 @@ argument-hint: "[environment]"
 
 ### Frontmatter Hooks (Claude Code Only)
 
-> This feature is **only available on Claude Code**. Cursor, Codex, OpenCode, and Gemini do not support frontmatter hooks.
+> This feature is **only available on Claude Code**. Cursor, Codex, OpenCode, Gemini, and OpenClaw do not support frontmatter hooks.
 
 Skills can define hooks directly in YAML frontmatter. These hooks are scoped to the skill's lifecycle — active when the skill is invoked, automatically cleaned up when it finishes. All hook events are supported.
 

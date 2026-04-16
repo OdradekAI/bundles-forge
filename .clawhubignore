@@ -1,0 +1,16 @@
+.git
+.repos
+.claude/
+.vscode/
+.bundles-forge/
+.worktrees/
+worktrees/
+node_modules/
+tests/
+examples/
+__pycache__/
+*.pyc
+*.log
+*.tmp
+.DS_Store
+Thumbs.db

@@ -90,7 +90,7 @@ allowed-tools: Read Grep Glob Bash
 }
 ```
 
-> **在 bundles-forge 中：** 项目自身就是一个拥有 5 个平台清单的插件，同时也是*构建*其他插件的工具包 — 一个用来造 bundle-plugin 的 bundle-plugin。
+> **在 bundles-forge 中：** 项目自身就是一个拥有 6 个平台清单的插件，同时也是*构建*其他插件的工具包 — 一个用来造 bundle-plugin 的 bundle-plugin。
 
 ### Subagent（子代理）
 

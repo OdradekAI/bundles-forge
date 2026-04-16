@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Bundles Forge is a bundle-plugin engineering toolkit supporting 5 platforms: Claude Code, Cursor, Codex, OpenCode, and Gemini CLI. It contains 7 skills covering the full lifecycle of bundle-plugin development (design, scaffold, author, audit, optimize, release). The project itself is a bundle-plugin — it uses its own patterns to build and validate itself.
+Bundles Forge is a bundle-plugin engineering toolkit supporting 6 platforms: Claude Code, Cursor, Codex, OpenCode, Gemini CLI, and OpenClaw. It contains 7 skills covering the full lifecycle of bundle-plugin development (design, scaffold, author, audit, optimize, release). The project itself is a bundle-plugin — it uses its own patterns to build and validate itself.
 
 **Requires Python 3.9+** (scripts use `pathlib.Path.is_relative_to` and other 3.9+ features).
 
@@ -52,7 +52,7 @@ bundles-forge bump-version <new-version>       # bump all files declared in .ver
 - `skills/` — 7 skill directories, each containing `SKILL.md` and optional `references/` subdirectory
 - `agents/` — 3 subagent definitions (inspector, auditor, evaluator) as `.md` files
 - `commands/` — slash command stubs (`bundles-*.md`) that redirect to skills via `bundles-forge:<skill-name>`
-- `hooks/` — session bootstrap: `session-start.py` reads `using-bundles-forge/SKILL.md` and injects it as platform-appropriate JSON context (Python for cross-platform compatibility)
+- `hooks/` — session bootstrap: `session-start.py` reads `using-bundles-forge/SKILL.md` and injects it as platform-appropriate JSON context (Python for cross-platform compatibility); `openclaw-bootstrap/` contains the OpenClaw hook-pack (HOOK.md + handler.js)
 - `docs/` — guides (concepts, blueprinting, scaffolding, authoring, auditing, optimizing, releasing) with `*.zh.md` Chinese translations; checked by D7
 - `skills/auditing/scripts/` — audit, security scan, documentation checks, and checklist generation (shares `_cli.py` for argparse/exit-code patterns)
 - `skills/releasing/scripts/` — version bump tooling (`bump_version.py`)
@@ -74,9 +74,9 @@ Pipeline stages: `blueprinting` → `optimizing` → `releasing`. Each orchestra
 
 ### Session Bootstrap
 
-The `hooks/session-start.py` script runs on SessionStart (matcher: `startup|clear|compact`, excluding `resume` since resumed sessions retain context). It reads the `using-bundles-forge` meta-skill and emits JSON context. Platform detection is three-way: `CURSOR_PLUGIN_ROOT` → Cursor format (`additional_context`), `CLAUDE_PLUGIN_ROOT` → Claude Code format (`hookSpecificOutput`), neither → plain text fallback. On read failure, the script warns to stderr and exits 0 (no-op). Written in Python for cross-platform compatibility (Windows/Mac/Linux).
+The `hooks/session-start.py` script runs on SessionStart (matcher: `startup|clear|compact`, excluding `resume` since resumed sessions retain context). It reads the `using-bundles-forge` meta-skill and emits JSON context. Platform detection is four-way: `CURSOR_PLUGIN_ROOT` → Cursor format (`additional_context`), `CLAUDE_PLUGIN_ROOT` → Claude Code format (`hookSpecificOutput`), `OPENCLAW_PLUGIN_ROOT` → OpenClaw format (plain text), neither → plain text fallback. On read failure, the script warns to stderr and exits 0 (no-op). Written in Python for cross-platform compatibility (Windows/Mac/Linux).
 
-The `hooks/hooks.json` includes a top-level `description` (shown in Claude Code's `/hooks` menu) and per-handler `timeout: 10` to prevent slow hooks from blocking session start. The `hooks/hooks-cursor.json` provides the Cursor-specific hook configuration (same `session-start.py` script, Cursor's simpler schema without timeout/description fields).
+The `hooks/hooks.json` includes a top-level `description` (shown in Claude Code's `/hooks` menu) and per-handler `timeout: 10` to prevent slow hooks from blocking session start. The `hooks/hooks-cursor.json` provides the Cursor-specific hook configuration (same `session-start.py` script, Cursor's simpler schema without timeout/description fields). The `hooks/openclaw-bootstrap/` directory is an OpenClaw hook-pack (`HOOK.md` + `handler.js`) that fires on `command:new` and `command:reset` events.
 
 ### Agent Dispatch
 
@@ -100,6 +100,7 @@ Version is synchronized across these files (declared in `.version-bump.json`):
 | Codex | `.codex/INSTALL.md` | No (install guide) |
 | OpenCode | `.opencode/plugins/bundles-forge.js` | No (plugin loader) |
 | Gemini CLI | `gemini-extension.json` | Yes |
+| OpenClaw | (uses `.claude-plugin/plugin.json`) | Yes (shared) |
 
 ## Key Conventions
 

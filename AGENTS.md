@@ -4,7 +4,7 @@ For full contributor guidelines, see [CLAUDE.md](CLAUDE.md).
 
 ## Quick Reference
 
-This is a bundle-plugin engineering toolkit supporting 5 platforms. It contains 7 skills covering the full lifecycle of bundle-plugin development.
+This is a bundle-plugin engineering toolkit supporting 6 platforms. It contains 7 skills covering the full lifecycle of bundle-plugin development.
 
 **Key rules:**
 - Skill naming: lowercase with hyphens, directory name must match frontmatter `name` field

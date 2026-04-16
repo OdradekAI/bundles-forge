@@ -2,7 +2,7 @@
 
 [中文](README.zh.md)
 
-A toolkit for building **bundle-plugins** — AI coding plugins organized around collaborative skill workflows — across Claude Code, Cursor, Codex, OpenCode, and Gemini CLI.
+A toolkit for building **bundle-plugins** — AI coding plugins organized around collaborative skill workflows — across Claude Code, Cursor, Codex, OpenCode, Gemini CLI, and OpenClaw.
 
 ## What is a Bundle-Plugin?
 
@@ -329,6 +329,22 @@ See [`.opencode/INSTALL.md`](.opencode/INSTALL.md)
 ```bash
 gemini extensions install https://github.com/odradekai/bundles-forge.git
 ```
+
+### OpenClaw
+
+From ClawHub:
+
+```bash
+openclaw bundles install clawhub:bundles-forge
+```
+
+From a local clone:
+
+```bash
+openclaw plugins install ./bundles-forge
+```
+
+Verify with `openclaw plugins inspect bundles-forge` — should show `Format: bundle`.
 
 ## Tips for Long Sessions
 

@@ -94,6 +94,27 @@ gemini extensions install <repo-url>
 
 ---
 
+## OpenClaw
+
+**Template files:** `assets/platforms/openclaw/HOOK.md`, `assets/platforms/openclaw/handler.js`, `assets/platforms/openclaw/INSTALL.md`
+
+OpenClaw detects the project as a **Claude bundle** via `.claude-plugin/plugin.json`. The `skills/` directory is loaded as native OpenClaw skills and `commands/` is treated as an additional skill root. No separate manifest is needed — creating an `openclaw.plugin.json` would cause OpenClaw to treat the project as a native plugin instead, which is not desirable for bundle-plugins.
+
+**Hook-pack bootstrap:** The `hooks/openclaw-bootstrap/` directory contains `HOOK.md` + `handler.js` following the OpenClaw hook-pack layout. It fires on `command:new` and `command:reset` events (equivalent to Claude Code's `SessionStart` with `startup|clear`). Note: as of OpenClaw v2026.3, hook-packs inside Claude bundles may not be automatically wired — see the OpenClaw limitation below.
+
+Replace all `<project-name>` occurrences in the templates with the actual project name.
+
+**Install method:**
+```bash
+openclaw bundles install clawhub:<project-name>
+# or from local directory:
+openclaw plugins install ./<project-name>
+```
+
+**Version bump entry:** None. OpenClaw reads from `.claude-plugin/plugin.json`, which is already tracked.
+
+---
+
 ## Platform-Specific Limitations
 
 ### Codex: No Bootstrap Routing Table
@@ -104,13 +125,17 @@ Codex has no hook-based bootstrap injection. It reads `AGENTS.md` (which points 
 
 Cursor's `hooks-cursor.json` only fires on `sessionStart` — there is no equivalent to Claude Code's `clear|compact` matcher. If a Cursor user clears context mid-session, the bootstrap is not re-injected. The agent loses the routing table until a new session starts. This is a platform limitation, not a bundles-forge issue.
 
+### OpenClaw: Hook-Pack Wiring in Claude Bundles
+
+OpenClaw maps hook-packs (HOOK.md + handler.js) only from Codex bundles. For Claude bundles, `hooks/hooks.json` is detected but not executed, and hook-pack directories may not be automatically wired. The `hooks/openclaw-bootstrap/` hook-pack is included for forward compatibility — when OpenClaw extends hook-pack support to Claude bundles, it will work without changes. In the meantime, OpenClaw users rely on native skill discovery: all skills from the `skills/` directory are loaded automatically and the agent matches user intent to skill descriptions.
+
 ## Platform Differences Summary
 
-| Aspect | Claude Code | Cursor | Codex | OpenCode | Gemini |
-|--------|------------|--------|-------|----------|--------|
-| Discovery | Convention | Explicit paths | Symlink | Plugin config | Context file |
-| Hook format | `hooks.json` (PascalCase) | `hooks-cursor.json` (camelCase) | N/A | JS plugin | N/A |
-| Skills path | Auto `skills/` | Declared in manifest | Symlink | Registered in JS | `@` includes |
+| Aspect | Claude Code | Cursor | Codex | OpenCode | Gemini | OpenClaw |
+|--------|------------|--------|-------|----------|--------|----------|
+| Discovery | Convention | Explicit paths | Symlink | Plugin config | Context file | Claude bundle auto-detect |
+| Hook format | `hooks.json` (PascalCase) | `hooks-cursor.json` (camelCase) | N/A | JS plugin | N/A | Hook-pack (`HOOK.md` + `handler.js`) |
+| Skills path | Auto `skills/` | Declared in manifest | Symlink | Registered in JS | `@` includes | Auto `skills/` (bundle roots) |
 
 ## Claude Code Hook Handler Types
 
@@ -212,7 +237,7 @@ Claude Code supports 25+ hook events across three cadences:
 
 ## Hooks in Skill and Agent Frontmatter
 
-> **Claude Code only.** This feature is not available on Cursor, Codex, OpenCode, or Gemini.
+> **Claude Code only.** This feature is not available on Cursor, Codex, OpenCode, Gemini, or OpenClaw.
 
 Skills and agents can define hooks directly in their YAML frontmatter. These hooks are scoped to the component's lifecycle — active while the skill/agent runs, automatically cleaned up when it finishes.
 

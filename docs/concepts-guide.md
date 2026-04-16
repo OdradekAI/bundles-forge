@@ -90,7 +90,7 @@ A directory containing `.claude-plugin/plugin.json` (manifest) plus any combinat
 }
 ```
 
-> **In bundles-forge:** The project itself is a plugin with manifests for 5 platforms. It's also a toolkit for *building* other plugins — a bundle-plugin that builds bundle-plugins.
+> **In bundles-forge:** The project itself is a plugin with manifests for 6 platforms. It's also a toolkit for *building* other plugins — a bundle-plugin that builds bundle-plugins.
 
 ### Subagent
 

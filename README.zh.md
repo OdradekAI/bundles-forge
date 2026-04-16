@@ -2,7 +2,7 @@
 
 [English](README.md)
 
-构建 **bundle-plugin** 的工程化工具包 — 以协作式技能工作流为核心的 AI 编程插件 — 覆盖 Claude Code、Cursor、Codex、OpenCode 和 Gemini CLI 五大平台。
+构建 **bundle-plugin** 的工程化工具包 — 以协作式技能工作流为核心的 AI 编程插件 — 覆盖 Claude Code、Cursor、Codex、OpenCode、Gemini CLI 和 OpenClaw 六大平台。
 
 ## 什么是 Bundle-Plugin？
 
@@ -329,6 +329,22 @@ flowchart LR
 ```bash
 gemini extensions install https://github.com/odradekai/bundles-forge.git
 ```
+
+### OpenClaw
+
+从 ClawHub 安装：
+
+```bash
+openclaw bundles install clawhub:bundles-forge
+```
+
+从本地目录安装：
+
+```bash
+openclaw plugins install ./bundles-forge
+```
+
+使用 `openclaw plugins inspect bundles-forge` 验证安装 — 应显示 `Format: bundle`。
 
 ## 长会话使用建议
 

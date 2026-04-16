@@ -1,6 +1,6 @@
 ---
 name: scaffolding
-description: "Use when generating project structure for new bundle-plugins, adding or removing platform support (Claude Code, Cursor, Codex, OpenCode, Gemini CLI), updating platform manifests, or migrating hooks and configuration between platforms"
+description: "Use when generating project structure for new bundle-plugins, adding or removing platform support (Claude Code, Cursor, Codex, OpenCode, Gemini CLI, OpenClaw), updating platform manifests, or migrating hooks and configuration between platforms"
 allowed-tools: Bash(bundles-forge bump-version *)
 ---
 
