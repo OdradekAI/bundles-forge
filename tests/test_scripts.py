@@ -635,5 +635,58 @@ class TestBundlesForgeErrorIntegration(unittest.TestCase):
                          "BundlesForgeError should not produce tracebacks")
 
 
+CLI_DISPATCHER = REPO_ROOT / "bin" / "bundles-forge"
+
+
+class TestCLIDispatcher(unittest.TestCase):
+    """Tests for the bin/bundles-forge CLI dispatcher."""
+
+    def test_help_exits_zero(self):
+        result = subprocess.run(
+            [sys.executable, str(CLI_DISPATCHER), "--help"],
+            capture_output=True, text=True
+        )
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("Usage:", result.stdout)
+        self.assertIn("audit-plugin", result.stdout)
+
+    def test_no_args_shows_help(self):
+        result = subprocess.run(
+            [sys.executable, str(CLI_DISPATCHER)],
+            capture_output=True, text=True
+        )
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("Commands:", result.stdout)
+
+    def test_unknown_command_exits_one(self):
+        result = subprocess.run(
+            [sys.executable, str(CLI_DISPATCHER), "nonexistent-cmd"],
+            capture_output=True, text=True
+        )
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("unknown command", result.stderr)
+
+    def test_audit_plugin_via_dispatcher(self):
+        result = subprocess.run(
+            [sys.executable, str(CLI_DISPATCHER),
+             "audit-plugin", "--json", str(REPO_ROOT)],
+            capture_output=True, text=True
+        )
+        self.assertIn(result.returncode, (0, 1, 2),
+                       f"Expected exit 0/1/2, got {result.returncode}")
+        data = json.loads(result.stdout)
+        self.assertIn("categories", data)
+
+    def test_polyglot_header_format(self):
+        content = CLI_DISPATCHER.read_text(encoding="utf-8")
+        lines = content.splitlines()
+        self.assertEqual(lines[0], "#!/bin/sh",
+                         "First line should be #!/bin/sh for polyglot")
+        self.assertTrue(lines[1].startswith("'''exec'"),
+                        "Second line should start with '''exec' for polyglot")
+        self.assertEqual(lines[2], "'''",
+                         "Third line should close the triple-quoted string")
+
+
 if __name__ == "__main__":
     unittest.main()

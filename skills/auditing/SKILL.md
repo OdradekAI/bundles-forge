@@ -16,7 +16,7 @@ Systematically evaluate a bundle-plugin project or a single skill across applica
 
 **Announce at start:** "I'm using the auditing skill to audit [this project / this skill]."
 
-**Plugin context:** When installed as a plugin, operate on the user's project (`$CLAUDE_PROJECT_DIR` / `<target-dir>`), not the plugin's own cache. Read files from and detect scope in the target; write all outputs (reports, JSON baselines) to the workspace's `.bundles-forge/audits/`. See `references/input-normalization.md` for workspace resolution and output directory structure.
+**Plugin context:** When installed as a plugin, operate on the user's project (`$CLAUDE_PROJECT_DIR` / `<target-dir>`), not the plugin's own cache. Read files from and detect scope in the target; write all outputs (reports, JSON baselines) to the workspace's `.bundles-forge/audits/`. See `references/input-normalization.md` for workspace resolution and output directory structure. `<plugin-root>` in commands below resolves to `$CLAUDE_PLUGIN_ROOT` (Claude Code), `$CURSOR_PLUGIN_ROOT` (Cursor), or `.` (local development).
 
 ## Resolve Input & Detect Scope
 
@@ -89,8 +89,7 @@ This collects the deterministic baseline — structure, manifests, version sync,
 
 **Failure Handling:**
 - **Exit code 0/1/2 with valid JSON file:** Proceed to Step 2. Exit 1 = warnings, exit 2 = critical findings — both are valid baselines.
-- **Exit code non-0/1/2 or stdout empty:** The CMD wrapper may have truncated output (known Windows issue). Bypass by calling the script directly: `python skills/auditing/scripts/audit_plugin.py --json --output-dir .bundles-forge/audits <target-dir>`
-- **Script import error or crash:** Check Python version (requires 3.9+). Report the traceback to the user and stop.
+- **Exit code non-0/1/2 or stdout empty:** Retry with `python "<plugin-root>/bin/bundles-forge" audit-plugin --json --output-dir .bundles-forge/audits <target-dir>`. If both fail, check Python version (requires 3.9+), report the traceback and stop.
 
 ### Step 2 — Dispatch Auditor
 
@@ -177,8 +176,8 @@ Also accepts a `SKILL.md` file path directly.
 **Expected Output:** A JSON baseline file at `.bundles-forge/audits/audit_skill-<YYYYMMDD-HHmmss>.json`.
 
 **Failure Handling:**
-- **Exit code non-0/1/2 or stdout empty:** Bypass CMD wrapper: `python skills/auditing/scripts/audit_skill.py --json --output-dir .bundles-forge/audits <skill-directory>`
-- **Script crash:** Check Python 3.9+ and report traceback.
+- **Exit code 0/1/2 with valid JSON file:** Proceed to Step 2.
+- **Exit code non-0/1/2 or stdout empty:** Retry with `python "<plugin-root>/bin/bundles-forge" audit-skill --json --output-dir .bundles-forge/audits <skill-directory>`. If both fail, check Python version (requires 3.9+), report the traceback and stop.
 
 ### Step 2 — Dispatch Auditor (Skill Mode)
 
@@ -245,8 +244,8 @@ Script mode covers W1-W9 (static + semantic layers). W10-W11 (behavioral layer) 
 **Expected Output:** A JSON baseline file at `.bundles-forge/audits/audit_workflow-<YYYYMMDD-HHmmss>.json`.
 
 **Failure Handling:**
-- **Exit code non-0/1/2 or stdout empty:** Bypass CMD wrapper: `python skills/auditing/scripts/audit_workflow.py --json --output-dir .bundles-forge/audits <target-dir>`
-- **Script crash:** Check Python 3.9+ and report traceback.
+- **Exit code 0/1/2 with valid JSON file:** Proceed to Step 2.
+- **Exit code non-0/1/2 or stdout empty:** Retry with `python "<plugin-root>/bin/bundles-forge" audit-workflow --json --output-dir .bundles-forge/audits <target-dir>`. If both fail, check Python version (requires 3.9+), report the traceback and stop.
 
 ### Step 2 — Dispatch Auditor (Workflow Mode)
 
@@ -316,7 +315,7 @@ When the user explicitly requests a security-only scan, run only Category 10 (Se
 | Skipping security because "I wrote it myself" | Accidental vulnerabilities are common — always scan |
 | Only scanning SKILL.md, ignoring hooks | Hooks are the highest-risk executable code (full audit) |
 | Treating script output as the final report | Script output is a baseline — always dispatch auditor or read `agents/auditor.md` inline to produce the full report |
-| Bypassing `--json` failure without diagnosis | If `--json` returns empty output or unexpected exit code, diagnose (check CMD wrapper, try direct python call) before falling back to non-JSON mode |
+| Bypassing `--json` failure without diagnosis | If `--json` returns empty output or unexpected exit code, retry with the direct Python call before falling back to non-JSON mode |
 | Not persisting JSON baseline to disk | Always use `--output-dir .bundles-forge/audits` to ensure intermediate results are saved regardless of agent behavior |
 | Skipping W10-W11 without marking N/A in report | If Behavioral Verification is skipped, the report must contain the section with "N/A" and the skip reason |
 

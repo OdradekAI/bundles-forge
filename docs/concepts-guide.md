@@ -178,7 +178,7 @@ Provides diagnostics after edits, go-to-definition, find-references, and hover i
 
 Useful for shipping CLI helpers, formatters, or validators that skills and hooks can call without absolute paths.
 
-> **In bundles-forge:** Not used — the toolkit relies on Python scripts in `skills/auditing/scripts/` and `skills/releasing/scripts/`, plus inline shell commands.
+> **In bundles-forge:** Ships `bundles-forge` CLI dispatcher, routing subcommands (`audit-skill`, `audit-security`, `audit-plugin`, etc.) to scripts in `skills/auditing/scripts/` and `skills/releasing/scripts/`.
 
 ### Plugin Settings (settings.json)
 

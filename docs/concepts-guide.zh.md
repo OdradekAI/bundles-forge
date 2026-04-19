@@ -178,7 +178,7 @@ MCP 服务器通过四种传输协议（`stdio`、`http`、`sse`、`ws`）提供
 
 适用于分发 CLI 辅助工具、格式化器或校验器，技能和钩子可以直接按名称调用而无需绝对路径。
 
-> **在 bundles-forge 中：** 未使用 — 工具包依赖 `skills/auditing/scripts/` 和 `skills/releasing/scripts/` 中的 Python 脚本，以及内联 shell 命令。
+> **在 bundles-forge 中：** 提供 `bundles-forge` CLI 分发器，将子命令（`audit-skill`、`audit-security`、`audit-plugin` 等）路由到 `skills/auditing/scripts/` 和 `skills/releasing/scripts/` 中的脚本。
 
 ### Plugin Settings（插件设置 / settings.json）
 

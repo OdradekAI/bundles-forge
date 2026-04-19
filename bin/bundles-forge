@@ -1,9 +1,16 @@
-#!/usr/bin/env python3
+#!/bin/sh
+'''exec' python3 "$0" "$@" 2>/dev/null; exec python "$0" "$@"; echo "bundles-forge: Python 3.9+ required" >&2; exit 1
+'''
 """bundles-forge CLI - unified cross-skill script dispatcher.
 
 Routes subcommands to the correct script inside the plugin.
 Uses subprocess.call to preserve __file__ semantics, exit codes,
 and stdout/stderr pass-through.
+
+Shell/Python polyglot: when executed by a shell (Git Bash, bash, sh),
+the triple-quoted line tries python3 then python via exec.
+When loaded by Python directly (e.g. via bundles-forge.cmd), the
+triple-quoted string is a no-op and execution continues normally.
 
 Usage:
     bundles-forge <command> [args...]
