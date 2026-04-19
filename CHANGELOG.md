@@ -2,6 +2,22 @@
 
 ## [Unreleased]
 
+## [1.8.1] - 2026-04-19
+
+### Added
+
+- **`--output-dir` CLI flag** — all audit scripts (`audit_plugin`, `audit_docs`, `audit_security`, `audit_skill`, `audit_workflow`) now accept `--output-dir` to save results to a specified directory with timestamped filenames
+
+### Changed
+
+- **Auditing SKILL.md restructured** — Full Project Audit section rewritten as explicit Steps 1-4 (Script Baseline → Dispatch Auditor → Behavioral Verification → Verify Final Report) with Prerequisites, Action, Expected Output, and Failure Handling for each step
+- **`audit_workflow.py` standardized** — migrated from manual `argparse` to shared `_cli.py` `make_parser()` for consistent CLI behavior across all scripts
+- **Auditor agent updated** — fallback command now includes `--output-dir .bundles-forge/audits` flag
+
+### Fixed
+
+- **Windows CMD wrapper** — `bundles-forge.cmd` now forwards exit codes correctly via `exit /b %ERRORLEVEL%`
+
 ## [1.8.0] - 2026-04-19
 
 ### Added
