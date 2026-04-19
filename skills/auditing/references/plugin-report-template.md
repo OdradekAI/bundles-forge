@@ -161,6 +161,18 @@ python: "<version>"
 
 Dispositions: **FP** = false-positive (excluded from score), **Accepted** = real but mitigated (no score penalty), **TP** = true-positive (full severity retained).
 
+<!-- For Workflow category (3.6): after listing W1-W9 findings, include the
+     Behavioral Verification subsection. This section is REQUIRED — it must
+     always be present in the final report. -->
+
+#### Behavioral Verification (W10-W11)
+
+<!-- REQUIRED: Fill one of the following -->
+<!-- IF executed: findings from evaluator agent, or "No findings. All checks pass." -->
+<!-- IF skipped: -->
+Not performed. Reason: <evaluator unavailable / quick check mode / static+semantic layers clean>. Scored as N/A (excluded from weighted average).
+<!-- END IF -->
+
 ---
 
 ## 4. Methodology

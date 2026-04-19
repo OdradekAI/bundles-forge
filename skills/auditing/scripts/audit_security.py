@@ -548,15 +548,21 @@ def format_markdown(results, project_name):
 # ---------------------------------------------------------------------------
 
 def main():
-    from _cli import make_parser, resolve_target, exit_by_severity
+    from _cli import make_parser, resolve_target, exit_by_severity, write_output
     args = make_parser("Scan bundle-plugins for security risks.").parse_args()
     root = resolve_target(args.target_dir)
 
     results = run_scan(root)
     if args.json:
-        print(json.dumps(results, indent=2))
+        output = json.dumps(results, indent=2)
     else:
-        print(format_markdown(results, root.name))
+        output = format_markdown(results, root.name)
+
+    print(output)
+
+    if args.output_dir:
+        path = write_output(output, args.output_dir, "audit_security", args.json)
+        print(f"\nOutput saved to {path}", file=sys.stderr)
 
     exit_by_severity(results["summary"])
 

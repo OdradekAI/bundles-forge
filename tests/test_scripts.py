@@ -165,6 +165,55 @@ class TestAuditPlugin(unittest.TestCase):
                         f"Missing categories: {expected_cats - actual_cats}")
 
 
+class TestOutputDir(unittest.TestCase):
+    """Tests for --output-dir support across audit scripts."""
+
+    def test_output_dir_writes_json(self):
+        """--output-dir + --json writes a JSON file to the specified directory."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = subprocess.run(
+                [sys.executable, str(AUDITING_SCRIPTS / "audit_plugin.py"),
+                 "--json", "--output-dir", tmpdir, str(REPO_ROOT)],
+                capture_output=True, text=True
+            )
+            files = list(Path(tmpdir).glob("audit_plugin-*.json"))
+            self.assertEqual(len(files), 1,
+                             f"Expected 1 JSON file, found {len(files)} in {tmpdir}")
+            data = json.loads(files[0].read_text(encoding="utf-8"))
+            self.assertIn("categories", data)
+
+    def test_output_dir_creates_directory(self):
+        """--output-dir auto-creates the directory if it doesn't exist."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            nested = Path(tmpdir) / "nonexistent" / "subdir"
+            result = subprocess.run(
+                [sys.executable, str(AUDITING_SCRIPTS / "audit_plugin.py"),
+                 "--json", "--output-dir", str(nested), str(REPO_ROOT)],
+                capture_output=True, text=True
+            )
+            self.assertTrue(nested.is_dir(),
+                            f"--output-dir should auto-create {nested}")
+            files = list(nested.glob("audit_plugin-*.json"))
+            self.assertEqual(len(files), 1)
+
+    def test_output_dir_writes_markdown(self):
+        """--output-dir without --json writes a Markdown file."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = subprocess.run(
+                [sys.executable, str(AUDITING_SCRIPTS / "audit_plugin.py"),
+                 "--output-dir", tmpdir, str(REPO_ROOT)],
+                capture_output=True, text=True
+            )
+            files = list(Path(tmpdir).glob("audit_plugin-*.md"))
+            self.assertEqual(len(files), 1,
+                             f"Expected 1 MD file, found {len(files)} in {tmpdir}")
+            content = files[0].read_text(encoding="utf-8")
+            self.assertIn("Bundle-Plugin Audit", content)
+
+
 class TestGraphRules(unittest.TestCase):
     """Tests for W1-W4 graph analysis rules via _graph.run_graph_analysis."""
 

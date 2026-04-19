@@ -44,28 +44,7 @@ After normalization, determine the audit scope from the resolved local path:
 
 ## Full Project Audit
 
-### Script Shortcut
-
-```bash
-bundles-forge audit-plugin <target-dir>        # full audit with status
-bundles-forge audit-plugin --json <target-dir>  # machine-readable
-bundles-forge audit-docs <target-dir>           # documentation consistency (D1-D9) standalone
-bundles-forge audit-docs --json <target-dir>    # machine-readable
-```
-
 `audit-plugin` orchestrates `audit-security` (security), `audit-skill` (skill quality), `audit-workflow` (workflow integration), and `audit-docs` (documentation consistency D1-D9), then adds structure, manifest, version-sync, hook, and testing checks.
-
-### Run Script Baseline
-
-Run `bundles-forge audit-plugin --json <target-dir>` to collect the deterministic baseline. This ensures script-checkable items (structure, manifests, version sync, skill quality, cross-references, hooks, documentation, security patterns) are verified with reproducible results regardless of agent behavior.
-
-### Dispatch Auditor
-
-Pass the JSON script output to the `auditor` agent (`agents/auditor.md`) as input context. The auditor uses these results as its baseline scores and adds qualitative assessment (±2 score adjustments, narrative evaluation, report compilation). The auditor is the single source of truth for scoring formula, report format, and qualitative assessment criteria.
-
-The auditor executes all 10 categories, scores each on a 0-10 scale, and compiles a layered report. Full execution details — category weights, scoring formula, report format, Go/No-Go logic — are defined in `agents/auditor.md` and supported by checklists in `references/`.
-
-When auditing a project created by `bundles-forge:blueprinting`, the auditor may reference the design document's "Success Criteria" section (if present in `.bundles-forge/blueprints/` or project root) to evaluate whether the implementation aligns with the original project goals.
 
 **Categories at a glance** (see `references/plugin-checklist.md` for 60+ individual checks):
 
@@ -94,25 +73,85 @@ When auditing a project created by `bundles-forge:blueprinting`, the auditor may
 | Bundled scripts | Medium |
 | MCP configs | Medium |
 
-**If subagent dispatch is unavailable:** Ask the user — "Subagents are not available. I can run the audit checks inline. Proceed inline?" If confirmed, read `agents/auditor.md` and follow its execution instructions within this conversation context, using the script JSON output as baseline. The agent file contains the complete audit protocol — scoring rules, report compilation, and file-saving conventions.
+### Step 1 — Run Script Baseline
 
-### Behavioral Verification (Optional)
+**Prerequisites:** Target directory resolved to a local path with a `skills/` directory (Full audit scope confirmed).
 
-Optionally verify that skill handoffs work end-to-end (W10-W11), not just structurally. For execution details, see Workflow Audit Phase 2 below.
+**Action:**
 
-**When to run:** Pre-release audits, or when the Workflow category (W1-W9) has warnings that suggest structural issues may affect runtime behavior.
+```bash
+bundles-forge audit-plugin --json --output-dir .bundles-forge/audits <target-dir>
+```
 
-**When to skip:** Quick post-change checks, when evaluator dispatch is unavailable, or when static and semantic layers show no issues. Score skipped behavioral layer as **N/A** (excluded from weighted average).
+This collects the deterministic baseline — structure, manifests, version sync, skill quality, cross-references, hooks, documentation, and security patterns are verified with reproducible results regardless of agent behavior.
+
+**Expected Output:** A JSON baseline file at `.bundles-forge/audits/audit_plugin-<YYYYMMDD-HHmmss>.json`. Verify the file exists and is valid JSON before proceeding to Step 2.
+
+**Failure Handling:**
+- **Exit code 0/1/2 with valid JSON file:** Proceed to Step 2. Exit 1 = warnings, exit 2 = critical findings — both are valid baselines.
+- **Exit code non-0/1/2 or stdout empty:** The CMD wrapper may have truncated output (known Windows issue). Bypass by calling the script directly: `python skills/auditing/scripts/audit_plugin.py --json --output-dir .bundles-forge/audits <target-dir>`
+- **Script import error or crash:** Check Python version (requires 3.9+). Report the traceback to the user and stop.
+
+### Step 2 — Dispatch Auditor
+
+**Prerequisites:** JSON baseline file from Step 1 exists at `.bundles-forge/audits/`.
+
+**Action:** Pass the JSON baseline file contents to the `auditor` agent (`agents/auditor.md`) as input context. The auditor is the single source of truth for scoring formula, report format, and qualitative assessment criteria. It adds ±2 qualitative score adjustments, narrative evaluation, and compiles a layered report using `references/plugin-report-template.md`.
+
+Full execution details — category weights, scoring formula, report format, Go/No-Go logic — are defined in `agents/auditor.md` and supported by checklists in `references/`.
+
+When auditing a project created by `bundles-forge:blueprinting`, the auditor may reference the design document's "Success Criteria" section (if present in `.bundles-forge/blueprints/` or project root) to evaluate whether the implementation aligns with the original project goals.
+
+**Expected Output:** The auditor produces:
+1. A scored audit report saved to `.bundles-forge/audits/<project-name>-v<version>-audit.<date>.md` — must follow the template structure in `references/plugin-report-template.md`
+2. Per-skill breakdowns with Verdict, Strengths, and Key Issues
+3. A Go/No-Go recommendation with qualitative adjustment rationale
+
+**Failure Handling:**
+- **Subagent dispatch unavailable:** Ask the user — "Subagents are not available. I can run the audit checks inline. Proceed inline?" If confirmed, read `agents/auditor.md` and follow its execution instructions within this conversation context, using the JSON baseline file as input. The agent file contains the complete audit protocol. The inline execution must still produce all three expected outputs listed above.
+- **Auditor returns without saving report:** The report file in `.bundles-forge/audits/` is a mandatory output. If the auditor did not save it, save the report yourself following the naming convention in `agents/auditor.md`.
+
+### Step 3 — Behavioral Verification (W10-W11)
+
+**Prerequisites:** Step 2 complete. The audit report exists in `.bundles-forge/audits/`.
+
+**Action:** Decide whether to run behavioral verification:
+- **Run when:** Pre-release audits, or when the Workflow category (W1-W9) has warnings that suggest structural issues may affect runtime behavior.
+- **Skip when:** Quick post-change checks, when evaluator dispatch is unavailable, or when static and semantic layers show no issues.
+
+If running: dispatch `evaluator` agent (`agents/evaluator.md`) with label "chain" for each workflow chain. Append evaluator results to the audit report.
+
+If skipping: add the following to the Behavioral Verification section of the audit report: "Not performed. Reason: `<reason>`. Scored as N/A (excluded from weighted average)."
+
+**Expected Output:** The audit report's Behavioral Verification (W10-W11) section is filled — either with evaluation results or with an explicit N/A entry and skip reason. This section must never be left blank or omitted.
+
+**Failure Handling:**
+- **Evaluator dispatch unavailable:** Mark as N/A with reason "evaluator agents unavailable". Do not leave the section empty.
+- **Evaluator returns errors:** Include the error details in the report section and score as N/A.
+
+### Step 4 — Verify Final Report
+
+**Prerequisites:** Steps 1-3 complete.
+
+**Action:** Verify the audit report in `.bundles-forge/audits/` meets these criteria:
+1. File exists and follows the naming convention
+2. Contains Decision Brief with Go/No-Go recommendation
+3. Contains all 10 category scores
+4. Contains Behavioral Verification section (results or N/A)
+5. Contains per-skill breakdowns
 
 Present all findings grouped by severity (Critical / Warning / Info). The audit report is the final output — the calling context decides what to fix and how.
+
+**Expected Output:** A complete, validated audit report file in `.bundles-forge/audits/`.
+
+**Failure Handling:**
+- **Report missing required sections:** Go back to Step 2 and re-run the auditor with explicit instructions to include the missing sections.
 
 ---
 
 ## Skill Audit (Lightweight Mode)
 
 When the target is a single skill directory or SKILL.md file, run only the 4 categories that apply at skill scope. This is auto-detected — no special flags needed.
-
-### Applicable Categories
 
 | Category | Checks Run | What It Catches |
 |----------|-----------|----------------|
@@ -123,17 +162,49 @@ When the target is a single skill directory or SKILL.md file, run only the 4 cat
 
 **Skipped categories:** Platform Manifests, Version Sync, Hooks, Testing, Documentation — these require project-level context.
 
-### Script Shortcut
+### Step 1 — Run Script Baseline
+
+**Prerequisites:** Target resolved to a single skill directory (contains `SKILL.md` but no `skills/` subdirectory).
+
+**Action:**
 
 ```bash
-bundles-forge audit-skill <target-dir>/<skill-directory>          # combined 4-category skill audit
-bundles-forge audit-skill <target-dir>/<path>/SKILL.md            # also accepts SKILL.md path
-bundles-forge audit-skill --json <target-dir>/<skill-directory>   # JSON output
+bundles-forge audit-skill --json --output-dir .bundles-forge/audits <skill-directory>
 ```
 
-### Process & Report
+Also accepts a `SKILL.md` file path directly.
 
-The auditor (or inline executor) runs the 4-category checks, produces a qualitative summary (Verdict, Strengths, Key Issues), scores each category, and compiles the report using `references/skill-report-template.md`. Full process and report format details are in `agents/auditor.md` (Single Skill Audit Mode section).
+**Expected Output:** A JSON baseline file at `.bundles-forge/audits/audit_skill-<YYYYMMDD-HHmmss>.json`.
+
+**Failure Handling:**
+- **Exit code non-0/1/2 or stdout empty:** Bypass CMD wrapper: `python skills/auditing/scripts/audit_skill.py --json --output-dir .bundles-forge/audits <skill-directory>`
+- **Script crash:** Check Python 3.9+ and report traceback.
+
+### Step 2 — Dispatch Auditor (Skill Mode)
+
+**Prerequisites:** JSON baseline file from Step 1 exists.
+
+**Action:** Pass the JSON baseline to the `auditor` agent (`agents/auditor.md`) in Single Skill Audit Mode. The auditor runs the 4-category checks, produces a qualitative summary (Verdict, Strengths, Key Issues), scores each category, and compiles the report using `references/skill-report-template.md`.
+
+**Expected Output:** A skill audit report saved to `.bundles-forge/audits/<skill-name>-v<version>-skill-audit.<date>.md` containing:
+1. Decision Brief with Verdict, Strengths, Key Issues
+2. Findings by Category (4 categories)
+3. Skill Profile
+
+**Failure Handling:**
+- **Subagent dispatch unavailable:** Ask the user — "Subagents are not available. I can run the skill audit checks inline. Proceed?" If confirmed, read `agents/auditor.md` (Single Skill Audit Mode section) and follow its instructions inline. The inline execution must still produce all expected outputs.
+- **Auditor returns without saving report:** Save the report yourself following the naming convention.
+
+### Step 3 — Verify Final Report
+
+**Prerequisites:** Step 2 complete.
+
+**Action:** Verify the skill audit report exists in `.bundles-forge/audits/` and contains Decision Brief, 4 category findings, and Skill Profile.
+
+**Expected Output:** A complete skill audit report file.
+
+**Failure Handling:**
+- **Report missing sections:** Re-run Step 2 with explicit instructions to include missing sections.
 
 ### Third-Party Skill Scanning
 
@@ -151,35 +222,79 @@ When auditing a skill from an external source (marketplace, git, shared file):
 
 When the user explicitly requests a workflow audit, or when the Full audit's Cross-References category (X1-X3) or Workflow category (W1-W11) has warnings, run a dedicated workflow audit. This evaluates how skills connect, hand off artifacts, and compose into coherent chains.
 
-### When to Trigger
-
+**When to Trigger:**
 - User explicitly requests "audit the workflow" or "check workflow integration"
 - After adding skills to an existing project
 - After modifying Integration sections, Inputs/Outputs, or adding new skills to a chain
 - When the Full audit's Workflow category shows warnings — suggest: "Workflow issues detected. Run a focused workflow audit with `--focus-skills` for detailed diagnostics."
 
-### Script Shortcut
+### Step 1 — Run Script Baseline
+
+**Prerequisites:** Target directory resolved. User has optionally specified `--focus-skills`.
+
+**Action:**
 
 ```bash
-bundles-forge audit-workflow <target-dir>                          # full workflow audit
-bundles-forge audit-workflow --focus-skills skill-a,skill-b <target-dir>   # focused on specific skills
-bundles-forge audit-workflow --json <target-dir>                   # machine-readable
+bundles-forge audit-workflow --json --output-dir .bundles-forge/audits <target-dir>
+# or with focus:
+bundles-forge audit-workflow --json --output-dir .bundles-forge/audits --focus-skills skill-a,skill-b <target-dir>
 ```
 
-**Note:** Script mode (`bundles-forge audit-workflow`) covers W1-W9 (static + semantic layers). W10-W11 (behavioral layer) requires evaluator agent dispatch and is scored as N/A in script output.
+Script mode covers W1-W9 (static + semantic layers). W10-W11 (behavioral layer) requires evaluator agent dispatch and is scored as N/A in script output.
 
-Dispatch the `auditor` agent (`agents/auditor.md`) in Workflow Audit Mode for automated assessment if subagents are available. The auditor handles W1-W9 (Static Structure + Semantic Interface) across three layers defined in `references/workflow-checklist.md`. Full workflow audit protocol, focus mode, and report format are in `agents/auditor.md` (Workflow Audit Mode section).
+**Expected Output:** A JSON baseline file at `.bundles-forge/audits/audit_workflow-<YYYYMMDD-HHmmss>.json`.
 
-**Phase 2 — Behavioral Verification (W10-W11):**
-After the auditor returns the workflow report, dispatch `evaluator` agent (`agents/evaluator.md`) with label "chain" for each workflow chain involving focus skills. Use the chain list and focus skills from the auditor's report. Skip if subagent dispatch is unavailable — score the behavioral layer as **N/A** (excluded from weighted average) and note the skip in the final report. Append evaluator results to the workflow audit report.
+**Failure Handling:**
+- **Exit code non-0/1/2 or stdout empty:** Bypass CMD wrapper: `python skills/auditing/scripts/audit_workflow.py --json --output-dir .bundles-forge/audits <target-dir>`
+- **Script crash:** Check Python 3.9+ and report traceback.
+
+### Step 2 — Dispatch Auditor (Workflow Mode)
+
+**Prerequisites:** JSON baseline file from Step 1 exists.
+
+**Action:** Pass the JSON baseline to the `auditor` agent (`agents/auditor.md`) in Workflow Audit Mode. The auditor handles W1-W9 (Static Structure + Semantic Interface) across three layers defined in `references/workflow-checklist.md`. Full workflow audit protocol, focus mode, and report format are in `agents/auditor.md` (Workflow Audit Mode section).
+
+**Expected Output:** A workflow audit report saved to `.bundles-forge/audits/<project-name>-v<version>-workflow-audit.<date>.md` using `references/workflow-report-template.md`, containing:
+1. Decision Brief with Go/No-Go recommendation
+2. Findings by Layer (Static, Semantic, Behavioral)
+3. Skill Integration Map
+
+**Failure Handling:**
+- **Subagent dispatch unavailable:** Ask the user — "Subagents are not available. I can run the workflow checks inline. Proceed?" If confirmed, read `agents/auditor.md` (Workflow Audit Mode section) and follow its instructions inline. Must still produce all expected outputs.
+- **Auditor returns without saving report:** Save the report yourself following the naming convention.
+
+### Step 3 — Behavioral Verification (W10-W11)
+
+**Prerequisites:** Step 2 complete. The workflow report exists.
+
+**Action:** Decide whether to run behavioral verification:
+- **Run when:** Pre-release audits, or when W1-W9 has warnings suggesting runtime behavior issues.
+- **Skip when:** Quick checks, evaluator dispatch unavailable, or static+semantic layers clean.
+
+If running: dispatch `evaluator` agent (`agents/evaluator.md`) with label "chain" for each workflow chain involving focus skills. Use the chain list and focus skills from the auditor's report. Append results to the workflow report.
+
+If skipping: add to the Behavioral Verification section: "Not performed. Reason: `<reason>`. Scored as N/A (excluded from weighted average)."
 
 **Why two phases:** Subagents cannot dispatch other subagents, so the evaluator must be dispatched from this skill (main conversation), not from within the auditor.
 
-**If subagent dispatch is unavailable:** Ask the user — "Subagents are not available. I can run the workflow checks inline. Proceed?" If confirmed, read `agents/auditor.md` (Workflow Audit Mode section) and follow its execution instructions inline, then handle W10-W11 from `references/workflow-checklist.md`.
+**Expected Output:** The workflow report's Behavioral Verification (W10-W11) section is filled — either with evaluation results or an explicit N/A entry. This section must never be left blank or omitted.
 
-### Report Findings
+**Failure Handling:**
+- **Evaluator dispatch unavailable:** Mark as N/A with reason "evaluator agents unavailable".
+- **Evaluator errors:** Include error details and score as N/A.
+
+### Step 4 — Verify Final Report
+
+**Prerequisites:** Steps 1-3 complete.
+
+**Action:** Verify the workflow report in `.bundles-forge/audits/` contains Decision Brief, all three layer findings (with Behavioral Verification filled), and Skill Integration Map.
 
 Present workflow findings grouped by severity. The `workflow-report` is consumed by the calling context for targeted fixes.
+
+**Expected Output:** A complete workflow audit report file.
+
+**Failure Handling:**
+- **Report missing sections:** Re-run Step 2 with explicit instructions to include missing sections.
 
 ---
 
@@ -200,6 +315,10 @@ When the user explicitly requests a security-only scan, run only Category 10 (Se
 | Skipping workflow audit after adding third-party skills | New skills need workflow integration validation — use `--focus-skills` |
 | Skipping security because "I wrote it myself" | Accidental vulnerabilities are common — always scan |
 | Only scanning SKILL.md, ignoring hooks | Hooks are the highest-risk executable code (full audit) |
+| Treating script output as the final report | Script output is a baseline — always dispatch auditor or read `agents/auditor.md` inline to produce the full report |
+| Bypassing `--json` failure without diagnosis | If `--json` returns empty output or unexpected exit code, diagnose (check CMD wrapper, try direct python call) before falling back to non-JSON mode |
+| Not persisting JSON baseline to disk | Always use `--output-dir .bundles-forge/audits` to ensure intermediate results are saved regardless of agent behavior |
+| Skipping W10-W11 without marking N/A in report | If Behavioral Verification is skipped, the report must contain the section with "N/A" and the skip reason |
 
 ## Inputs
 

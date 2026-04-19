@@ -2,6 +2,7 @@
 
 import argparse
 import sys
+from datetime import datetime
 from pathlib import Path
 
 
@@ -26,13 +27,29 @@ def run_main(fn):
 
 
 def make_parser(description):
-    """Create a standard argparse parser with target-dir and --json options."""
+    """Create a standard argparse parser with target-dir, --json, and --output-dir."""
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("target_dir", nargs="?", default=".",
                         help="Bundle-plugin root (default: current directory)")
     parser.add_argument("--json", action="store_true",
                         help="Output JSON instead of markdown")
+    parser.add_argument("--output-dir", default=None,
+                        help="Write output to this directory (auto-created)")
     return parser
+
+
+def write_output(content, output_dir, script_name, is_json):
+    """Write content to a timestamped file in output_dir.
+
+    Returns the Path of the written file.
+    """
+    out = Path(output_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    ext = "json" if is_json else "md"
+    path = out / f"{script_name}-{stamp}.{ext}"
+    path.write_text(content, encoding="utf-8")
+    return path
 
 
 def resolve_target(path_str):

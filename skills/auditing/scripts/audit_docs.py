@@ -811,7 +811,7 @@ def format_markdown(results):
 # ---------------------------------------------------------------------------
 
 def main():
-    from _cli import make_parser, resolve_target, exit_by_severity
+    from _cli import make_parser, resolve_target, exit_by_severity, write_output
     args = make_parser(
         "Check documentation consistency in a bundle-plugin project."
     ).parse_args()
@@ -819,9 +819,15 @@ def main():
 
     results = run_check(root)
     if args.json:
-        print(json.dumps(results, indent=2))
+        output = json.dumps(results, indent=2)
     else:
-        print(format_markdown(results))
+        output = format_markdown(results)
+
+    print(output)
+
+    if args.output_dir:
+        path = write_output(output, args.output_dir, "audit_docs", args.json)
+        print(f"\nOutput saved to {path}", file=sys.stderr)
 
     exit_by_severity(results["summary"])
 

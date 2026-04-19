@@ -140,17 +140,19 @@ python: "<version>"
 
 ### 2.3 Behavioral Verification (Score: X/10, Weight: Low)
 
+<!-- REQUIRED — this section must always be present in the final report. Use one of: -->
+<!-- 1. Findings from W10-W11 evaluation, or "No findings. All checks pass." -->
+<!-- 2. "Not performed. Reason: <evaluator unavailable / quick check / clean layers>. Scored as N/A." -->
+
 **Summary:** <one-sentence layer assessment, or "Skipped — evaluator agents unavailable">
 
 **Checks run:** W10 (chain eval), W11 (trigger/exit in context)
 
-<!-- IF skipped -->
-Behavioral verification was not performed. Reason: <evaluator agents unavailable / quick check mode / static+semantic layers clean>.
+<!-- IF executed: findings or "No findings. All checks pass." -->
 
-This does not affect the Go/No-Go recommendation for static and semantic layers.
+<!-- IF skipped: -->
+Not performed. Reason: <evaluator agents unavailable / quick check mode / static+semantic layers clean>. Scored as N/A (excluded from weighted average).
 <!-- END IF -->
-
-<!-- findings or "No findings. All checks pass." -->
 
 ---
 

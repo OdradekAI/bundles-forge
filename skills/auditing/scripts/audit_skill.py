@@ -763,7 +763,7 @@ def detect_mode(raw_path, force_all=False):
 # ---------------------------------------------------------------------------
 
 def main():
-    from _cli import make_parser, exit_by_severity
+    from _cli import make_parser, exit_by_severity, write_output
 
     parser = make_parser(
         "Skill audit for bundle-plugins (single skill or project-level).")
@@ -778,17 +778,23 @@ def main():
             raise BundlesForgeError(f"{resolved} has no skills/ directory")
         results = run_lint(resolved)
         if args.json:
-            print(json.dumps(results, indent=2))
+            output = json.dumps(results, indent=2)
         else:
-            print(format_project_markdown(results))
-        exit_by_severity(results["summary"])
+            output = format_project_markdown(results)
     else:
         results = run_skill_audit(resolved)
         if args.json:
-            print(json.dumps(results, indent=2))
+            output = json.dumps(results, indent=2)
         else:
-            print(format_skill_markdown(results))
-        exit_by_severity(results["summary"])
+            output = format_skill_markdown(results)
+
+    print(output)
+
+    if args.output_dir:
+        path = write_output(output, args.output_dir, "audit_skill", args.json)
+        print(f"\nOutput saved to {path}", file=sys.stderr)
+
+    exit_by_severity(results["summary"])
 
 
 if __name__ == "__main__":

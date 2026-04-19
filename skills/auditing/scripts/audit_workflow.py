@@ -385,19 +385,13 @@ def format_markdown(results, project_name):
 # ---------------------------------------------------------------------------
 
 def main():
-    import argparse
+    from _cli import make_parser, resolve_target, exit_by_severity, write_output
 
-    parser = argparse.ArgumentParser(
-        description="Workflow audit for bundle-plugins.")
-    parser.add_argument("target_dir", nargs="?", default=".",
-                        help="Bundle-plugin root (default: current directory)")
-    parser.add_argument("--json", action="store_true",
-                        help="Output JSON instead of markdown")
+    parser = make_parser("Workflow audit for bundle-plugins.")
     parser.add_argument("--focus-skills",
                         help="Comma-separated list of skill names to focus on")
     args = parser.parse_args()
 
-    from _cli import resolve_target, exit_by_severity
     root = resolve_target(args.target_dir)
 
     focus = None
@@ -406,9 +400,15 @@ def main():
 
     results = run_workflow_audit(root, focus_skills=focus)
     if args.json:
-        print(json.dumps(results, indent=2))
+        output = json.dumps(results, indent=2)
     else:
-        print(format_markdown(results, root.name))
+        output = format_markdown(results, root.name)
+
+    print(output)
+
+    if args.output_dir:
+        path = write_output(output, args.output_dir, "audit_workflow", args.json)
+        print(f"\nOutput saved to {path}", file=sys.stderr)
 
     exit_by_severity(results["summary"])
 
