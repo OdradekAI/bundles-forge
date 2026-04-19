@@ -2,6 +2,25 @@
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-04-19
+
+### Added
+
+- **Comprehensive audit report example** — `examples/superpowers-v5.0.7-audit.md` and `.zh.md` worked audit reports for the superpowers bundle-plugin
+- **Plugin context documentation** — auditing SKILL.md now documents workspace resolution when running as an installed plugin (`$CLAUDE_PROJECT_DIR` / `<target-dir>`)
+- **Shared finding classification** — `classify_finding_category()` and `count_by_severity()` extracted to `_parsing.py` as shared utilities across audit scripts
+
+### Changed
+
+- **CLI parameter rename** — `project-root` → `target-dir` across all scripts (`_cli.py`, `audit_docs.py`, `audit_plugin.py`, `audit_security.py`, `audit_skill.py`, `audit_workflow.py`, `generate_checklists.py`, `bump_version.py`), SKILL.md files, and documentation
+- **Output directory structure** — audit reports now write to `.bundles-forge/audits/`, eval results to `.bundles-forge/evals/`, and inspector reports to `.bundles-forge/blueprints/` (previously all flat under `.bundles-forge/`)
+- **`audit_docs.py` refactored** — project metadata detection now uses shared `detect_project_meta()` from `_parsing.py` instead of inline logic (2 occurrences deduplicated)
+- **`audit_workflow.py` refactored** — severity counting replaced with shared `count_by_severity()` from `_parsing.py`
+- **`audit_skill.py` refactored** — `_classify_finding()` replaced with shared `classify_finding_category()` from `_parsing.py`; severity counting uses shared `count_by_severity()`
+- **Documentation synced** — all `docs/` guides (auditing, authoring, cli-reference, concepts, optimizing, releasing) and their `.zh.md` translations updated with new `target-dir` terminology
+- **CLAUDE.md** — CLI examples updated from `[project-root]` to `[target-dir]`
+- **Agents updated** — `auditor.md`, `evaluator.md`, `inspector.md` aligned with terminology changes
+
 ## [1.7.8] - 2026-04-17
 
 ### Added
