@@ -12,7 +12,7 @@ Systematically evaluate a bundle-plugin project or a single skill across applica
 
 **Core principle:** Measure and report. A scored audit gives orchestrating skills (blueprinting, optimizing, releasing) the information they need to decide what to fix. When sources contradict, apply the authority hierarchy in `references/source-of-truth-policy.md`.
 
-**This skill includes security scanning.** Category 10 performs a security scan of skill content, hook scripts, plugin code, agent prompts, and bundled scripts. No need to invoke a separate security skill.
+**This skill includes security scanning.** No need to invoke a separate security skill — see Category 10 under Full Project Audit.
 
 **Announce at start:** "I'm using the auditing skill to audit [this project / this skill]."
 
@@ -49,6 +49,8 @@ After normalization, determine the audit scope from the resolved local path:
 ```bash
 bundles-forge audit-plugin <target-dir>        # full audit with status
 bundles-forge audit-plugin --json <target-dir>  # machine-readable
+bundles-forge audit-docs <target-dir>           # documentation consistency (D1-D9) standalone
+bundles-forge audit-docs --json <target-dir>    # machine-readable
 ```
 
 `audit-plugin` orchestrates `audit-security` (security), `audit-skill` (skill quality), `audit-workflow` (workflow integration), and `audit-docs` (documentation consistency D1-D9), then adds structure, manifest, version-sync, hook, and testing checks.
@@ -94,11 +96,9 @@ When auditing a project created by `bundles-forge:blueprinting`, the auditor may
 
 **If subagent dispatch is unavailable:** Ask the user — "Subagents are not available. I can run the audit checks inline. Proceed inline?" If confirmed, read `agents/auditor.md` and follow its execution instructions within this conversation context, using the script JSON output as baseline. The agent file contains the complete audit protocol — scoring rules, report compilation, and file-saving conventions.
 
-**Third-party skill scanning:** When scanning skills from external sources, clone/download without executing hooks, run the audit, and review critical findings with the user before installation. Never auto-install without scanning.
-
 ### Behavioral Verification (Optional)
 
-If subagents are available, dispatch the `evaluator` agent (`agents/evaluator.md`) with label "chain" to run behavioral verification (W10-W11) on workflow chains. This validates that skill handoffs work end-to-end, not just structurally. Append evaluator results to the Workflow category in the audit report.
+Optionally verify that skill handoffs work end-to-end (W10-W11), not just structurally. For execution details, see Workflow Audit Phase 2 below.
 
 **When to run:** Pre-release audits, or when the Workflow category (W1-W9) has warnings that suggest structural issues may affect runtime behavior.
 
@@ -166,6 +166,8 @@ bundles-forge audit-workflow --focus-skills skill-a,skill-b <target-dir>   # foc
 bundles-forge audit-workflow --json <target-dir>                   # machine-readable
 ```
 
+**Note:** Script mode (`bundles-forge audit-workflow`) covers W1-W9 (static + semantic layers). W10-W11 (behavioral layer) requires evaluator agent dispatch and is scored as N/A in script output.
+
 Dispatch the `auditor` agent (`agents/auditor.md`) in Workflow Audit Mode for automated assessment if subagents are available. The auditor handles W1-W9 (Static Structure + Semantic Interface) across three layers defined in `references/workflow-checklist.md`. Full workflow audit protocol, focus mode, and report format are in `agents/auditor.md` (Workflow Audit Mode section).
 
 **Phase 2 — Behavioral Verification (W10-W11):**
@@ -183,7 +185,7 @@ Present workflow findings grouped by severity. The `workflow-report` is consumed
 
 ## Security-Only Mode
 
-When invoked via `bundles-scan` or when the user explicitly requests a security-only scan, run only Category 10 (Security) and `bundles-forge audit-security`. Skip Categories 1-8. Report in the same format but with only the Security category scored. This provides a quick security check without the overhead of a full 10-category audit.
+When the user explicitly requests a security-only scan, run only Category 10 (Security) via `bundles-forge audit-security`. Skip Categories 1-9. Report in the same format but with only the Security category scored. This provides a quick security check without the overhead of a full 10-category audit.
 
 ---
 

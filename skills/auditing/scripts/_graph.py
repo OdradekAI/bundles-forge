@@ -187,7 +187,7 @@ def run_graph_analysis(parsed_skills):
     skills_dir = parsed_skills["skills_dir"]
 
     if len(skills) < 2:
-        return []
+        return [], {}
 
     findings = []
 

@@ -175,3 +175,29 @@ def parse_all_skills(target_dir):
         "skills_dir": skills_dir,
         "skills": skills,
     }
+
+
+# ---------------------------------------------------------------------------
+# Finding classification and severity counting
+# ---------------------------------------------------------------------------
+
+def classify_finding_category(check_code):
+    """Map a check code prefix to one of the 4 skill-level categories."""
+    if check_code.startswith("S"):
+        return "structure"
+    if check_code.startswith(("Q", "C")):
+        return "skill_quality"
+    if check_code.startswith("X"):
+        return "cross_references"
+    if check_code.startswith(("SEC", "SC", "HK", "AG", "BS", "MC", "OC", "PC")):
+        return "security"
+    return "skill_quality"
+
+
+def count_by_severity(findings, key="severity"):
+    """Count findings by severity level."""
+    counts = {"critical": 0, "warning": 0, "info": 0}
+    for f in findings:
+        sev = f.get(key, "info")
+        counts[sev] = counts.get(sev, 0) + 1
+    return counts

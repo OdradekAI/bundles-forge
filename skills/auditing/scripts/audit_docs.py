@@ -29,6 +29,12 @@ import re
 import sys
 from pathlib import Path
 
+_SCRIPT_DIR = Path(__file__).resolve().parent
+if str(_SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPT_DIR))
+
+from _parsing import detect_project_meta
+
 # ---------------------------------------------------------------------------
 # Extraction helpers
 # ---------------------------------------------------------------------------
@@ -199,17 +205,7 @@ def check_cross_references(root, findings):
     skills_dir = root / "skills"
     actual_skills = {d.name for d in skills_dir.iterdir() if d.is_dir()}
 
-    # Detect project name / abbreviation
-    project_name = root.name
-    project_abbreviation = None
-    pkg_path = root / "package.json"
-    if pkg_path.exists():
-        try:
-            pkg = json.loads(pkg_path.read_text(encoding="utf-8"))
-            project_name = pkg.get("name", project_name)
-            project_abbreviation = pkg.get("abbreviation")
-        except (json.JSONDecodeError, OSError):
-            pass
+    project_name, project_abbreviation = detect_project_meta(root)
 
     valid_prefixes = {project_name}
     if project_abbreviation:
@@ -735,14 +731,7 @@ def check_docs_content(root, findings):
     skills_dir = root / "skills"
     actual_skills = {d.name for d in skills_dir.iterdir() if d.is_dir()}
 
-    project_name = root.name
-    pkg_path = root / "package.json"
-    if pkg_path.exists():
-        try:
-            pkg = json.loads(pkg_path.read_text(encoding="utf-8"))
-            project_name = pkg.get("name", project_name)
-        except (json.JSONDecodeError, OSError):
-            pass
+    project_name, _ = detect_project_meta(root)
 
     for doc_file in docs_dir.rglob("*.md"):
         content = doc_file.read_text(encoding="utf-8", errors="replace")

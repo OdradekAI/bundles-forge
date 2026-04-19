@@ -86,6 +86,8 @@ Scan every `SKILL.md` and every markdown file in `references/` directories.
 | SC15 | Info | Excessively long line (>500 chars) — may indicate obfuscated or machine-generated content | `audit_security.py` |
 <!-- END:security/skill_content -->
 
+> **Note:** SC1 and SC2 are downgraded from Critical to Warning when scanning `references/` markdown files, as these often contain example paths for documentation purposes. See `audit_security.py` `SKILL_REFERENCE_RULES`.
+
 ---
 
 ## Category 2: Hook Script Safety (Weight: High)

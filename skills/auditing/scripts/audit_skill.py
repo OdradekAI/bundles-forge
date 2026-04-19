@@ -35,6 +35,8 @@ from _parsing import (
     estimate_tokens,
     parse_all_skills,
     detect_project_meta,
+    classify_finding_category,
+    count_by_severity,
 )
 from _cli import BundlesForgeError
 from _graph import CROSS_REF_RE, extract_all_refs
@@ -320,14 +322,14 @@ def run_lint(target_dir, parsed_skills=None):
     for skill_dir in skill_dirs:
         findings = lint_skill(skill_dir, target_dir, project_name,
                               project_abbreviation)
+        counts = count_by_severity(findings)
         skill_result = {
             "skill": skill_dir.name,
             "findings": findings,
-            "counts": {"critical": 0, "warning": 0, "info": 0},
+            "counts": counts,
         }
-        for f in findings:
-            skill_result["counts"][f["severity"]] += 1
-            results["summary"][f["severity"]] += 1
+        for sev in ("critical", "warning", "info"):
+            results["summary"][sev] += counts[sev]
         results["skills"].append(skill_result)
 
     # -----------------------------------------------------------------------
@@ -549,20 +551,6 @@ def _find_target_root(skill_dir):
 # Single-skill audit
 # ---------------------------------------------------------------------------
 
-def _classify_finding(finding):
-    """Map a finding to one of the 4 skill-level categories."""
-    check = finding.get("check", "")
-    if check.startswith("S"):
-        return "structure"
-    if check.startswith("Q") or check.startswith("C"):
-        return "skill_quality"
-    if check.startswith("X"):
-        return "cross_references"
-    if check.startswith(("SEC", "SC", "HK", "AG", "BS", "MC", "OC", "PC")):
-        return "security"
-    return "skill_quality"
-
-
 def run_skill_audit(skill_path):
     """Run a 4-category audit on a single skill.
 
@@ -626,13 +614,11 @@ def run_skill_audit(skill_path):
     }
 
     for f in lint_findings:
-        cat = _classify_finding(f)
+        cat = classify_finding_category(f.get("check", ""))
         categories[cat]["findings"].append(f)
 
     for cat_data in categories.values():
-        for f in cat_data["findings"]:
-            sev = f.get("severity", "info")
-            cat_data["counts"][sev] = cat_data["counts"].get(sev, 0) + 1
+        cat_data["counts"] = count_by_severity(cat_data["findings"])
 
     scores = {}
     for cat_name, cat_data in categories.items():

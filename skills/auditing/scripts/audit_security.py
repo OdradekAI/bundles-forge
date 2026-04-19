@@ -77,6 +77,9 @@ SKILL_CONTENT_RULES = _compile([
     ("SC15", "info", None, "Excessively long line (>500 chars)", _SUS),
 ])
 
+# Reference files (references/*.md) often contain .env/.ssh examples for
+# documentation purposes. Downgrade SC1/SC2 from critical to warning in
+# reference scope to reduce false positives.
 SKILL_REFERENCE_RULES = [
     (cid, "warning" if cid in ("SC1", "SC2") else risk, pat, desc, conf)
     for cid, risk, pat, desc, conf in SKILL_CONTENT_RULES

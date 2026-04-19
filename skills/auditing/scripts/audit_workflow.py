@@ -29,7 +29,7 @@ if str(_SCRIPT_DIR) not in sys.path:
 
 import audit_skill
 import _graph
-from _parsing import parse_all_skills
+from _parsing import parse_all_skills, count_by_severity
 from _scoring import compute_baseline_score, compute_weighted_average
 
 # ---------------------------------------------------------------------------
@@ -234,25 +234,18 @@ def run_workflow_audit(target_dir, focus_skills=None,
     semantic_findings = check_semantic(parsed_skills, lint_results, focus_skills)
     behavioral_findings = []
 
-    def _count(findings):
-        c = {"critical": 0, "warning": 0, "info": 0}
-        for f in findings:
-            sev = f.get("severity", "info")
-            c[sev] = c.get(sev, 0) + 1
-        return c
-
     layers = {
         "static": {
             "findings": static_findings,
-            "counts": _count(static_findings),
+            "counts": count_by_severity(static_findings),
         },
         "semantic": {
             "findings": semantic_findings,
-            "counts": _count(semantic_findings),
+            "counts": count_by_severity(semantic_findings),
         },
         "behavioral": {
             "findings": behavioral_findings,
-            "counts": _count(behavioral_findings),
+            "counts": count_by_severity(behavioral_findings),
             "skipped": True,
             "skip_reason": "Behavioral verification requires evaluator agent "
                            "dispatch (not available in script mode)",
@@ -271,10 +264,9 @@ def run_workflow_audit(target_dir, focus_skills=None,
     overall_score = compute_weighted_average(scores, LAYER_WEIGHTS)
 
     all_findings = static_findings + semantic_findings + behavioral_findings
-    total_critical = sum(1 for f in all_findings
-                         if f.get("severity") == "critical")
-    total_warning = sum(1 for f in all_findings
-                        if f.get("severity") == "warning")
+    totals = count_by_severity(all_findings)
+    total_critical = totals["critical"]
+    total_warning = totals["warning"]
 
     if total_critical > 0:
         status = "FAIL"

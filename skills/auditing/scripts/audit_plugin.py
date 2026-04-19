@@ -32,7 +32,7 @@ import audit_docs
 import audit_security
 import audit_skill
 import _graph
-from _parsing import parse_all_skills
+from _parsing import parse_all_skills, classify_finding_category, count_by_severity
 
 # ---------------------------------------------------------------------------
 # Scoring
@@ -278,13 +278,6 @@ def run_audit(target_dir):
     docs = check_documentation(root)
     testing = check_testing(root)
 
-    def _count(findings, key="severity"):
-        c = {"critical": 0, "warning": 0, "info": 0}
-        for f in findings:
-            s = f.get(key, "info")
-            c[s] = c.get(s, 0) + 1
-        return c
-
     def _flat_findings(detail, finding_key="findings", risk_key="severity"):
         """Extract a flat list of findings from a detail result."""
         flat = []
@@ -303,9 +296,9 @@ def run_audit(target_dir):
         return flat
 
     categories = {
-        "structure": {"findings": structure, "counts": _count(structure)},
-        "manifests": {"findings": manifests, "counts": _count(manifests)},
-        "version_sync": {"findings": version_sync, "counts": _count(version_sync)},
+        "structure": {"findings": structure, "counts": count_by_severity(structure)},
+        "manifests": {"findings": manifests, "counts": count_by_severity(manifests)},
+        "version_sync": {"findings": version_sync, "counts": count_by_severity(version_sync)},
         "skill_quality": {
             "findings": [],
             "counts": lint_results["summary"],
@@ -313,7 +306,7 @@ def run_audit(target_dir):
         },
         "cross_references": {
             "findings": graph_findings,
-            "counts": _count(graph_findings),
+            "counts": count_by_severity(graph_findings),
         },
         "workflow": {
             "findings": (workflow_results.get("focus_findings", [])
@@ -321,9 +314,9 @@ def run_audit(target_dir):
             "counts": workflow_results["summary"],
             "detail": workflow_results,
         },
-        "hooks": {"findings": hooks, "counts": _count(hooks)},
-        "testing": {"findings": testing, "counts": _count(testing)},
-        "documentation": {"findings": docs, "counts": _count(docs)},
+        "hooks": {"findings": hooks, "counts": count_by_severity(hooks)},
+        "testing": {"findings": testing, "counts": count_by_severity(testing)},
+        "documentation": {"findings": docs, "counts": count_by_severity(docs)},
         "security": {
             "findings": [],
             "counts": sec_results["summary"],
@@ -368,31 +361,23 @@ def run_audit(target_dir):
 # Output
 # ---------------------------------------------------------------------------
 
-def _classify_check(check_code):
-    """Map a check code to one of the 4 skill-level categories."""
-    if check_code.startswith("S"):
-        return "Structure"
-    if check_code.startswith("Q"):
-        return "Skill Quality"
-    if check_code.startswith("X"):
-        return "Cross-References"
-    if check_code.startswith(("SEC", "SC", "HK", "AG", "BS", "MC", "OC", "PC")):
-        return "Security"
-    return "Skill Quality"
+_CATEGORY_DISPLAY = {
+    "structure": "Structure",
+    "skill_quality": "Skill Quality",
+    "cross_references": "Cross-References",
+    "security": "Security",
+}
 
 
 def _skill_category_counts(findings):
     """Tally findings per skill-level category."""
-    cats = {
-        "Structure": {"critical": 0, "warning": 0, "info": 0},
-        "Skill Quality": {"critical": 0, "warning": 0, "info": 0},
-        "Cross-References": {"critical": 0, "warning": 0, "info": 0},
-        "Security": {"critical": 0, "warning": 0, "info": 0},
-    }
+    cats = {name: {"critical": 0, "warning": 0, "info": 0}
+            for name in _CATEGORY_DISPLAY.values()}
     for f in findings:
-        cat = _classify_check(f.get("check", ""))
+        key = classify_finding_category(f.get("check", ""))
+        display = _CATEGORY_DISPLAY.get(key, "Skill Quality")
         sev = f.get("severity", "info")
-        cats[cat][sev] = cats[cat].get(sev, 0) + 1
+        cats[display][sev] = cats[display].get(sev, 0) + 1
     return cats
 
 
