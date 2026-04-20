@@ -21,7 +21,7 @@ Unlike auditing (which assesses only), optimizing drives improvement from the hu
 The fastest way to improve an existing bundle-plugin or skill:
 
 1. **Run an audit** (optional but recommended) — `bundles-forge:auditing` produces a diagnostic report that optimizing can consume directly
-2. **Invoke** `/bundles-optimize` (or ask the agent to optimize your project or skill)
+2. **Invoke** `bundles-forge:optimizing` (or ask the agent to optimize your project or skill)
 3. **The agent auto-detects scope** — project root or single skill — and selects applicable targets
 4. **Review proposed changes** — the agent presents its improvement plan before applying
 5. **Verify** — the agent runs `bundles-forge:auditing` after changes to confirm improvement

@@ -18,7 +18,7 @@ Blueprinting is the **new-project orchestrator**: it runs a structured three-pha
 
 The fastest way to start a new bundle-plugin:
 
-1. **Invoke** `/bundles-blueprint` (or ask the agent to plan a new bundle-plugin)
+1. **Invoke** `bundles-forge:blueprinting` (or ask the agent to plan a new bundle-plugin)
 2. **Answer** the three-phase interview — needs first, then architecture, one question at a time
 3. **Review and approve** the design document the agent produces (including self-review checks)
 4. **The agent takes over** — it automatically runs scaffolding → authoring → workflow design → auditing
@@ -28,7 +28,7 @@ Key things to know upfront:
 - **Needs come first.** The agent will ask what problem you're solving and who will use it *before* any technical questions. Even for simple projects, this takes only 2 questions.
 - **The agent recommends, you decide.** For key decisions (quick vs adaptive mode, skill decomposition, platform selection), the agent proposes 2-3 approaches with trade-offs and a recommendation.
 - **The agent pushes back when needed.** If your answers contradict each other or your requested scope seems disproportionate to the problem, the agent will name the issue and propose a simpler alternative. This is by design.
-- **Already have a project?** Blueprinting creates *new* projects. To add skills, restructure workflows, or improve an existing project, use `/bundles-optimize` instead — see Skill & Workflow Restructuring in the [optimizing guide](optimizing-guide.md).
+- **Already have a project?** Blueprinting creates *new* projects. To add skills, restructure workflows, or improve an existing project, use `bundles-forge:optimizing` instead — see Skill & Workflow Restructuring in the [optimizing guide](optimizing-guide.md).
 
 For details on each step, read on.
 
@@ -44,7 +44,7 @@ Blueprinting has three entry points. Pick the one that matches your situation:
 | **B: Decomposition** | One large skill | Your SKILL.md has grown too complex | Decomposition plan → design document |
 | **C: Composition** | Multiple existing skills | You want to combine independent skills into a workflow | Composition plan → design document |
 
-> **Want to add skills to an existing project?** That's optimization, not blueprinting. Use `/bundles-optimize` — see Skill & Workflow Restructuring in the [optimizing guide](optimizing-guide.md).
+> **Want to add skills to an existing project?** That's optimization, not blueprinting. Use `bundles-forge:optimizing` — see Skill & Workflow Restructuring in the [optimizing guide](optimizing-guide.md).
 
 ### Decision Flowchart
 
@@ -91,7 +91,7 @@ After collecting answers, the agent restates its understanding and asks you to c
 | 2 | Project name | Kebab-case identifier used everywhere |
 | 3 | Target platforms | Agent recommends based on target users — you confirm or adjust |
 | 4 | Skill inventory | Agent *proposes* a decomposition with trade-offs — you confirm or adjust |
-| 4a | Skill visibility | Entry-point vs internal — affects commands and descriptions (adaptive only) |
+| 4a | Skill visibility | Entry-point vs internal — affects descriptions and discovery (adaptive only) |
 | 5 | Workflow chain | How skills connect (adaptive only) |
 | 6 | Bootstrap strategy | Whether to auto-inject skill awareness (adaptive only) |
 | 7 | Advanced components | MCP servers, LSP servers, bin/ executables, output styles (adaptive only, only when you mention a matching need) |
@@ -115,7 +115,7 @@ Questions 4a, 5, 6, and 7 are only asked in **adaptive mode**. Quick mode skips 
 | **Architecture depth** | 5 steps (assumptions, mode, name, platforms, skills) | 8+ questions with conditional follow-ups |
 | **Default platform** | Claude Code only | User-selected |
 | **Bootstrap** | Skipped (not needed) | Recommended for 3+ skills |
-| **Commands** | Not generated | Entry-point skills get matching commands |
+
 | **Duration** | 3-5 minutes | 8-15 minutes |
 
 **Rule of thumb:** If your skills form a chain (output of A feeds into B), use adaptive mode. If they're independent utilities, quick is fine. The agent recommends the mode — you don't need to choose upfront.
@@ -136,7 +136,7 @@ Most users follow the standard interview (Scenario A). These two scenarios handl
 
 ### Scenario B: Decomposition (Splitting a Large Skill)
 
-**You have a SKILL.md that has grown too complex** — too many responsibilities, branching logic, or approaching the 500-line limit. Splitting produces a **new** project. To refactor skills within an existing project, use `/bundles-optimize` (Skill & Workflow Restructuring target).
+**You have a SKILL.md that has grown too complex** — too many responsibilities, branching logic, or approaching the 500-line limit. Splitting produces a **new** project. To refactor skills within an existing project, use `bundles-forge:optimizing` (Skill & Workflow Restructuring target).
 
 **Signs you need decomposition:**
 
@@ -244,7 +244,7 @@ When the design document is approved, **blueprinting orchestrates** a four-step 
 |------|-----------|---------|
 | **Scaffold** | `bundles-forge:scaffolding` | Generate project structure and platform manifests |
 | **Author Content** | `bundles-forge:authoring` | Author **SKILL.md** and **agents/*.md** — **invoked by blueprinting** after scaffolding (not by scaffolding) |
-| **Wire Workflow** | Workflow design (blueprinting internal) | Wire skills together (chains, bootstrap, commands) per the design |
+| **Wire Workflow** | Workflow design (blueprinting internal) | Wire skills together (chains, bootstrap, cross-references) per the design |
 | **Run Audit** | `bundles-forge:auditing` | Validate quality and security before further iteration |
 
 Each phase includes a verification gate: the agent checks its work (e.g., inspector passes, frontmatter is valid, workflow links are symmetric, no critical audit findings) and loops back to fix issues before proceeding. If the final audit surfaces warnings, the agent presents them and asks whether to proceed.
@@ -259,7 +259,7 @@ The agent carries your approved design document through these phases. **Authorin
 
 **Q: The agent jumps straight to scaffolding without interviewing me. What happened?**
 
-The skill has a HARD-GATE that prevents this. If it happened, the skill wasn't loaded — explicitly invoke `/bundles-blueprint` to ensure the full interview runs. The agent cannot proceed to scaffolding until you approve a design document.
+The skill has a HARD-GATE that prevents this. If it happened, the skill wasn't loaded — explicitly invoke `bundles-forge:blueprinting` to ensure the full interview runs. The agent cannot proceed to scaffolding until you approve a design document.
 
 **Q: The agent keeps asking questions and won't move on. How do I speed this up?**
 
@@ -287,7 +287,7 @@ Follow the decision flowchart in the "Choosing a Scenario" section. When in doub
 
 **Q: I want to add skills to an existing project, not create a new one.**
 
-Use `/bundles-optimize` instead — the Skill & Workflow Restructuring target handles adding, replacing, and reorganizing skills in existing projects. Blueprinting is only for creating new projects.
+Use `bundles-forge:optimizing` instead — the Skill & Workflow Restructuring target handles adding, replacing, and reorganizing skills in existing projects. Blueprinting is only for creating new projects.
 
 **Q: What's the difference between blueprinting and scaffolding?**
 

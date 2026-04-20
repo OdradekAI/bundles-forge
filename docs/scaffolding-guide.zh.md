@@ -43,7 +43,7 @@
 | 操作 | 入口条件 | 阶段 1 | 阶段 2 | 阶段 3 |
 |------|---------|--------|--------|--------|
 | 新建项目（minimal） | 设计文档或用户 + 无项目 | 加载 Claude Code 模板 | 生成清单 + 技能 + 文档 | git init，验证 JSON |
-| 新建项目（intelligent） | 设计文档或用户 + 无项目 | 加载模板索引、模板、项目结构参考 | 替换占位符，按平台生成，技能、命令、引导、可选组件 | git init，版本检查 |
+| 新建项目（intelligent） | 设计文档或用户 + 无项目 | 加载模板索引、模板、项目结构参考 | 替换占位符，按平台生成，技能、引导、可选组件 | git init，版本检查 |
 | 新建项目（custom） | 用户 + 无项目 | 同 intelligent | 同上，但每个组件需交互确认 | git init，版本检查 |
 | 添加平台 | 现有项目 + 目标平台 | 检测当前平台，读取适配器参考 | 生成适配器文件，更新版本同步 + 钩子 + 文档 | 验证清单，版本检查 |
 | 移除平台 | 现有项目 + 目标平台 | 识别待移除文件 | 删除清单，清理钩子，更新文档 | 版本检查，inspector 验证 |
@@ -73,7 +73,7 @@
 **预期体验：** Agent 会询问你在构建什么、使用哪些平台、有多少技能。根据你的回答，它只生成必要的内容 — 不引入不必要的可选组件。
 
 **生成层次：**
-1. **核心** — `package.json`、`.gitignore`、`.version-bump.json`、技能、命令
+1. **核心** — `package.json`、`.gitignore`、`.version-bump.json`、技能
 2. **平台适配器** — 仅针对所选平台（清单、钩子、安装文档）
 3. **引导** — 如果有 3 个以上技能或工作流链
 4. **可选组件** — 仅在 Agent 检测到需要时（MCP 服务器、LSP 服务器、可执行文件、输出样式、默认设置、用户配置、市场条目）
@@ -90,10 +90,10 @@
 
 ### 从 Blueprinting 过来
 
-如果你先运行了 `/bundles-blueprint`，设计文档已包含模式、平台、技能清单和组件选择。脚手架读取设计文档并自动生成一切 — 无需额外提问。
+如果你先调用了 `bundles-forge:blueprinting`，设计文档已包含模式、平台、技能清单和组件选择。脚手架读取设计文档并自动生成一切 — 无需额外提问。
 
 ```
-/bundles-blueprint
+bundles-forge:blueprinting
   → 访谈完成，设计批准
   → 脚手架自动调用（附带设计文档）
   → 项目生成
@@ -103,7 +103,7 @@
 
 ### 直接调用
 
-如果你直接调用脚手架（通过 `/bundles-scaffold` 或直接向 Agent 描述），它会检测是否存在项目：
+如果你直接调用脚手架（通过 `bundles-forge:scaffolding` 或直接向 Agent 描述），它会检测是否存在项目：
 
 - **无现有项目** → 进入新建项目流程，询问模式偏好
 - **有现有项目** → 进入平台适配流程
@@ -234,7 +234,7 @@
 
 | 平台 | 技能发现方式 | 引导工作方式 |
 |------|------------|------------|
-| Claude Code | 约定 — 自动发现 `skills/`、`agents/`、`commands/` | Shell 钩子在 `SessionStart` 时输出 JSON |
+| Claude Code | 约定 — 自动发现 `skills/`、`agents/` | Shell 钩子在 `SessionStart` 时输出 JSON |
 | Cursor | 在 `plugin.json` 中显式声明路径 | 相同的 Shell 钩子，不同的 JSON 格式 |
 | Codex | 符号链接到 `~/.agents/skills/` | `AGENTS.md` → `CLAUDE.md`（无钩子注入） |
 | OpenCode | JS 插件在配置中注册路径 | JS 插件将内容前置到第一条用户消息 |
@@ -246,7 +246,7 @@
 |------|------------|--------|
 | 钩子事件大小写 | `SessionStart`（PascalCase） | `sessionStart`（camelCase） |
 | 钩子重注入 | 在 `startup\|clear\|compact` 时触发 | 仅在 `sessionStart` — 上下文清除后不重注入 |
-| 清单路径 | 基于约定（无需声明） | 必须显式声明 `skills`、`agents`、`commands`、`hooks` |
+| 清单路径 | 基于约定（无需声明） | 必须显式声明 `skills`、`agents`、`hooks` |
 
 ### 平台限制
 
@@ -298,7 +298,7 @@
 
 **问：我手动添加了一个平台。如何验证设置是否正确？**
 
-运行 `/bundles-audit` — 审计技能会检查清单有效性、版本同步、钩子配置和交叉引用。或者调用脚手架让 inspector 代理验证。
+调用 `bundles-forge:auditing` — 审计技能会检查清单有效性、版本同步、钩子配置和交叉引用。或者调用脚手架让 inspector 代理验证。
 
 ---
 

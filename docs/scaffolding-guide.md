@@ -43,7 +43,7 @@ All six scaffolding operations follow the same three-phase structure: detect con
 | Operation | Entry Condition | Phase 1 | Phase 2 | Phase 3 |
 |-----------|----------------|---------|---------|---------|
 | New project (minimal) | Design or user + no project | Load Claude Code template | Generate manifest + skills + docs | git init, validate JSON |
-| New project (intelligent) | Design or user + no project | Load template index, templates, anatomy | Replace placeholders, generate per-platform, skills, commands, bootstrap, optional | git init, version check |
+| New project (intelligent) | Design or user + no project | Load template index, templates, anatomy | Replace placeholders, generate per-platform, skills, bootstrap, optional | git init, version check |
 | New project (custom) | User + no project | Same as intelligent | Same, but each component confirmed interactively | git init, version check |
 | Add platform | Existing project + target platform | Detect current platforms, read adapter reference | Generate adapter files, update version sync + hooks + docs | Validate manifests, version check |
 | Remove platform | Existing project + target platform | Identify files to remove | Delete manifests, clean hooks, update docs | Version check, inspector validation |
@@ -73,7 +73,7 @@ Best for: most new projects. Tell the agent what you're building and it recommen
 **What to expect:** The agent asks what you're building, which platforms you use, and how many skills you have. Based on your answers, it generates only what's needed — no unnecessary optional components.
 
 **Generated layers:**
-1. **Core** — `package.json`, `.gitignore`, `.version-bump.json`, skills, commands
+1. **Core** — `package.json`, `.gitignore`, `.version-bump.json`, skills
 2. **Platform adapters** — only for selected platforms (manifests, hooks, install docs)
 3. **Bootstrap** — if you have 3+ skills or a workflow chain
 4. **Optional components** — only if the agent detects a need (MCP servers, LSP servers, executables, output styles, default settings, user configuration, marketplace entry)
@@ -90,10 +90,10 @@ Best for: experienced users who want explicit control, or unusual project config
 
 ### Coming from Blueprinting
 
-If you ran `/bundles-blueprint` first, the design document already contains your mode, platforms, skill inventory, and component choices. Scaffolding reads this and generates everything automatically — no additional questions.
+If you invoked `bundles-forge:blueprinting` first, the design document already contains your mode, platforms, skill inventory, and component choices. Scaffolding reads this and generates everything automatically — no additional questions.
 
 ```
-/bundles-blueprint
+bundles-forge:blueprinting
   → Interview complete, design approved
   → Scaffolding auto-invoked with design document
   → Project generated
@@ -103,7 +103,7 @@ If you ran `/bundles-blueprint` first, the design document already contains your
 
 ### Direct Invocation
 
-If you invoke scaffolding directly (via `/bundles-scaffold` or by asking the agent), it detects whether a project already exists:
+If you invoke scaffolding directly (via `bundles-forge:scaffolding` or by asking the agent), it detects whether a project already exists:
 
 - **No existing project** → enters new project flow, asks for mode preference
 - **Existing project** → enters platform adaptation flow
@@ -234,7 +234,7 @@ Understanding platform differences helps you choose which to support.
 
 | Platform | How Skills Are Found | How Bootstrap Works |
 |----------|---------------------|-------------------|
-| Claude Code | Convention — auto-discovers `skills/`, `agents/`, `commands/` | Shell hook emits JSON on `SessionStart` |
+| Claude Code | Convention — auto-discovers `skills/`, `agents/` | Shell hook emits JSON on `SessionStart` |
 | Cursor | Explicit paths in `plugin.json` | Same shell hook, different JSON format |
 | Codex | Symlink into `~/.agents/skills/` | `AGENTS.md` → `CLAUDE.md` (no hook injection) |
 | OpenCode | JS plugin registers paths in config | JS plugin prepends to first user message |
@@ -246,7 +246,7 @@ Understanding platform differences helps you choose which to support.
 |--------|------------|--------|
 | Hook event casing | `SessionStart` (PascalCase) | `sessionStart` (camelCase) |
 | Hook re-injection | Fires on `startup\|clear\|compact` | Only on `sessionStart` — no re-injection after context clear |
-| Manifest paths | Convention-based (no declaration needed) | Must declare `skills`, `agents`, `commands`, `hooks` explicitly |
+| Manifest paths | Convention-based (no declaration needed) | Must declare `skills`, `agents`, `hooks` explicitly |
 
 ### Platform Limitations
 
@@ -298,7 +298,7 @@ Blueprinting is the *planning* phase — it interviews you and produces a design
 
 **Q: I added a platform manually. How do I verify it's set up correctly?**
 
-Run `/bundles-audit` — the auditing skill checks manifest validity, version sync, hook configuration, and cross-references. Or invoke scaffolding and let the inspector agent validate.
+Invoke `bundles-forge:auditing` — the auditing skill checks manifest validity, version sync, hook configuration, and cross-references. Or invoke scaffolding and let the inspector agent validate.
 
 ---
 

@@ -6,8 +6,8 @@ These questions are only asked in adaptive mode. Quick mode skips them entirely 
 
 For projects with workflow chains, classify each skill:
 
-- **Entry-point** — users invoke directly. Gets a matching command in `commands/` for discoverability. Description describes user-facing triggering conditions.
-- **Internal** — called by other skills as part of a workflow chain, not invoked directly by users. Description should say "Use when called by `<project>:<parent-skill>`, not directly." No matching command needed.
+- **Entry-point** — users invoke directly. Description describes user-facing triggering conditions.
+- **Internal** — called by other skills as part of a workflow chain, not invoked directly by users. Description should say "Use when called by `<project>:<parent-skill>`, not directly."
 
 Record the classification in the skill inventory table.
 

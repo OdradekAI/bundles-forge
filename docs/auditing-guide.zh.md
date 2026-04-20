@@ -78,7 +78,7 @@ baseline = max(0, 10 - (critical_count × 3 + warning_count × 1))
 ### 通过 Agent
 
 ```
-/bundles-audit
+bundles-forge:auditing
 ```
 
 Agent 检测项目根目录（包含 `skills/` 目录）并运行全部 10 个类别。如果子代理可用，会派遣 `auditor` agent 进行自动化评估。
@@ -134,7 +134,7 @@ bundles-forge audit-plugin --json <target-dir>  # JSON 输出
 ### 通过 Agent
 
 ```
-/bundles-audit skills/authoring
+bundles-forge:auditing skills/authoring
 ```
 
 Agent 检测到单个技能目录（包含 `SKILL.md`、无 `skills/` 子目录）并运行 4 个适用类别。
@@ -258,7 +258,7 @@ bundles-forge audit-workflow --json <target-dir>                   # JSON 输出
 ### 通过 Agent
 
 ```
-/bundles-scan
+bundles-forge:auditing  (security-only mode)
 ```
 
 映射到 `bundles-forge:auditing` 技能的安全专用模式 — 仅运行类别 10（安全），覆盖全部 7 大攻击面。

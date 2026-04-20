@@ -2,6 +2,64 @@
 
 ## [Unreleased]
 
+## [1.8.4] - 2026-04-21
+
+### Removed
+
+- **`commands/` directory deleted** — all 8 `/bundles-*` slash command stubs removed; skills are now invoked exclusively via `bundles-forge:<skill-name>` references or automatic description matching
+- **Command concept removed from documentation** — "Skill vs Command" distinction, Command row in Key Concepts table, and command-related sections removed from `docs/concepts-guide.md/.zh.md`
+
+### Changed
+
+- **Skill invocation model simplified** — all documentation, guides (EN + ZH), and README files updated from `/bundles-*` slash commands to `bundles-forge:<skill-name>` invocation syntax (e.g. `bundles-forge:auditing`, `bundles-forge:blueprinting`)
+- **README "Commands" section → "Invoking Skills"** — command table replaced with concise invocation explanation in both `README.md` and `README.zh.md`
+- **Architecture diagrams updated** — Mermaid flowcharts in both READMEs simplified by removing command nodes; flow now starts directly from skill entry points
+- **Platform manifests cleaned** — `"commands"` field removed from `.cursor-plugin/plugin.json` and scaffolding Cursor template
+- **`audit_docs.py` D6/D7 updated** — D6 no longer checks command table sync; D7 now validates `bundles-forge:<skill-name>` references instead of `/bundles-*` slash commands between EN/ZH guide pairs
+- **Auditor agent updated** — report next-step recommendations changed from `/bundles-optimize` to `bundles-forge:optimizing`
+- **Scaffolding skill streamlined** — command generation step removed from scaffold pipeline; project anatomy reference removes `commands/` section
+- **Testing skill updated** — component discovery checklist no longer includes commands
+- **Codex INSTALL.md updated** — symlink instructions no longer reference `commands/` directory
+- **Audit report examples added** — `examples/superpowers-v5.0.7-audit.2026-04-20.md` and `.zh.md`
+
+## [1.8.3] - 2026-04-20
+
+### Added
+
+- **`.gitattributes`** — enforces LF for polyglot scripts (`bin/bundles-forge`, hook scripts) and CRLF for `.cmd` wrappers, preventing cross-platform line-ending issues
+- **`hooks/session-start` (Bash)** — replaces `session-start.py` for bootstrap injection; dynamically discovers skills by scanning `skills/*/SKILL.md`; uses `printf`-based JSON output to avoid bash 5.3+ heredoc hang
+- **`hooks/run-hook.cmd` (polyglot wrapper)** — CMD+Bash polyglot that finds Git for Windows bash on Windows (standard locations + PATH) and runs bash directly on Unix; exits silently if no bash found
+- **Audit report examples (GLM 5.1)** — `examples/superpowers-v5.0.7-audit.glm51.md` and `.zh.md` worked audit reports
+- **Copilot CLI / SDK standard detection** — `session-start` now emits `{"additionalContext": "..."}` (SDK standard) as fallback for Copilot CLI and unknown platforms, replacing the previous plain-text fallback
+
+### Changed
+
+- **CLI `bin/bundles-forge` hardened** — shell preamble now uses `find_python()` probe that validates interpreter via `--version` before `exec`, skipping Windows Store stubs that masquerade as `python3`
+- **`bin/bundles-forge.cmd` rewritten** — Python probe loop tries `python3` then `python` with `--version` validation; clearer error messages with install URL
+- **Session-start hook migrated Python → Bash** — `hooks/session-start.py` deleted; new extensionless Bash script with three-way platform detection (CURSOR_PLUGIN_ROOT → Cursor, CLAUDE_PLUGIN_ROOT → Claude Code, COPILOT_CLI/fallback → SDK standard)
+- **Hook configs updated** — Claude Code `hooks.json` now invokes `run-hook.cmd session-start`; Cursor `hooks-cursor.json` runs `./hooks/session-start` directly (no Python dependency)
+- **Scaffolding templates migrated** — `assets/hooks/session-start.py` replaced by `assets/hooks/session-start` (Bash) + `assets/hooks/run-hook.cmd`; all scaffolding references (`platform-adapters.md`, `project-anatomy.md`, `scaffold-templates.md`, `hooks-configuration.md`, `SKILL.md`) updated
+- **Audit checks updated** — H2 now checks for `hooks/session-start` (Bash); new H2b checks for `hooks/run-hook.cmd`; H3/H6/H8/H12/T4 updated for Bash hook terminology
+- **Integration tests rewritten** — removed pure-Python simulation tests; bash subprocess tests use `_find_bash()` with Git Bash priority and `@unittest.skipUnless`; added `run-hook.cmd` existence and polyglot format checks; new SDK-standard fallback assertion
+- **CLI dispatcher tests enhanced** — `test_polyglot_header_format` → `test_polyglot_format` with assertions for `find_python` probe and `exec "$PYTHON"` pattern
+- **Documentation synced** — `AGENTS.md`, `CLAUDE.md`, concepts/scaffolding/troubleshooting guides and their `.zh.md` translations updated for Bash hook migration
+
+### Fixed
+
+- **Manifest version sync** — all platform manifests (`.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `.cursor-plugin/plugin.json`, `gemini-extension.json`) synced to v1.8.3
+
+## [1.8.2] - 2026-04-19
+
+### Added
+
+- **CLI dispatcher test suite** — `TestCLIDispatcher` with 5 tests: `--help` exits 0, no-args shows help, unknown command exits 1, `audit-plugin --json` via dispatcher, polyglot header format validation
+
+### Changed
+
+- **CLI dispatcher polyglot** — `bin/bundles-forge` converted from `#!/usr/bin/env python3` shebang to shell/Python polyglot (`#!/bin/sh` + `'''exec'` line that tries `python3` then `python` via `exec`)
+- **Concepts guide updated** — `bin/` section now describes the CLI dispatcher routing subcommands (`audit-skill`, `audit-security`, `audit-plugin`, etc.) to scripts, replacing the "not used" note
+- **Auditing SKILL.md streamlined** — plugin context now documents `<plugin-root>` resolution (`$CLAUDE_PLUGIN_ROOT` / `$CURSOR_PLUGIN_ROOT` / `.`); failure handling recommends retry via `bundles-forge` CLI instead of CMD wrapper bypass
+
 ## [1.8.1] - 2026-04-19
 
 ### Added

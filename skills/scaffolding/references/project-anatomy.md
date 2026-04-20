@@ -143,12 +143,11 @@ Cursor plugin manifest. Unlike Claude Code, Cursor requires explicit path declar
   "keywords": ["skills"],
   "skills": "./skills/",
   "agents": "./agents/",
-  "commands": "./commands/",
   "hooks": "./hooks/hooks-cursor.json"
 }
 ```
 
-Key difference from Claude Code: `skills`, `agents`, `commands`, and `hooks` paths are explicit.
+Key difference from Claude Code: `skills`, `agents`, and `hooks` paths are explicit.
 
 ---
 
@@ -268,10 +267,6 @@ Only create supporting files when content exceeds what fits inline:
 ## `agents/` — Shared Agent Prompts (optional)
 
 Markdown files used as prompts when dispatching subagents. Referenced by skills via `agents/<role>.md`. Example: `agents/code-reviewer.md` contains the review template.
-
-## `commands/` — Slash Commands (optional)
-
-Markdown files that define slash commands for platforms that support them (Cursor). Each file is one command.
 
 ## Version Tooling
 

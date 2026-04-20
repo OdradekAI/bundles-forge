@@ -21,7 +21,7 @@
 改进现有 bundle-plugin 或技能的最快方式：
 
 1. **运行审计**（可选但推荐）— `bundles-forge:auditing` 生成优化可直接消费的诊断报告
-2. **调用** `/bundles-optimize`（或请 agent 优化你的项目或技能）
+2. **调用** `bundles-forge:optimizing`（或请 agent 优化你的项目或技能）
 3. **Agent 自动检测范围** — 项目根目录或单个技能 — 并选择适用的目标
 4. **审查提议的变更** — agent 在应用前呈现其改进方案
 5. **验证** — agent 在变更后运行 `bundles-forge:auditing` 确认改进效果

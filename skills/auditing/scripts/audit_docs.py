@@ -409,34 +409,6 @@ def check_readme_sync(root, findings):
             message=f"Agent table mismatch between READMEs — "
                     f"EN: {sorted(en_agents)}, ZH: {sorted(zh_agents)}"))
 
-    # --- Command tables ---
-    en_cmd_cells = _parse_table_column(readme_en, 0, section_header="Commands")
-    if not en_cmd_cells:
-        en_cmd_cells = _parse_table_column(readme_en, 0, section_header="命令")
-    zh_cmd_cells = _parse_table_column(readme_zh, 0, section_header="命令")
-    if not zh_cmd_cells:
-        zh_cmd_cells = _parse_table_column(readme_zh, 0, section_header="Commands")
-
-    en_cmds = _extract_backtick_names(set(en_cmd_cells)) if en_cmd_cells else set()
-    zh_cmds = _extract_backtick_names(set(zh_cmd_cells)) if zh_cmd_cells else set()
-
-    # Commands use /slash format — extract with a different regex
-    slash_re = re.compile(r"`(/[a-z-]+)`")
-    en_slash = set()
-    zh_slash = set()
-    for cell in en_cmd_cells:
-        for m in slash_re.finditer(cell):
-            en_slash.add(m.group(1))
-    for cell in zh_cmd_cells:
-        for m in slash_re.finditer(cell):
-            zh_slash.add(m.group(1))
-
-    if en_slash and zh_slash and en_slash != zh_slash:
-        findings.append(dict(
-            check="D6", severity="warning",
-            message=f"Command table mismatch between READMEs — "
-                    f"EN: {sorted(en_slash)}, ZH: {sorted(zh_slash)}"))
-
     # --- Code blocks (bash commands) ---
     code_block_re = re.compile(r"```bash\n(.*?)```", re.DOTALL)
 
@@ -526,7 +498,7 @@ def check_guide_language_sync(root, findings):
 
     code_block_re = re.compile(r"```(?:bash|json|yaml|markdown)?\n(.*?)```", re.DOTALL)
     link_re = re.compile(r"\]\(([^)]+)\)")
-    slash_re = re.compile(r"`(/[a-z-]+)`")
+    skill_ref_re = re.compile(r"`(bundles-forge:[a-z][\w-]*)`")
 
     def _extract_commands(text):
         cmds = set()
@@ -573,18 +545,18 @@ def check_guide_language_sync(root, findings):
                     message=f"Bash commands in {rel_en} not found in "
                             f"{rel_zh}: {sample}"))
 
-        en_slash = set()
-        zh_slash = set()
-        for m in slash_re.finditer(en_content):
-            en_slash.add(m.group(1))
-        for m in slash_re.finditer(zh_content):
-            zh_slash.add(m.group(1))
-        if en_slash and zh_slash and en_slash != zh_slash:
+        en_skill_refs = set()
+        zh_skill_refs = set()
+        for m in skill_ref_re.finditer(en_content):
+            en_skill_refs.add(m.group(1))
+        for m in skill_ref_re.finditer(zh_content):
+            zh_skill_refs.add(m.group(1))
+        if en_skill_refs and zh_skill_refs and en_skill_refs != zh_skill_refs:
             findings.append(dict(
                 check="D7", severity="warning",
-                message=f"Slash command mismatch between {rel_en} and "
-                        f"{rel_zh} — EN: {sorted(en_slash)}, "
-                        f"ZH: {sorted(zh_slash)}"))
+                message=f"Skill invocation mismatch between {rel_en} and "
+                        f"{rel_zh} — EN: {sorted(en_skill_refs)}, "
+                        f"ZH: {sorted(zh_skill_refs)}"))
 
         en_file_links = {m.group(1) for m in link_re.finditer(en_content)
                          if not m.group(1).startswith("http")

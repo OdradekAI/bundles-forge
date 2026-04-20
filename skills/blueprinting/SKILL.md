@@ -35,7 +35,7 @@ This skill handles three scenarios. All three feed into the same three-phase int
 
 If the user has an existing skill they want to break apart, start with Scenario B. If the user has multiple existing skills they want to combine into a **new** unified project, start with Scenario C. Otherwise, start with Scenario A.
 
-> **Adding skills to an existing project?** That's optimization, not blueprinting. Use `bundles-forge:optimizing` (Skill & Workflow Restructuring target) or invoke `/bundles-optimize`.
+> **Adding skills to an existing project?** That's optimization, not blueprinting. Use `bundles-forge:optimizing` (Skill & Workflow Restructuring target).
 
 ## Dialogue Strategy
 
@@ -197,7 +197,7 @@ After the interview, compile a design summary using the template in `references/
 Before presenting to the user, review the document:
 
 1. **Placeholder scan** — any TBD, TODO, or incomplete [TBD] markers? Fix what can be resolved from interview context
-2. **Internal consistency** — does the skill inventory match the workflow chain? Do entry-point skills all have commands/?
+2. **Internal consistency** — does the skill inventory match the workflow chain?
 3. **Scope check** — is this focused on a single project? Does it need decomposition into sub-projects first?
 4. **Ambiguity check** — could any requirement be interpreted two ways? If so, pick one and make it explicit
 
@@ -274,7 +274,7 @@ Invoke `bundles-forge:auditing` on the project root for a baseline quality check
 | Dumping skills into one folder without analyzing compatibility | Audit each skill first — naming conflicts and overlapping responsibilities cause confusion |
 | Copying third-party skills without security audit | Always invoke `bundles-forge:auditing` on imported content |
 | Treating all third-party skills as repackage-only | Ask integration intent — workflow integration requires adaptation |
-| Forgetting skill visibility classification | Entry-point vs internal determines commands/ and description style |
+| Forgetting skill visibility classification | Entry-point vs internal determines description style |
 | Using blueprinting to add skills to an existing project | Blueprinting creates new projects; use `bundles-forge:optimizing` (Skill & Workflow Restructuring target) for existing ones |
 
 ## Inputs

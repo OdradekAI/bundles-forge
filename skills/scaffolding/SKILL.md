@@ -59,7 +59,6 @@ Generated for all intelligent-mode projects regardless of platform selection:
 | `.gitignore` | node_modules, .worktrees, OS files |
 | `.version-bump.json` | Version sync manifest |
 | `skills/<skill-name>/SKILL.md` | One directory per skill |
-| `commands/<entry-skill>.md` | One command per entry-point skill |
 
 #### Platform Adapters (selected platforms only)
 
@@ -112,8 +111,7 @@ For platform-specific wiring details, read `references/platform-adapters.md`.
 5. **Replace placeholders** — substitute `<project-name>`, `<author-name>`, etc.
 6. **Generate per-platform** — only create files for target platforms
 7. **Generate skill stubs** — one directory per skill
-8. **Generate commands** — one command per entry-point skill
-9. **Generate bootstrap** — if requested, create meta-skill with routing table
+8. **Generate bootstrap** — if requested, create meta-skill with routing table
 10. **Generate optional components** — only what the design specifies. For MCP servers, use `assets/mcp-json.md` template and consult `references/external-integration.md` for transport selection and platform differences. When `userConfig` is specified, add the `userConfig` field to `plugin.json` with appropriate `sensitive` flags. When marketplace distribution is specified, generate `.claude-plugin/marketplace.json` with plugin metadata. When CI validation is specified, generate `.github/workflows/validate-plugin.yml` from template
 
 *Phase 3 — Finalize:*

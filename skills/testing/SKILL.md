@@ -131,12 +131,6 @@ For each directory under `skills/`:
 - [ ] `name` matches directory name
 - [ ] `description` starts with "Use when..."
 
-### Commands
-
-For each `.md` file under `commands/`:
-- [ ] Has YAML frontmatter with `description`
-- [ ] Cross-reference (`<project>:<skill>`) resolves to an existing skill
-
 ### Agents
 
 For each `.md` file under `agents/`:
@@ -188,7 +182,7 @@ Generate a test report summarizing all findings.
 |-------|--------|---------|
 | 1. Local Environment | PASS/FAIL/SKIP | ... |
 | 2. Hook Smoke Tests | PASS/FAIL/SKIP | ... |
-| 3. Component Discovery | PASS/FAIL/SKIP | N skills, M commands, K agents |
+| 3. Component Discovery | PASS/FAIL/SKIP | N skills, K agents |
 | 4. Cross-Platform | PASS/FAIL/SKIP | ... |
 
 ## Issues Found

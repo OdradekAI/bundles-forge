@@ -82,7 +82,7 @@ python: "<version>"
 | **Date** | `<YYYY-MM-DD>` |
 | **Audit Context** | `pre-release` / `post-change` / `third-party-evaluation` |
 | **Platforms** | <list of target platforms> |
-| **Skills** | <N> skills, <N> agents, <N> commands, <N> scripts |
+| **Skills** | <N> skills, <N> agents, <N> scripts |
 
 ### Recommendation: `GO` / `CONDITIONAL GO` / `NO-GO` / `NEEDS MORE INFO`
 
@@ -183,7 +183,7 @@ Not performed. Reason: <evaluator unavailable / quick check mode / static+semant
 
 | Dimension | Covered |
 |-----------|---------|
-| **Directories** | `skills/`, `agents/`, `commands/`, `hooks/`, `scripts/`, platform manifests, project root |
+| **Directories** | `skills/`, `agents/`, `hooks/`, `scripts/`, platform manifests, project root |
 | **Check categories** | 10 categories, 60+ individual checks |
 | **Total files scanned** | <N> |
 

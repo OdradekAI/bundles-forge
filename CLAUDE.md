@@ -53,7 +53,6 @@ bundles-forge bump-version <new-version>       # bump all files declared in .ver
 - `bin/` — CLI dispatcher: `bundles-forge` (shell/Python polyglot with `find_python()` probe), `bundles-forge.cmd` (Windows CMD wrapper)
 - `skills/` — 8 skill directories, each containing `SKILL.md` and optional `references/` subdirectory
 - `agents/` — 3 subagent definitions (inspector, auditor, evaluator) as `.md` files
-- `commands/` — slash command stubs (`bundles-*.md`) that redirect to skills via `bundles-forge:<skill-name>`
 - `hooks/` — session bootstrap (`session-start` Bash script + `run-hook.cmd` polyglot wrapper emit lightweight skill-list prompt); `openclaw-bootstrap/` contains the OpenClaw hook-pack (HOOK.md + handler.js)
 - `docs/` — guides (concepts, blueprinting, scaffolding, authoring, auditing, optimizing, releasing) with `*.zh.md` Chinese translations; checked by D7
 - `skills/auditing/scripts/` — audit, security scan, documentation checks, and checklist generation (shares `_cli.py` for argparse/exit-code patterns)

@@ -46,9 +46,8 @@ Deprecation is a **minor** version change (adding the deprecated marker is non-b
 
 After at least one minor version with the deprecation marker:
 1. Remove the skill directory
-2. Remove command stubs
-3. Update all remaining references
-4. Bump version (removal is a **major** change if the skill was publicly used)
+2. Update all remaining references
+3. Bump version (removal is a **major** change if the skill was publicly used)
 
 ---
 
@@ -77,7 +76,6 @@ Search and replace across the entire project:
 |--------|---------|-------|
 | `<project>:old-name` | `<project>:new-name` | All SKILL.md, agents/*.md |
 | `old-name` in Integration sections | `new-name` | Skills with Calls/Called-by references |
-| Command stubs referencing old skill | Updated references | commands/*.md |
 | Bootstrap routing table | Updated entry | using-<project>/SKILL.md |
 | Documentation tables | Updated entries | README.md, CLAUDE.md, AGENTS.md |
 
@@ -176,6 +174,5 @@ After any structural change (deprecation, rename, split, merge):
 - [ ] Hook configurations reference existing scripts
 - [ ] OpenCode plugin.js skill paths correct
 - [ ] Gemini GEMINI.md references updated
-- [ ] Command stubs in `commands/` updated or removed
 - [ ] `.clawhubignore` updated if skill directories changed
 - [ ] Run `bundles-forge:testing` to verify component discovery

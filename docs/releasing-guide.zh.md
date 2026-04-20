@@ -145,9 +145,9 @@ git diff $(git describe --tags --abbrev=0)..HEAD
 解决一致性问题后，同步所有项目文档：
 
 1. **`docs/`** — 修复技能、脚本、架构的过时引用
-2. **`CLAUDE.md`** — 更新技能数量、生命周期流程、命令、agent、清单
+2. **`CLAUDE.md`** — 更新技能数量、生命周期流程、agent、清单
 3. **`AGENTS.md`** — 更新可用技能表
-4. **`README.md` + `README.zh.md`** — 更新技能表、Agent 表、命令表、代码块
+4. **`README.md` + `README.zh.md`** — 更新技能表、Agent 表、技能调用章节、代码块
 
 更改后重新运行 `bundles-forge audit-docs` 确认一致性。
 

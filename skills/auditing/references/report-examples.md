@@ -101,4 +101,4 @@ Supplementary examples for the audit report template (`plugin-report-template.md
 `.md` (SKILL.md, agent prompts), `.json` (manifests, hooks config), `.py` (audit/release scripts), `session-start` (Bash hook), `run-hook.cmd` (polyglot wrapper), `.js` (OpenCode plugins)
 
 **Directories covered:**
-`skills/`, `agents/`, `commands/`, `hooks/`, `scripts/`, `.claude-plugin/`, `.cursor-plugin/`, `.codex/`, `.opencode/`, project root
+`skills/`, `agents/`, `hooks/`, `scripts/`, `.claude-plugin/`, `.cursor-plugin/`, `.codex/`, `.opencode/`, project root

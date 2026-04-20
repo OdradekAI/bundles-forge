@@ -27,7 +27,6 @@ graph TB
         Hook["Hook"]
         MCPServer["MCP Server"]
         LSPServer["LSP Server"]
-        Command["Command"]
         Bin["bin/ Executables"]
         SettingsFile["settings.json"]
     end
@@ -38,7 +37,6 @@ graph TB
     Plugin -->|bundles| Hook
     Plugin -->|bundles| MCPServer
     Plugin -->|bundles| LSPServer
-    Plugin -->|bundles| Command
     Plugin -->|bundles| Bin
     Plugin -->|bundles| SettingsFile
 
@@ -78,7 +76,7 @@ allowed-tools: Read Grep Glob Bash
 
 **[Official docs](https://code.claude.com/docs/en/plugins)** — The packaging and distribution unit.
 
-A directory containing `.claude-plugin/plugin.json` (manifest) plus any combination of skills, agents, hooks, MCP servers, LSP servers, commands, output styles, `bin/` executables (added to the Shell tool's PATH while the plugin is enabled), and a root-level `settings.json` for default configuration (currently supports the `agent` key to activate a custom subagent as the main thread). Plugins namespace their components (`/plugin-name:skill-name`) to avoid conflicts. Distributed via marketplaces.
+A directory containing `.claude-plugin/plugin.json` (manifest) plus any combination of skills, agents, hooks, MCP servers, LSP servers, output styles, `bin/` executables (added to the Shell tool's PATH while the plugin is enabled), and a root-level `settings.json` for default configuration (currently supports the `agent` key to activate a custom subagent as the main thread). Plugins namespace their components (`/plugin-name:skill-name`) to avoid conflicts. Distributed via marketplaces.
 
 **Example file:** `.claude-plugin/plugin.json`
 
@@ -104,7 +102,7 @@ Subagents support persistent memory (`memory` field with `user`/`project`/`local
 
 > **In bundles-forge:** Three non-editing subagents — `inspector`, `auditor`, `evaluator` — are dispatched by skills for isolated validation work. They have `disallowedTools: Edit` so they cannot modify existing project files, but they do write new report files to `.bundles-forge/` subdirectories (`audits/`, `evals/`, `blueprints/`).
 >
-> **Design decision:** Users always interact through skills (slash commands), never by invoking agents directly. Skills orchestrate agent dispatch from the main conversation because they need pre/post logic (scope detection, report merging). Subagents cannot spawn other subagents — all orchestration stays in the skill layer.
+> **Design decision:** Users always interact through skills, never by invoking agents directly. Skills orchestrate agent dispatch from the main conversation because they need pre/post logic (scope detection, report merging). Subagents cannot spawn other subagents — all orchestration stays in the skill layer.
 
 ### Hook
 
@@ -147,14 +145,6 @@ Not every external integration needs MCP — stateless, single-shot tools are be
 ---
 
 ## Supplementary Concepts
-
-### Command
-
-**[Official docs](https://code.claude.com/docs/en/skills)** — Slash commands (`/deploy`, `/audit`) that invoke skills.
-
-Commands have been merged into the skill system — a file at `.claude/commands/deploy.md` and a skill at `.claude/skills/deploy/SKILL.md` create the same `/deploy` command. Plugin `commands/` directories are still supported.
-
-> **In bundles-forge:** 8 `/bundles-*` commands serve as thin entry points that redirect to the corresponding skill.
 
 ### Marketplace
 
@@ -201,17 +191,6 @@ Changes how Claude presents its output (e.g., concise mode, structured reports).
 ## Key Distinctions
 
 Concepts in the plugin ecosystem can be confusing at first. This section clarifies the boundaries between similar-sounding terms.
-
-### Skill vs Command
-
-| | Skill | Command |
-|---|---|---|
-| **What it is** | A capability unit with instructions and tool permissions | A slash-command alias that invokes a skill |
-| **File location** | `skills/<name>/SKILL.md` | `commands/<name>.md` |
-| **Discovery** | Agent matches user intent against `description` field | User types `/command-name` explicitly |
-| **Can exist alone?** | Yes — skills work without a command | No — commands must point to a skill |
-
-**Why both exist:** Skills are the real workers; commands are just convenience shortcuts for users who prefer explicit invocation. Not every skill needs a command — executor skills may be dispatched by orchestrator skills rather than invoked directly by users.
 
 ### Skill (inline) vs Skill (context:fork)
 
@@ -269,7 +248,7 @@ The three bundles-forge subagents (`inspector`, `auditor`, `evaluator`) all have
 
 - **Separation of concerns** — agents assess, skills act. An auditor that can fix what it finds would conflate the roles.
 - **Trust boundary** — audit reports should be objective. If the auditor could modify project files, its findings could be questioned ("did it just pass because it silently fixed the issue?").
-- **Predictability** — users invoke `/bundles-audit` expecting a report, not surprise changes to their code.
+- **Predictability** — users invoke `bundles-forge:auditing` expecting a report, not surprise changes to their code.
 
 The skill or user that dispatches the agent is responsible for acting on the report — offering to fix issues, re-running the audit, or invoking the appropriate orchestrator.
 
@@ -303,13 +282,11 @@ flowchart LR
 
     subgraph BF ["bundles-forge Plugin"]
         HK["session-start Hook"]
-        CMD["8 /bundles-* Commands"]
         SK["8 Skills: 3 Orchestrators + 4 Executors + 1 Meta"]
         AG["3 Subagents"]
     end
 
     HK -->|"emits lightweight skill list"| SK
-    CMD -->|"invokes via bundles-forge:name"| SK
     SK -->|"dispatches read-only tasks"| AG
     AG -->|"writes reports to .bundles-forge/*/"|SK
     SK -->|"orchestrators dispatch executors via prose"| SK
@@ -317,9 +294,8 @@ flowchart LR
 
 1. **Marketplace** distributes the plugin — users install with `/plugin install bundles-forge@bundles-forge-dev`
 2. **Hook** fires at session start — emits a lightweight skill list so the agent knows what's available
-3. **Commands** provide explicit entry points — `/bundles-audit` routes to the `auditing` skill
-4. **Skills** do the work — orchestrators manage pipelines and dispatch executors; executors perform focused tasks
-5. **Subagents** handle isolated tasks — auditing, inspection, A/B evaluation — and write reports to `.bundles-forge/` subdirectories (`audits/`, `evals/`, `blueprints/`)
+3. **Skills** do the work — orchestrators manage pipelines and dispatch executors; executors perform focused tasks. Users invoke skills directly via `bundles-forge:<skill-name>` (e.g. `bundles-forge:auditing`)
+4. **Subagents** handle isolated tasks — auditing, inspection, A/B evaluation — and write reports to `.bundles-forge/` subdirectories (`audits/`, `evals/`, `blueprints/`)
 
 ---
 

@@ -51,7 +51,7 @@ cd bundles-forge
 ### Path A: Build a New Bundle-Plugin
 
 ```
-/bundles-blueprint
+bundles-forge:blueprinting
 ```
 
 This starts a structured interview to design your project — scope, platform targets, skill decomposition. When the design is ready, the agent automatically chains into `scaffolding` (project generation) and then `authoring` (SKILL.md writing).
@@ -60,7 +60,7 @@ This starts a structured interview to design your project — scope, platform ta
 
 ```
 cd your-bundle-plugin-project
-/bundles-audit
+bundles-forge:auditing
 ```
 
 Runs a 10-category quality assessment with pattern-based security checks across 7 file categories.
@@ -73,7 +73,6 @@ Runs a 10-category quality assessment with pattern-based security checks across 
 | **Plugin** | Packaging/distribution unit — bundles skills, agents, hooks, and more |
 | **Subagent** | Isolated AI assistant for delegated tasks with its own context window |
 | **Hook** | Shell/HTTP/LLM/Agent action that fires automatically on lifecycle events |
-| **Command** | Slash command entry point (`/audit`) that invokes a skill |
 | **MCP** | Open standard connecting Claude to external tools and data sources |
 
 > Full explanations, design decisions, and architecture diagrams → [Concepts Guide](docs/concepts-guide.md)
@@ -133,20 +132,9 @@ Each skill has a companion guide in [`docs/`](docs/) with detailed usage, exampl
 | `auditor` | Executes systematic quality audit with security scanning |
 | `evaluator` | Runs A/B skill evaluation for optimization and workflow chain verification for auditing (W10-W11) |
 
-### Commands
+### Invoking Skills
 
-| Command | Skill |
-|---------|-------|
-| `/bundles-forge` | `using-bundles-forge` |
-| `/bundles-blueprint` | `blueprinting` |
-| `/bundles-scaffold` | `scaffolding` |
-| `/bundles-audit` | `auditing` |
-| `/bundles-optimize` | `optimizing` |
-| `/bundles-release` | `releasing` |
-| `/bundles-test` | `testing` |
-| `/bundles-scan` | `auditing` |
-
-Skills without a slash command are invoked **automatically** (the agent matches user intent to the skill's `description` field) or **explicitly** when another skill chains to them via `bundles-forge:<skill-name>` references.
+Skills are invoked **automatically** (the agent matches user intent to the skill's `description` field) or **explicitly** via `bundles-forge:<skill-name>` references — for example, `bundles-forge:auditing` or `bundles-forge:blueprinting`.
 
 ## Auditing
 
@@ -154,12 +142,12 @@ Both `auditing` and `optimizing` accept local paths, GitHub URLs, and zip/tar.gz
 
 Four audit scopes for different levels of granularity — the agent auto-detects scope from the target path:
 
-| Scope | Command / Script | What It Checks |
-|-------|-----------------|----------------|
-| Full Project | `/bundles-audit` or `bundles-forge audit-plugin` | 10 categories (structure, manifests, version sync, skill quality, cross-refs, workflow, hooks, testing, docs, security) |
-| Single Skill | `/bundles-audit skills/authoring` or `bundles-forge audit-skill` | 4 categories (structure, skill quality, cross-refs, security) |
+| Scope | Invocation / Script | What It Checks |
+|-------|---------------------|----------------|
+| Full Project | `bundles-forge:auditing` or `bundles-forge audit-plugin` | 10 categories (structure, manifests, version sync, skill quality, cross-refs, workflow, hooks, testing, docs, security) |
+| Single Skill | `bundles-forge:auditing` on `skills/authoring` or `bundles-forge audit-skill` | 4 categories (structure, skill quality, cross-refs, security) |
 | Workflow | Explicit request or `bundles-forge audit-workflow` | 3 layers: static structure, semantic interface, behavioral verification (W1-W11) |
-| Security Only | `/bundles-scan` or `bundles-forge audit-security` | Pattern-based detection across 7 file categories (skill content, hook scripts, HTTP hooks, OpenCode plugins, agent prompts, bundled scripts, MCP configs) |
+| Security Only | `bundles-forge:auditing` (security-only mode) or `bundles-forge audit-security` | Pattern-based detection across 7 file categories (skill content, hook scripts, HTTP hooks, OpenCode plugins, agent prompts, bundled scripts, MCP configs) |
 
 ### Quick Start (Scripts)
 
@@ -174,8 +162,8 @@ bundles-forge audit-security .                                      # security-o
 Via the agent, you can also audit remote projects:
 
 ```
-/bundles-audit https://github.com/user/repo
-/bundles-audit https://github.com/user/repo/tree/main/skills/my-skill
+bundles-forge:auditing https://github.com/user/repo
+bundles-forge:auditing https://github.com/user/repo/tree/main/skills/my-skill
 ```
 
 Exit codes: `0` = pass, `1` = warnings, `2` = critical findings. All scripts accept `--json` for CI integration.
@@ -187,50 +175,42 @@ Exit codes: `0` = pass, `1` = warnings, `2` = critical findings. All scripts acc
 ## Architecture
 
 <details>
-<summary>Command execution chains and internal routing</summary>
+<summary>Skill execution chains and internal routing</summary>
 
 > For concept explanations see [Concepts Guide](docs/concepts-guide.md). For per-skill details see guides in [`docs/`](docs/).
 
-### Command Execution
+### Skill Execution
 
-Each slash command is a thin pointer to a skill. The real logic lives in the skill — but the execution chains can be deep.
+Each skill is discovered by its description or invoked explicitly via `bundles-forge:<skill-name>`. The execution chains can be deep.
 
 ```mermaid
 flowchart LR
-    subgraph commands [Slash Commands]
-        CMD_BP["/bundles-blueprint"]
-        CMD_SF["/bundles-scaffold"]
-        CMD_AU["/bundles-audit"]
-        CMD_OP["/bundles-optimize"]
-        CMD_RE["/bundles-release"]
-        CMD_SC["/bundles-scan"]
+    subgraph skills [Entry-Point Skills]
+        SK_BP["blueprinting"]
+        SK_SF["scaffolding"]
+        SK_AU["auditing"]
+        SK_OP["optimizing"]
+        SK_RE["releasing"]
     end
 
-    CMD_BP --> blueprinting
-    CMD_SF --> scaffolding
-    CMD_AU --> auditing
-    CMD_OP --> optimizing
-    CMD_RE --> releasing
-    CMD_SC -->|"security only"| auditing
-
-    blueprinting -->|"design approved"| scaffolding
-    blueprinting -->|"content authoring"| authoring
-    blueprinting -->|"initial audit"| auditing
-    auditing -->|"issues found"| optimizing
-    optimizing -->|"delegate changes"| authoring
-    optimizing -->|"verify fixes"| auditing
-    releasing -->|"pre-release check"| auditing
-    releasing -->|"fix quality"| optimizing
+    SK_BP -->|"design approved"| scaffolding
+    SK_BP -->|"content authoring"| authoring
+    SK_BP -->|"initial audit"| SK_AU
+    SK_AU -->|"issues found"| SK_OP
+    SK_OP -->|"delegate changes"| authoring
+    SK_OP -->|"verify fixes"| SK_AU
+    SK_RE -->|"pre-release check"| SK_AU
+    SK_RE -->|"fix quality"| SK_OP
 ```
 
-#### `/bundles-blueprint` — Plan a new bundle-plugin
+#### `bundles-forge:blueprinting` — Plan a new bundle-plugin
 
 > Full guide: [`docs/blueprinting-guide.md`](docs/blueprinting-guide.md)
 
 **When to use:** Starting a new project, splitting a monolithic skill into multiple skills, or composing third-party skills into a bundle.
 
 ```
-User runs /bundles-blueprint
+User invokes bundles-forge:blueprinting
   → blueprinting: context exploration (scan existing files/skills)
   → blueprinting: Phase 1 — needs exploration (problem, users, capabilities, flow)
   → blueprinting: Phase 2 — architecture design (complexity, platforms, skill decomposition, workflow)
@@ -243,14 +223,14 @@ User runs /bundles-blueprint
   → Run Audit: invoke auditing — initial quality check
 ```
 
-#### `/bundles-scaffold` — Generate or adapt project structure
+#### `bundles-forge:scaffolding` — Generate or adapt project structure
 
 > Full guide: [`docs/scaffolding-guide.md`](docs/scaffolding-guide.md)
 
 **When to use:** Adding platform support to an existing project, removing a platform, or generating a new project directly (without going through blueprinting first).
 
 ```
-User runs /bundles-scaffold
+User invokes bundles-forge:scaffolding
   → scaffolding: detect context (new project vs existing project)
   → New project: ask mode preference (intelligent/custom), generate structure
   → Existing project:
@@ -259,14 +239,14 @@ User runs /bundles-scaffold
     → inspector agent validates changes (if subagents available)
 ```
 
-#### `/bundles-audit` — Quality assessment
+#### `bundles-forge:auditing` — Quality assessment
 
 > Full guide: [`docs/auditing-guide.md`](docs/auditing-guide.md)
 
 **When to use:** Reviewing a project before release, after significant changes, or when scanning a third-party skill for security risks.
 
 ```
-User runs /bundles-audit
+User invokes bundles-forge:auditing
   → auditing: detect scope (full project vs single skill vs workflow)
   → Full project: 10 categories (structure, manifests, version sync,
     quality, cross-refs, workflow, hooks, testing, docs, security)
@@ -278,18 +258,18 @@ User runs /bundles-audit
   → Report delivered to calling context (user or orchestrating skill) for action
 ```
 
-#### `/bundles-scan` — Security-focused audit
+#### `bundles-forge:auditing` (security-only mode) — Security-focused audit
 
-**When to use:** Quick security-only check. Maps to the same `auditing` skill in security-only mode — runs only Category 10 (the 7-surface security scan: skill content, hook scripts, HTTP hooks, OpenCode plugins, agent prompts, bundled scripts, MCP configs), skipping Categories 1-8.
+**When to use:** Quick security-only check. Maps to the `auditing` skill in security-only mode — runs only Category 10 (the 7-surface security scan: skill content, hook scripts, HTTP hooks, OpenCode plugins, agent prompts, bundled scripts, MCP configs), skipping Categories 1-8.
 
-#### `/bundles-optimize` — Engineering improvements
+#### `bundles-forge:optimizing` — Engineering improvements
 
 > Full guide: [`docs/optimizing-guide.md`](docs/optimizing-guide.md)
 
 **When to use:** Improving description triggering accuracy, reducing token usage, fixing workflow chain gaps, adding skills to fill gaps, restructuring workflows, or iterating on user feedback about a specific skill.
 
 ```
-User runs /bundles-optimize
+User invokes bundles-forge:optimizing
   → optimizing: detect scope (project vs single skill)
   → Project scope: 6 optimization targets
     (descriptions, tokens, workflow chains,
@@ -301,14 +281,14 @@ User runs /bundles-optimize
   → Verify fixes via auditing
 ```
 
-#### `/bundles-release` — Version bump and publish
+#### `bundles-forge:releasing` — Version bump and publish
 
 > Full guide: [`docs/releasing-guide.md`](docs/releasing-guide.md)
 
 **When to use:** Preparing a release — version drift check, quality gate, documentation consistency, version bump, CHANGELOG update, and publishing guidance.
 
 ```
-User runs /bundles-release
+User invokes bundles-forge:releasing
   → releasing: verify prerequisites (clean working tree, branch check)
   → Pre-flight checks
     → bundles-forge bump-version --check (version drift)
@@ -365,7 +345,7 @@ Verify with `openclaw plugins inspect bundles-forge` — should show `Format: bu
 Skills, audit reports, and script output accumulate in the conversation context over a long session. If you notice the agent slowing down or losing track of earlier context:
 
 - **Start a fresh session** for each major lifecycle phase (blueprinting, authoring, auditing)
-- **Use slash commands** (`/bundles-audit`, `/bundles-optimize`) to re-anchor the agent on the current task
+- **Invoke skills explicitly** (`bundles-forge:auditing`, `bundles-forge:optimizing`) to re-anchor the agent on the current task
 - **Prefer script output over inline checks** — `bundles-forge audit-plugin .` produces a compact summary instead of the agent reasoning through each check
 
 ## Prerequisites

@@ -125,7 +125,7 @@ Before bumping the version, invoke `bundles-forge:testing` to verify the plugin 
 
 1. Generate a dev-marketplace and install the plugin locally
 2. Verify hook smoke tests pass (SessionStart + any custom hooks)
-3. Confirm all components (skills, commands, agents) are discoverable
+3. Confirm all components (skills, agents) are discoverable
 4. Run cross-platform readiness checks for all target platforms
 
 If testing reveals critical issues, resolve them before proceeding to version bump.

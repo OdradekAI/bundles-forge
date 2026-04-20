@@ -182,9 +182,8 @@ For the full step-by-step process, see `references/deprecation-guide.md`.
 
 1. Rename the directory: `skills/old-name/` → `skills/new-name/`
 2. Update frontmatter `name` field
-3. Update all cross-references (`<project>:old-name` → `<project>:new-name`) across all SKILL.md, Integration sections, command stubs, and documentation
-4. Update command stubs in `commands/`
-5. Update bootstrap routing table
+3. Update all cross-references (`<project>:old-name` → `<project>:new-name`) across all SKILL.md, Integration sections, and documentation
+4. Update bootstrap routing table
 6. Run `bundles-forge audit-docs` to catch any missed references
 
 **Splitting** — divide a skill into multiple focused skills:

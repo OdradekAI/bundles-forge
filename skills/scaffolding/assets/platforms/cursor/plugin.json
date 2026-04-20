@@ -13,6 +13,5 @@
   "keywords": ["skills"],
   "skills": "./skills/",
   "agents": "./agents/",
-  "commands": "./commands/",
   "hooks": "./hooks/hooks-cursor.json"
 }

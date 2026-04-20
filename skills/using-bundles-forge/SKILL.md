@@ -96,7 +96,6 @@ When multiple skills could apply, prefer orchestrators over executors:
 - **Cross-references**: `<project>:<skill-name>`
 - **Bootstrap skill**: `using-<project>`
 - **Agent prompts**: `agents/<role>.md`
-- **Commands**: `commands/<action>.md`
 
 ## Skill Types
 

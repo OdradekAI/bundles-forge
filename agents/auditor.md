@@ -83,7 +83,7 @@ Compile the report using `skills/auditing/references/skill-report-template.md`. 
 2. **Findings by Category** — all findings grouped by the 4 categories, with severity (Critical / Warning / Info)
 3. **Skill Profile** — 4-category score table, file inventory, token counts, tools declared
 
-Save to `.bundles-forge/audits/<skill-name>-v<version>-skill-audit.YYYY-MM-DD[.<lang>].md` (read version from `package.json`; append `.<lang>` when not English). If a file with the same name exists, append a sequence number. End the report with: "**Next step:** The user can run `/bundles-optimize` for targeted improvements."
+Save to `.bundles-forge/audits/<skill-name>-v<version>-skill-audit.YYYY-MM-DD[.<lang>].md` (read version from `package.json`; append `.<lang>` when not English). If a file with the same name exists, append a sequence number. End the report with: "**Next step:** The user can invoke `bundles-forge:optimizing` for targeted improvements."
 
 ### Workflow Audit Mode
 
@@ -102,7 +102,7 @@ When explicitly requested for a workflow audit (or when `--focus-skills` is spec
 
 **Report:** Use `skills/auditing/references/workflow-report-template.md`. Save to `.bundles-forge/audits/<project-name>-v<version>-workflow-audit.YYYY-MM-DD[.<lang>].md` (read name and version from `package.json`; append `.<lang>` when not English).
 
-End the report with: "**Next step:** The user can run `/bundles-optimize` for workflow fixes (Workflow Chain Integrity target)."
+End the report with: "**Next step:** The user can invoke `bundles-forge:optimizing` for workflow fixes (Workflow Chain Integrity target)."
 
 ### Contradiction Resolution
 

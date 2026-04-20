@@ -12,9 +12,9 @@ All templates use `<project-name>` as a placeholder — replace with the actual 
 
 **Additional shared files:** `hooks/session-start` + `hooks/run-hook.cmd` (see `assets/hooks/` templates)
 
-Claude Code discovers `skills/`, `commands/`, `agents/`, and `hooks/hooks.json` by convention — no path declarations needed in plugin.json. Optional components (`bin/`, `output-styles/`, `.mcp.json`, `.lsp.json`, `settings.json`) are also auto-discovered at their default locations.
+Claude Code discovers `skills/`, `agents/`, and `hooks/hooks.json` by convention — no path declarations needed in plugin.json. Optional components (`bin/`, `output-styles/`, `.mcp.json`, `.lsp.json`, `settings.json`) are also auto-discovered at their default locations.
 
-**Plugin manifest fields:** `name` (required), `version`, `description`, `author`, `homepage`, `repository`, `license`, `keywords`. Component path overrides: `commands`, `agents`, `skills`, `hooks`, `mcpServers`, `outputStyles`, `lspServers`, `userConfig`, `channels`.
+**Plugin manifest fields:** `name` (required), `version`, `description`, `author`, `homepage`, `repository`, `license`, `keywords`. Component path overrides: `agents`, `skills`, `hooks`, `mcpServers`, `outputStyles`, `lspServers`, `userConfig`, `channels`.
 
 **`userConfig`** declares values prompted at plugin enable time (API keys, endpoints). Keys are available as `${user_config.KEY}` in MCP/LSP/hook configs and (non-sensitive only) in skill/agent content. Sensitive values go to the system keychain. See `references/external-integration.md` for full schema and wiring guide.
 
@@ -37,7 +37,7 @@ Claude Code discovers `skills/`, `commands/`, `agents/`, and `hooks/hooks.json` 
 
 **Additional shared files:** `hooks/session-start` + `hooks/run-hook.cmd`
 
-Unlike Claude Code, Cursor requires explicit `skills`, `agents`, `commands`, and `hooks` path declarations in plugin.json.
+Unlike Claude Code, Cursor requires explicit `skills`, `agents`, and `hooks` path declarations in plugin.json.
 
 Note: Cursor uses `sessionStart` (camelCase), Claude Code uses `SessionStart` (PascalCase).
 
@@ -98,7 +98,7 @@ gemini extensions install <repo-url>
 
 **Template files:** `assets/platforms/openclaw/HOOK.md`, `assets/platforms/openclaw/handler.js`, `assets/platforms/openclaw/INSTALL.md`
 
-OpenClaw detects the project as a **Claude bundle** via `.claude-plugin/plugin.json`. The `skills/` directory is loaded as native OpenClaw skills and `commands/` is treated as an additional skill root. No separate manifest is needed — creating an `openclaw.plugin.json` would cause OpenClaw to treat the project as a native plugin instead, which is not desirable for bundle-plugins.
+OpenClaw detects the project as a **Claude bundle** via `.claude-plugin/plugin.json`. The `skills/` directory is loaded as native OpenClaw skills. No separate manifest is needed — creating an `openclaw.plugin.json` would cause OpenClaw to treat the project as a native plugin instead, which is not desirable for bundle-plugins.
 
 **Hook-pack bootstrap:** The `hooks/openclaw-bootstrap/` directory contains `HOOK.md` + `handler.js` following the OpenClaw hook-pack layout. It fires on `command:new` and `command:reset` events (equivalent to Claude Code's `SessionStart` with `startup|clear`). Note: as of OpenClaw v2026.3, hook-packs inside Claude bundles may not be automatically wired — see the OpenClaw limitation below.
 

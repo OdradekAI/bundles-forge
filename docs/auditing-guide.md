@@ -78,7 +78,7 @@ All scripts accept `--json` for machine-readable output.
 ### Via Agent
 
 ```
-/bundles-audit
+bundles-forge:auditing
 ```
 
 The agent detects the project root (has `skills/` directory) and runs all 10 categories. If subagents are available, it dispatches the `auditor` agent for automated assessment.
@@ -134,7 +134,7 @@ Full project audits use `skills/auditing/references/plugin-report-template.md` �
 ### Via Agent
 
 ```
-/bundles-audit skills/authoring
+bundles-forge:auditing skills/authoring
 ```
 
 The agent detects a single skill directory (contains `SKILL.md`, no `skills/` subdirectory) and runs the 4 applicable categories.
@@ -258,7 +258,7 @@ Workflow audits use `skills/auditing/references/workflow-report-template.md` —
 ### Via Agent
 
 ```
-/bundles-scan
+bundles-forge:auditing  (security-only mode)
 ```
 
 Maps to the `bundles-forge:auditing` skill in security-only mode — runs only Category 10 (Security) across all 7 attack surfaces.

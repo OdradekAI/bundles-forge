@@ -17,7 +17,6 @@ bundles-forge/
 │   ├── auditing/      #   scripts/ (7 Python scripts), references/ (11 files)
 │   └── scaffolding/   #   assets/ (6 platform templates + root/hooks/scripts)
 ├── agents/            # 3 read-only subagents: inspector, auditor, evaluator
-├── commands/          # Slash command stubs (bundles-*.md) → bundles-forge:<skill>
 ├── hooks/             # session-start (Bash) + run-hook.cmd (polyglot) + openclaw-bootstrap/
 ├── docs/              # 10 guide pairs (EN + .zh.md), checked by audit-docs D7-D9
 ├── tests/             # 6 suites via run_all.py; fixtures/ + prompts/ per skill
@@ -97,4 +96,4 @@ python -m pytest tests/test_scripts.py -v    # single suite
 - `skills/scaffolding/assets/` is a template directory — files here are copied to new projects, not used directly
 - CI matrix: Python 3.9 + 3.12 on ubuntu-latest; 3.12 on windows-latest
 - Exit codes: 0 = pass, 1 = warnings, 2 = critical (audit scripts)
-- The `using-bundles-forge` meta-skill is loaded via session-start hook, not slash command
+- The `using-bundles-forge` meta-skill is loaded via session-start hook, not by user request

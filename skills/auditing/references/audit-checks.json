@@ -74,8 +74,8 @@
   {"id": "D3",  "category": "documentation", "severity": "warning",  "criteria": "CLAUDE.md Platform Manifests table matches `.version-bump.json`", "automation": "`audit_docs.py`", "scopes": ["plugin"]},
   {"id": "D4",  "category": "documentation", "severity": "critical", "criteria": "Skill scripts referenced in CLAUDE.md exist at their declared `skills/.../scripts/` paths", "automation": "`audit_docs.py`", "scopes": ["plugin"]},
   {"id": "D5",  "category": "documentation", "severity": "warning",  "criteria": "Agent names in CLAUDE.md match agents/ directory", "automation": "`audit_docs.py`", "scopes": ["plugin"]},
-  {"id": "D6",  "category": "documentation", "severity": "warning",  "criteria": "README.md and README.zh.md hard data (skills, agents, commands, links) in sync", "automation": "`audit_docs.py`", "scopes": ["plugin"]},
-  {"id": "D7",  "category": "documentation", "severity": "warning",  "criteria": "docs/*.md and docs/*.zh.md pairs have consistent hard data (tables, commands, links)", "automation": "`audit_docs.py`", "scopes": ["plugin"]},
+  {"id": "D6",  "category": "documentation", "severity": "warning",  "criteria": "README.md and README.zh.md hard data (skills, agents, invocation examples, links) in sync", "automation": "`audit_docs.py`", "scopes": ["plugin"]},
+  {"id": "D7",  "category": "documentation", "severity": "warning",  "criteria": "docs/*.md and docs/*.zh.md pairs have consistent hard data (tables, code blocks, links)", "automation": "`audit_docs.py`", "scopes": ["plugin"]},
   {"id": "D8",  "category": "documentation", "severity": "warning",  "criteria": "Each docs/*.md guide has a `> **Canonical source:**` declaration pointing to an existing skill or agent file", "automation": "`audit_docs.py`", "scopes": ["plugin"]},
   {"id": "D9",  "category": "documentation", "severity": "warning",  "criteria": "Key numbers in docs/*.md guides match their canonical source (e.g., attack surface count, category count, target count)", "automation": "`audit_docs.py`", "scopes": ["plugin"]},
 

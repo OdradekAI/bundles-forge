@@ -93,7 +93,7 @@ bundles-forge audit-docs <target-dir>
 | D3 — Platform manifest sync | CLAUDE.md Platform Manifests table matches `.version-bump.json` |
 | D4 — Script accuracy | Skill scripts referenced in CLAUDE.md exist at their declared `skills/.../scripts/` paths |
 | D5 — Agent list sync | Agents in CLAUDE.md match `agents/` directory |
-| D6 — README data sync | Hard data (skill names, commands, links) consistent between README.md and README.zh.md |
+| D6 — README data sync | Hard data (skill names, invocation examples, links) consistent between README.md and README.zh.md |
 | D7 — Guide language sync | Hard data (tables, code blocks, links) consistent between `docs/*.md` and `docs/*.zh.md` |
 | D8 — Canonical source declaration | Each `docs/*.md` guide has a `> **Canonical source:**` declaration pointing to an existing skill or agent file |
 | D9 — Numeric cross-validation | Key numbers in `docs/*.md` guides match their canonical source (e.g., attack surface count, category count) |
@@ -145,9 +145,9 @@ Look for:
 After resolving coherence issues, sync all project documentation:
 
 1. **`docs/`** — Fix outdated references to skills, scripts, architecture
-2. **`CLAUDE.md`** — Update skill count, lifecycle flow, commands, agents, manifests
+2. **`CLAUDE.md`** — Update skill count, lifecycle flow, agents, manifests
 3. **`AGENTS.md`** — Update Available Skills table
-4. **`README.md` + `README.zh.md`** — Update Skills table, Agents table, Commands table, code blocks
+4. **`README.md` + `README.zh.md`** — Update Skills table, Agents table, Invoking Skills section, code blocks
 
 Re-run `bundles-forge audit-docs` after making changes to confirm consistency.
 

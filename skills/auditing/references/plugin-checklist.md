@@ -222,8 +222,8 @@ Documentation consistency checks — verifies that project docs stay in sync wit
 | D3 | Warning | CLAUDE.md Platform Manifests table matches `.version-bump.json` | `audit_docs.py` |
 | D4 | Critical | Skill scripts referenced in CLAUDE.md exist at their declared `skills/.../scripts/` paths | `audit_docs.py` |
 | D5 | Warning | Agent names in CLAUDE.md match agents/ directory | `audit_docs.py` |
-| D6 | Warning | README.md and README.zh.md hard data (skills, agents, commands, links) in sync | `audit_docs.py` |
-| D7 | Warning | docs/*.md and docs/*.zh.md pairs have consistent hard data (tables, commands, links) | `audit_docs.py` |
+| D6 | Warning | README.md and README.zh.md hard data (skills, agents, invocation examples, links) in sync | `audit_docs.py` |
+| D7 | Warning | docs/*.md and docs/*.zh.md pairs have consistent hard data (tables, code blocks, links) | `audit_docs.py` |
 | D8 | Warning | Each docs/*.md guide has a `> **Canonical source:**` declaration pointing to an existing skill or agent file | `audit_docs.py` |
 | D9 | Warning | Key numbers in docs/*.md guides match their canonical source (e.g., attack surface count, category count, target count) | `audit_docs.py` |
 <!-- END:documentation -->
