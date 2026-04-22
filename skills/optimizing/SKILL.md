@@ -22,11 +22,23 @@ The target can be a local path, a GitHub URL, or a zip file. Normalize the input
 
 ### Input Normalization
 
-> Canonical source: `bundles-forge:auditing` — `references/input-normalization.md`
+> Edge cases & naming conventions: `bundles-forge:auditing` — `references/input-normalization.md`
 
-Normalize local paths, GitHub URLs, and archives to a local directory. Read the canonical input normalization reference for the full table, security rules, and failure handling.
+**This is a mandatory step — do not skip it or improvise paths.** Resolve the target to a local directory before proceeding to Scope Detection.
+
+1. **Resolve the workspace.** The workspace is `$CLAUDE_PROJECT_DIR` or `$CURSOR_PROJECT_DIR` (plugin mode), falling back to the current working directory.
+2. **Normalize the target by type:**
+   - **Local path** — use directly; no transformation needed.
+   - **GitHub URL** — parse `<owner>` and `<repo>` from the URL. Shallow-clone to `<workspace>/.bundles-forge/repos/<owner>__<repo>/` using `--depth 1 --no-checkout`, then run `git checkout`. If the directory already exists, append a `__<YYYYMMDD>` timestamp to avoid collisions. **Do not clone to `/tmp/`, `~/`, or any path outside `.bundles-forge/repos/`.**
+   - **Zip/tar.gz** — extract to `<workspace>/.bundles-forge/repos/<archive-name>/`.
+3. **Create the target subdirectory** if it does not exist.
+4. **On failure** (network error, 404, auth required, rate limit): tell the user what failed and suggest providing a local path or zip file instead. Do not silently skip or proceed with partial data.
+
+See the canonical source for the full naming convention (version/timestamp suffixes), GitHub subdirectory URLs, and security rules.
 
 ### Scope Detection
+
+**Prerequisites:** Target resolved to a local path (via Input Normalization above).
 
 After normalization, determine the scope from the resolved local path:
 

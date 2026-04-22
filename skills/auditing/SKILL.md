@@ -16,7 +16,7 @@ Systematically evaluate a bundle-plugin project or a single skill across applica
 
 **Announce at start:** "I'm using the auditing skill to audit [this project / this skill]."
 
-**Plugin context:** When installed as a plugin, operate on the user's project (`$CLAUDE_PROJECT_DIR` / `<target-dir>`), not the plugin's own cache. Read files from and detect scope in the target; write all outputs (reports, JSON baselines) to the workspace's `.bundles-forge/audits/`. See `references/input-normalization.md` for workspace resolution and output directory structure. `<plugin-root>` in commands below resolves to `$CLAUDE_PLUGIN_ROOT` (Claude Code), `$CURSOR_PLUGIN_ROOT` (Cursor), or `.` (local development).
+**Plugin context:** When installed as a plugin, operate on the user's project (`$CLAUDE_PROJECT_DIR` / `<target-dir>`), not the plugin's own cache. Read files from and detect scope in the target; write all outputs (reports, JSON baselines) to the workspace's `.bundles-forge/audits/`. See `references/input-normalization.md` for edge-case input types, naming conventions, and security rules. `<plugin-root>` in commands below resolves to `$CLAUDE_PLUGIN_ROOT` (Claude Code), `$CURSOR_PLUGIN_ROOT` (Cursor), or `.` (local development).
 
 ## Resolve Input & Detect Scope
 
@@ -24,7 +24,17 @@ The target can be a local path, a GitHub URL, or a zip file. Normalize to a loca
 
 ### Input Normalization
 
-Normalize local paths, GitHub URLs, and archives to a local directory. Read `references/input-normalization.md` for the full normalization table, security rules, and failure handling.
+**This is a mandatory step — do not skip it or improvise paths.** Resolve the target to a local directory before proceeding to Scope Detection or any audit Step 1.
+
+1. **Resolve the workspace.** The workspace is `$CLAUDE_PROJECT_DIR` or `$CURSOR_PROJECT_DIR` (plugin mode), falling back to the current working directory.
+2. **Normalize the target by type:**
+   - **Local path** — use directly; no transformation needed.
+   - **GitHub URL** — parse `<owner>` and `<repo>` from the URL. Shallow-clone to `<workspace>/.bundles-forge/repos/<owner>__<repo>/` using `--depth 1 --no-checkout`, then run `git checkout`. If the directory already exists, append a `__<YYYYMMDD>` timestamp to avoid collisions. **Do not clone to `/tmp/`, `~/`, or any path outside `.bundles-forge/repos/`.**
+   - **Zip/tar.gz** — extract to `<workspace>/.bundles-forge/repos/<archive-name>/`.
+3. **Create the target subdirectory** if it does not exist.
+4. **On failure** (network error, 404, auth required, rate limit): tell the user what failed and suggest providing a local path or zip file instead. Do not silently skip or proceed with partial data.
+
+See `references/input-normalization.md` for the full naming convention (version/timestamp suffixes), GitHub subdirectory URLs, and security rules.
 
 ### Scope Detection
 
@@ -75,7 +85,7 @@ After normalization, determine the audit scope from the resolved local path:
 
 ### Step 1 — Run Script Baseline
 
-**Prerequisites:** Target directory resolved to a local path with a `skills/` directory (Full audit scope confirmed).
+**Prerequisites:** Target directory resolved to a local path (via Input Normalization above) with a `skills/` directory (Full audit scope confirmed).
 
 **Action:**
 
@@ -163,7 +173,7 @@ When the target is a single skill directory or SKILL.md file, run only the 4 cat
 
 ### Step 1 — Run Script Baseline
 
-**Prerequisites:** Target resolved to a single skill directory (contains `SKILL.md` but no `skills/` subdirectory).
+**Prerequisites:** Target resolved to a local path (via Input Normalization above) containing `SKILL.md` but no `skills/` subdirectory.
 
 **Action:**
 
@@ -229,7 +239,7 @@ When the user explicitly requests a workflow audit, or when the Full audit's Cro
 
 ### Step 1 — Run Script Baseline
 
-**Prerequisites:** Target directory resolved. User has optionally specified `--focus-skills`.
+**Prerequisites:** Target directory resolved to a local path (via Input Normalization above). User has optionally specified `--focus-skills`.
 
 **Action:**
 

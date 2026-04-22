@@ -60,6 +60,11 @@ bundles-forge bump-version <new-version>       # bump all files declared in .ver
 - `tests/` — 6 test suites run by `run_all.py`; fixtures in `tests/fixtures/`, prompt snapshots in `tests/prompts/`
 - `examples/` — worked audit report examples
 - `.github/workflows/validate-plugin.yml` — CI: JSON validation, version/checklist drift, audit-skill, audit-security, audit-docs, audit-workflow, tests (Python 3.9 + 3.12 matrix)
+- `.bundles-forge/` — runtime output directory (gitignored, created by skills at runtime)
+  - `audits/` — audit reports and script JSON baselines
+  - `evals/` — A/B eval and chain eval results
+  - `blueprints/` — design documents and inspection reports
+  - `repos/` — cloned/extracted external targets (GitHub URLs, zip/tar.gz archives)
 
 ### Skill Architecture
 
