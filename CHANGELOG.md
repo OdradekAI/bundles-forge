@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+## [1.8.7] - 2026-04-27
+
+### Added
+
+- **Q16 audit check** — new skill quality check detects `allowed-tools` declaring external CLI tools (not `git`/`python`/`node`/`npm`/`npx`/`bash` or `bin/`/`scripts/` paths) without a `## Prerequisites` section in the SKILL.md body
+- **Prerequisites writing guide** — `skill-writing-guide.md` now includes a "Prerequisites Writing" section with standard table format and agent behavior for required vs optional tools
+- **Overview writing guide** — `skill-writing-guide.md` adds an "Overview Writing" section with three-element template (purpose, core principle, skill type)
+- **Missing dependency handling** — `external-integration.md` documents the required/optional tool detection pattern for skills with external CLI dependencies
+
+### Changed
+
+- **Authoring step 8 expanded** — external dependency check now includes Prerequisites section guidance alongside declaration syntax
+- **Skill structure order updated** — recommended section order in `skill-writing-guide.md` now places Prerequisites between Overview and Entry Detection
+
 ## [1.8.6] - 2026-04-22
 
 ### Added
